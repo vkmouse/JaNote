@@ -1,0 +1,17 @@
+services:
+  janote:
+    build: .
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./env.d.ts:/app/env.d.ts
+      - ./index.html:/app/index.html
+      - ./package.json:/app/package.json
+      - ./tsconfig.app.json:/app/tsconfig.app.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.node.json:/app/tsconfig.node.json
+      - ./vite.config.ts:/app/vite.config.ts
+    environment:
+      - NODE_ENV=development

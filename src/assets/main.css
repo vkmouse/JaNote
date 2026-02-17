@@ -1,0 +1,24 @@
+@import './base.css';
+
+#app {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-main {
+  min-height: 100vh;
+  padding: 32px 40px;
+  margin-left: var(--nav-width);
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 20px;
+    padding-bottom: 96px;
+  }
+}

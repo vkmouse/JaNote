@@ -1,0 +1,41 @@
+:root {
+  --bg: #f6f2ec;
+  --bg-elevated: #ffffff;
+  --text: #1c1b1a;
+  --text-muted: #5a4f47;
+  --accent: #d66a3a;
+  --accent-soft: #f6d9cb;
+  --border: #e6dcd1;
+  --nav-shadow: 0 20px 40px rgba(32, 24, 20, 0.12);
+  --nav-width: 240px;
+  --nav-width-mobile: 200px;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --font-family: 'Space Grotesk', 'Manrope', 'Noto Sans TC', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #fff7ef 0%, #f6f2ec 55%, #efe8de 100%);
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
