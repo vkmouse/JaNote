@@ -245,7 +245,7 @@ const getCategoryColor = (categoryId: string): string => {
   
   // Use category id to consistently assign color
   const index = categoryId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return colors[index % colors.length]
+  return colors[index % colors.length] ?? colors[0]!
 }
 
 const goToNewTransaction = () => {
@@ -263,6 +263,7 @@ const confirmDateSelection = () => {
 // Swipe-to-delete handlers
 const handleTouchStart = (event: TouchEvent, id: string) => {
   const touch = event.touches[0]
+  if (!touch) return
   swipeState.value[id] = {
     offset: 0,
     startX: touch.clientX,
@@ -274,6 +275,7 @@ const handleTouchMove = (event: TouchEvent, id: string) => {
   if (!swipeState.value[id]) return
   
   const touch = event.touches[0]
+  if (!touch) return
   const diff = touch.clientX - swipeState.value[id].startX
   
   // Only allow left swipe (negative offset)

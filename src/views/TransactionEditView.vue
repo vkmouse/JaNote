@@ -327,12 +327,15 @@ const handleCalcKey = (key: string) => {
         let i = 0
         while (i < expr.length) {
           const ch = expr[i]
+          if (!ch) break
           if (ch === ' ') { i++; continue }
           if (/[0-9.]/.test(ch)) {
             let num = ch
             i++
-            while (i < expr.length && /[0-9.]/.test(expr[i])) {
-              num += expr[i]
+            while (i < expr.length) {
+              const nextCh = expr[i]
+              if (!nextCh || !/[0-9.]/.test(nextCh)) break
+              num += nextCh
               i++
             }
             // reject malformed numbers with multiple dots
@@ -360,7 +363,9 @@ const handleCalcKey = (key: string) => {
           if (/^[0-9.]+$/.test(t)) {
             output.push(t)
           } else if (/^[+\-*/]$/.test(t)) {
-            while (ops.length > 0 && prec[ops[ops.length - 1]] >= prec[t]) {
+            while (ops.length > 0) {
+              const topOp = ops[ops.length - 1]
+              if (!topOp || (prec[topOp] ?? 0) < prec[t]) break
               output.push(ops.pop()!)
             }
             ops.push(t)
@@ -391,7 +396,7 @@ const handleCalcKey = (key: string) => {
           }
         }
         if (stack.length !== 1) return null
-        return stack[0]
+        return stack[0] ?? null
       }
 
       const result = evaluateExpression(amount.value)
