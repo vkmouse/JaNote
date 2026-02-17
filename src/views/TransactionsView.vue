@@ -120,7 +120,6 @@ import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
-import { performSync } from '../services/sync.service'
 
 const router = useRouter()
 const transactions = ref<Transaction[]>([])
@@ -323,7 +322,6 @@ const deleteTransaction = async (id: string) => {
         })
 
         const userId = localStorage.getItem('sync_user_id') || 'demo-user'
-        await performSync(userId, syncApiBase)
       } catch {
         // Ignore sync errors to avoid blocking the UI
       }
