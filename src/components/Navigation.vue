@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import SyncIcon from '../assets/icons/icon-sync.svg?raw'
 import DashboardIcon from '../assets/icons/icon-dashboard.svg?raw'
 import TransactionsIcon from '../assets/icons/icon-transactions.svg?raw'
 import ShareIcon from '../assets/icons/icon-share.svg?raw'
@@ -7,9 +8,10 @@ import ShareIcon from '../assets/icons/icon-share.svg?raw'
 const route = useRoute()
 
 const navItems = [
-  { to: '/dashboard', label: '帳務總覽頁', icon: DashboardIcon },
-  { to: '/transactions', label: '月收支頁面', icon: TransactionsIcon },
-  { to: '/share', label: '共享帳本頁', icon: ShareIcon },
+  { to: '/', label: '同步頁面', icon: SyncIcon },
+  { to: '/dashboard', label: '帳務總覽', icon: DashboardIcon },
+  { to: '/transactions', label: '月收支', icon: TransactionsIcon },
+  { to: '/share', label: '共享帳本', icon: ShareIcon },
 ]
 
 const isActive = (path: string) => route.path === path

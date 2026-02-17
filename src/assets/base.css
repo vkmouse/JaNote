@@ -12,6 +12,16 @@
   --radius-lg: 18px;
   --radius-md: 12px;
   --font-family: 'Space Grotesk', 'Manrope', 'Noto Sans TC', sans-serif;
+  --janote-primary: #ffc107;
+  --janote-primary-light: #fffaf0;
+  --janote-primary-hover: #E53935;
+
+  --text-primary: #f5f5f5;
+  --text-secondary: #757575;
+  --text-light: #FFFFFF;
+
+  --bg-page: #FFFFFF;
+  --bg-body: #FFFFFF;
 }
 
 *,
