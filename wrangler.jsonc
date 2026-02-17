@@ -16,6 +16,13 @@
 	},
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "janote-db",
+			"database_id": "your-database-id"
+		}
 	]
 	/**
 	 * Smart Placement
