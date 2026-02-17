@@ -119,6 +119,8 @@ import { useRouter } from 'vue-router'
 import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
+import { syncQueueRepository } from '../repositories/syncQueueRepository'
+import { performSync } from '../services/sync.service'
 
 const router = useRouter()
 const transactions = ref<Transaction[]>([])
@@ -127,6 +129,7 @@ const currentDate = ref(new Date())
 const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
 const showMonthPicker = ref(false)
+const syncApiBase = '/api'
 
 // Swipe-to-delete state
 const swipeState = ref<Record<string, { offset: number; startX: number; showDelete: boolean }>>({})
@@ -308,6 +311,22 @@ const deleteTransaction = async (id: string) => {
         if (!current) return null
         return { ...current, is_deleted: 1, version: current.version + 1 }
       })
+
+      try {
+        await syncQueueRepository.add({
+          mutation_id: crypto.randomUUID(),
+          entity_type: 'TXN',
+          entity_id: id,
+          payload: null,
+          base_version: transaction.version || 0,
+          created_at: Date.now(),
+        })
+
+        const userId = localStorage.getItem('sync_user_id') || 'demo-user'
+        await performSync(userId, syncApiBase)
+      } catch {
+        // Ignore sync errors to avoid blocking the UI
+      }
       
       // Reload transactions
       await loadTransactions()
