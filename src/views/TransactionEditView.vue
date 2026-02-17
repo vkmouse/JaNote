@@ -365,7 +365,7 @@ const handleCalcKey = (key: string) => {
           } else if (/^[+\-*/]$/.test(t)) {
             while (ops.length > 0) {
               const topOp = ops[ops.length - 1]
-              if (!topOp || (prec[topOp] ?? 0) < prec[t]) break
+              if (!topOp || (prec[topOp] ?? 0) < (prec[t] ?? 0)) break
               output.push(ops.pop()!)
             }
             ops.push(t)
