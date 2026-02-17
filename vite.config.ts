@@ -18,10 +18,15 @@ export default defineConfig({
 	server: {
 		host: '0.0.0.0',
 		port: 5173,
-		// 支持 HMR（熱模組重載）
+		// Docker volume needs polling to detect file changes reliably.
+		watch: {
+			usePolling: true
+		},
+		// Support HMR from the host browser.
 		hmr: {
 			host: 'localhost',
-			port: 5173
+			port: 5173,
+			clientPort: 5173
 		}
 	}
 })

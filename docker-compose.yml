@@ -2,16 +2,24 @@ services:
   janote:
     build: .
     ports:
+      - "8888:8888"
       - "5173:5173"
     volumes:
-      - ./src:/app/src
+      - ./functions:/app/functions
       - ./public:/app/public
+      - ./server:/app/server
+      - ./src:/app/src
       - ./env.d.ts:/app/env.d.ts
       - ./index.html:/app/index.html
       - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
       - ./tsconfig.app.json:/app/tsconfig.app.json
       - ./tsconfig.json:/app/tsconfig.json
       - ./tsconfig.node.json:/app/tsconfig.node.json
       - ./vite.config.ts:/app/vite.config.ts
+      - ./worker-configuration.d.ts:/app/worker-configuration.d.ts
+      - ./wrangler.jsonc:/app/wrangler.jsonc
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=1
+      - WRANGLER_USE_POLLING=1
