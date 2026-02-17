@@ -8,7 +8,7 @@
 	"compatibility_date": "2026-02-12",
 	"main": "server/index.ts",
 	"assets": {
-		"directory": "dist",
+		"directory": "public",
 		"not_found_handling": "single-page-application"
 	},
 	"observability": {
@@ -16,6 +16,13 @@
 	},
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "janote-db",
+			"database_id": "your-database-id"
+		}
 	]
 	/**
 	 * Smart Placement
