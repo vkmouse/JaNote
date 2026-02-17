@@ -317,13 +317,91 @@ const handleCalcKey = (key: string) => {
 
   if (key === '=') {
     try {
-      // Replace Chinese operators with standard operators
-      let expr = amount.value
-        .replace(/÷/g, '/')
-        .replace(/×/g, '*')
-      amount.value = String(Math.round(eval(expr) * 100) / 100)
+      // Evaluate the expression safely without using eval
+      const evaluateExpression = (input: string): number | null => {
+        if (!input) return null
+        const expr = input.replace(/÷/g, '/').replace(/×/g, '*')
+
+        // Tokenize numbers and operators
+        const tokens: string[] = []
+        let i = 0
+        while (i < expr.length) {
+          const ch = expr[i]
+          if (ch === ' ') { i++; continue }
+          if (/[0-9.]/.test(ch)) {
+            let num = ch
+            i++
+            while (i < expr.length && /[0-9.]/.test(expr[i])) {
+              num += expr[i]
+              i++
+            }
+            // reject malformed numbers with multiple dots
+            if ((num.match(/\./g) || []).length > 1) return null
+            tokens.push(num)
+            continue
+          }
+          if (/[+\-*/]/.test(ch)) {
+            tokens.push(ch)
+            i++
+            continue
+          }
+          // unsupported character
+          return null
+        }
+
+        if (tokens.length === 0) return null
+
+        // Shunting-yard to convert to RPN
+        const prec: Record<string, number> = { '+': 1, '-': 1, '*': 2, '/': 2 }
+        const output: string[] = []
+        const ops: string[] = []
+
+        for (let t of tokens) {
+          if (/^[0-9.]+$/.test(t)) {
+            output.push(t)
+          } else if (/^[+\-*/]$/.test(t)) {
+            while (ops.length > 0 && prec[ops[ops.length - 1]] >= prec[t]) {
+              output.push(ops.pop()!)
+            }
+            ops.push(t)
+          } else {
+            return null
+          }
+        }
+        while (ops.length > 0) output.push(ops.pop()!)
+
+        // Evaluate RPN
+        const stack: number[] = []
+        for (let token of output) {
+          if (/^[0-9.]+$/.test(token)) {
+            stack.push(parseFloat(token))
+          } else {
+            if (stack.length < 2) return null
+            const b = stack.pop()!
+            const a = stack.pop()!
+            let res: number
+            if (token === '+') res = a + b
+            else if (token === '-') res = a - b
+            else if (token === '*') res = a * b
+            else if (token === '/') {
+              if (b === 0) return null
+              res = a / b
+            } else return null
+            stack.push(res)
+          }
+        }
+        if (stack.length !== 1) return null
+        return stack[0]
+      }
+
+      const result = evaluateExpression(amount.value)
+      if (result === null || Number.isNaN(result)) {
+        // Invalid expression, ignore
+      } else {
+        amount.value = String(Math.round(result * 100) / 100)
+      }
     } catch {
-      // Invalid expression, ignore
+      // Invalid expression or other error, ignore
     }
     return
   }
