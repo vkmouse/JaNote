@@ -144,7 +144,7 @@
               <div 
                 class="transaction-item"
                 :style="{ transform: `translateX(${swipeState[transaction.id]?.offset || 0}px)` }"
-                @click="editTransaction(transaction.id)"
+                @click="!swipeState[transaction.id]?.hasSwipped && editTransaction(transaction.id)"
               >
                 <div class="item-left">
                   <div class="category-icon" :style="{ background: getCategoryColor(transaction.category_id) }">
@@ -206,7 +206,7 @@ const showMonthPicker = ref(false)
 const syncApiBase = '/api'
 
 // Swipe-to-delete state
-const swipeState = ref<Record<string, { offset: number; startX: number; showDelete: boolean; isDragging: boolean }>>({})
+const swipeState = ref<Record<string, { offset: number; startX: number; showDelete: boolean; isDragging: boolean; hasSwipped: boolean }>>({})
 
 interface DailyGroup {
   date: string
@@ -371,6 +371,7 @@ const handleTouchStart = (event: TouchEvent, id: string) => {
     if (key !== id && swipeState.value[key]) {
       swipeState.value[key].offset = 0
       swipeState.value[key].showDelete = false
+      swipeState.value[key].hasSwipped = false
     }
   })
   
@@ -378,7 +379,8 @@ const handleTouchStart = (event: TouchEvent, id: string) => {
     offset: swipeState.value[id]?.offset || 0,
     startX: touch.clientX,
     showDelete: swipeState.value[id]?.showDelete || false,
-    isDragging: true
+    isDragging: true,
+    hasSwipped: false
   }
 }
 
@@ -387,14 +389,29 @@ const handleTouchMove = (event: TouchEvent, id: string) => {
   
   const touch = event.touches[0]
   if (!touch) return
-  const diff = touch.clientX - swipeState.value[id].startX
+  const currentX = touch.clientX
+  const startX = swipeState.value[id].startX
+  const diff = currentX - startX
   
-  // Only allow left swipe (negative offset)
-  if (diff < 0) {
-    const offset = Math.max(diff, -80) // Limit to -80px
-    swipeState.value[id].offset = offset
-    swipeState.value[id].showDelete = offset < -40
+  // Mark as swiped if movement exceeds 5px
+  if (Math.abs(diff) > 5) {
+    swipeState.value[id].hasSwipped = true
   }
+  
+  // Get current offset
+  const currentOffset = swipeState.value[id].offset
+  
+  // Calculate new offset based on current state
+  // If we already have a negative offset (open), allow positive movements (closing)
+  // If we have no offset (closed), allow negative movements (opening)
+  let newOffset = currentOffset + diff
+  
+  // Limit to -80px to 0px range
+  newOffset = Math.min(0, Math.max(newOffset, -80))
+  
+  swipeState.value[id].offset = newOffset
+  swipeState.value[id].showDelete = newOffset < -40
+  swipeState.value[id].startX = currentX // Update start position for continuous tracking
 }
 
 const handleTouchEnd = (id: string) => {
@@ -419,6 +436,7 @@ const handleMouseDown = (event: MouseEvent, id: string) => {
     if (key !== id && swipeState.value[key]) {
       swipeState.value[key].offset = 0
       swipeState.value[key].showDelete = false
+      swipeState.value[key].hasSwipped = false
     }
   })
   
@@ -426,21 +444,37 @@ const handleMouseDown = (event: MouseEvent, id: string) => {
     offset: swipeState.value[id]?.offset || 0,
     startX: event.clientX,
     showDelete: swipeState.value[id]?.showDelete || false,
-    isDragging: true
+    isDragging: true,
+    hasSwipped: false
   }
 }
 
 const handleMouseMove = (event: MouseEvent, id: string) => {
   if (!swipeState.value[id] || !swipeState.value[id].isDragging) return
   
-  const diff = event.clientX - swipeState.value[id].startX
+  const currentX = event.clientX
+  const startX = swipeState.value[id].startX
+  const diff = currentX - startX
   
-  // Only allow left swipe (negative offset)
-  if (diff < 0) {
-    const offset = Math.max(diff, -80) // Limit to -80px
-    swipeState.value[id].offset = offset
-    swipeState.value[id].showDelete = offset < -40
+  // Mark as swiped if movement exceeds 5px
+  if (Math.abs(diff) > 5) {
+    swipeState.value[id].hasSwipped = true
   }
+  
+  // Get current offset
+  const currentOffset = swipeState.value[id].offset
+  
+  // Calculate new offset based on current state
+  // If we already have a negative offset (open), allow positive movements (closing)
+  // If we have no offset (closed), allow negative movements (opening)
+  let newOffset = currentOffset + diff
+  
+  // Limit to -80px to 0px range
+  newOffset = Math.min(0, Math.max(newOffset, -80))
+  
+  swipeState.value[id].offset = newOffset
+  swipeState.value[id].showDelete = newOffset < -40
+  swipeState.value[id].startX = currentX // Update start position for continuous tracking
 }
 
 const handleMouseUp = (id: string) => {
@@ -493,6 +527,7 @@ const deleteTransaction = async (id: string) => {
     if (swipeState.value[id]) {
       swipeState.value[id].offset = 0
       swipeState.value[id].showDelete = false
+      swipeState.value[id].hasSwipped = false
     }
   }
 }
@@ -908,7 +943,7 @@ onMounted(() => {
 /* Responsive */
 @media (max-width: 480px) {
   .summary-amount {
-    font-size: 28px;
+    font-size: 20px;
   }
   
   .daily-group {
