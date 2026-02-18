@@ -615,7 +615,7 @@ onMounted(() => {
 .picker-controls button {
   background: #f0f0f0;
   border: none;
-  border-radius: 50%;
+  border-radius: 8px;
   width: 40px;
   height: 40px;
   cursor: pointer;
@@ -679,7 +679,7 @@ onMounted(() => {
 .month-btn.active {
   background: var(--janote-income);
   border-color: var(--janote-income);
-  color: var(--text-primary);
+  color: var(--text-light);
   font-weight: 600;
 }
 

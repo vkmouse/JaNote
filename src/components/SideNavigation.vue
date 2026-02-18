@@ -70,20 +70,18 @@ const isActive = (path: string) => route.path === path
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 8px;
-  color: var(--text-secondary, #757575);
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+  color: var(--text-primary);
   transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-link:hover {
-  background: rgba(214, 106, 58, 0.12);
-  color: var(--text-primary);
-  transform: translateX(2px);
+  background: var(--janote-expense-light);
 }
 
 .nav-link.active {
-  background: var(--janote-expense-light, #FFF4D9);
-  color: var(--text-primary);
+  background: var(--janote-expense);
   font-weight: 600;
 }
 

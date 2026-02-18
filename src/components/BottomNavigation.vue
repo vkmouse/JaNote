@@ -64,7 +64,8 @@ const isActive = (path: string) => route.path === path
     gap: 4px;
     padding: 8px 12px;
     border-radius: 8px;
-    color: var(--text-secondary, #757575);
+    background: var(--bg-page);
+    color: var(--text-primary);
     transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
     flex: 1;
     max-width: 80px;
@@ -72,12 +73,11 @@ const isActive = (path: string) => route.path === path
 
   .nav-link:hover,
   .nav-link:active {
-    background: rgba(214, 106, 58, 0.08);
-    color: var(--text-primary);
+    background: var(--janote-expense-light);
   }
 
   .nav-link.active {
-    color: var(--janote-expense, #FFC952);
+    background: var(--janote-expense);
     font-weight: 600;
   }
 
