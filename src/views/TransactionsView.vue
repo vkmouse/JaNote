@@ -136,6 +136,10 @@
               @touchstart="handleTouchStart($event, transaction.id)"
               @touchmove="handleTouchMove($event, transaction.id)"
               @touchend="handleTouchEnd(transaction.id)"
+              @mousedown="handleMouseDown($event, transaction.id)"
+              @mousemove="handleMouseMove($event, transaction.id)"
+              @mouseup="handleMouseUp(transaction.id)"
+              @mouseleave="handleMouseLeave(transaction.id)"
             >
               <div 
                 class="transaction-item"
@@ -155,8 +159,11 @@
               </div>
               <button 
                 class="delete-btn" 
-                @click="deleteTransaction(transaction.id)"
-                :style="{ opacity: swipeState[transaction.id]?.showDelete ? 1 : 0 }"
+                @click.stop="deleteTransaction(transaction.id)"
+                :style="{ 
+                  opacity: swipeState[transaction.id]?.showDelete ? 1 : 0,
+                  pointerEvents: swipeState[transaction.id]?.showDelete ? 'auto' : 'none'
+                }"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"></polyline>
@@ -199,7 +206,7 @@ const showMonthPicker = ref(false)
 const syncApiBase = '/api'
 
 // Swipe-to-delete state
-const swipeState = ref<Record<string, { offset: number; startX: number; showDelete: boolean }>>({})
+const swipeState = ref<Record<string, { offset: number; startX: number; showDelete: boolean; isDragging: boolean }>>({})
 
 interface DailyGroup {
   date: string
@@ -354,19 +361,29 @@ const confirmDateSelection = () => {
   showMonthPicker.value = false
 }
 
-// Swipe-to-delete handlers
+// Swipe-to-delete handlers (Touch)
 const handleTouchStart = (event: TouchEvent, id: string) => {
   const touch = event.touches[0]
   if (!touch) return
+  
+  // Close other open swipes
+  Object.keys(swipeState.value).forEach(key => {
+    if (key !== id && swipeState.value[key]) {
+      swipeState.value[key].offset = 0
+      swipeState.value[key].showDelete = false
+    }
+  })
+  
   swipeState.value[id] = {
-    offset: 0,
+    offset: swipeState.value[id]?.offset || 0,
     startX: touch.clientX,
-    showDelete: false
+    showDelete: swipeState.value[id]?.showDelete || false,
+    isDragging: true
   }
 }
 
 const handleTouchMove = (event: TouchEvent, id: string) => {
-  if (!swipeState.value[id]) return
+  if (!swipeState.value[id] || !swipeState.value[id].isDragging) return
   
   const touch = event.touches[0]
   if (!touch) return
@@ -383,6 +400,8 @@ const handleTouchMove = (event: TouchEvent, id: string) => {
 const handleTouchEnd = (id: string) => {
   if (!swipeState.value[id]) return
   
+  swipeState.value[id].isDragging = false
+  
   // Snap to position
   if (swipeState.value[id].offset < -40) {
     swipeState.value[id].offset = -80
@@ -391,6 +410,57 @@ const handleTouchEnd = (id: string) => {
     swipeState.value[id].offset = 0
     swipeState.value[id].showDelete = false
   }
+}
+
+// Mouse handlers for desktop
+const handleMouseDown = (event: MouseEvent, id: string) => {
+  // Close other open swipes
+  Object.keys(swipeState.value).forEach(key => {
+    if (key !== id && swipeState.value[key]) {
+      swipeState.value[key].offset = 0
+      swipeState.value[key].showDelete = false
+    }
+  })
+  
+  swipeState.value[id] = {
+    offset: swipeState.value[id]?.offset || 0,
+    startX: event.clientX,
+    showDelete: swipeState.value[id]?.showDelete || false,
+    isDragging: true
+  }
+}
+
+const handleMouseMove = (event: MouseEvent, id: string) => {
+  if (!swipeState.value[id] || !swipeState.value[id].isDragging) return
+  
+  const diff = event.clientX - swipeState.value[id].startX
+  
+  // Only allow left swipe (negative offset)
+  if (diff < 0) {
+    const offset = Math.max(diff, -80) // Limit to -80px
+    swipeState.value[id].offset = offset
+    swipeState.value[id].showDelete = offset < -40
+  }
+}
+
+const handleMouseUp = (id: string) => {
+  if (!swipeState.value[id]) return
+  
+  swipeState.value[id].isDragging = false
+  
+  // Snap to position
+  if (swipeState.value[id].offset < -40) {
+    swipeState.value[id].offset = -80
+    swipeState.value[id].showDelete = true
+  } else {
+    swipeState.value[id].offset = 0
+    swipeState.value[id].showDelete = false
+  }
+}
+
+const handleMouseLeave = (id: string) => {
+  if (!swipeState.value[id] || !swipeState.value[id].isDragging) return
+  handleMouseUp(id)
 }
 
 const deleteTransaction = async (id: string) => {
@@ -724,6 +794,8 @@ onMounted(() => {
 .transaction-item-wrapper {
   position: relative;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .transaction-item {
@@ -735,6 +807,7 @@ onMounted(() => {
   transition: transform 0.3s ease-out;
   position: relative;
   background: var(--bg-page);
+  z-index: 1;
 }
 
 .transaction-item:hover {
@@ -755,7 +828,8 @@ onMounted(() => {
   justify-content: center;
   cursor: pointer;
   transition: opacity 0.3s;
-  pointer-events: all;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .item-left {
