@@ -4,112 +4,24 @@
     <TopNavigation>
       <button class="month-selector" @click="showMonthPicker = true">
         <span class="month-display">{{ currentMonthDisplay }}</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
+        <span class="icon-arrow" v-html="iconArrowDown"></span>
       </button>
     </TopNavigation>
 
-    <!-- Month Picker Modal -->
-    <div v-if="showMonthPicker" class="month-picker-overlay" @click="showMonthPicker = false">
-      <div class="month-picker" @click.stop>
-        <h3>選擇年月</h3>
-        <div class="picker-controls">
-          <button @click="selectedYear--"><span v-html="ArrowLeftIcon" class="picker-arrow"></span></button>
-          <span class="picker-year">{{ selectedYear }}</span>
-          <button @click="selectedYear++"><span v-html="ArrowRightIcon" class="picker-arrow"></span></button>
-        </div>
-        <div class="month-grid">
-          <button 
-            v-for="month in 12" 
-            :key="month"
-            :class="['month-btn', { active: month === selectedMonth }]"
-            @click="selectedMonth = month"
-          >
-            {{ month }}月
-          </button>
-        </div>
-        <button class="confirm-btn" @click="confirmDateSelection">確認</button>
-      </div>
-    </div>
+    <MonthPicker
+      v-model:open="showMonthPicker"
+      v-model:year="selectedYear"
+      v-model:month="selectedMonth"
+    />
 
     <div class="page-content page">
-    <!-- Summary Statistics -->
-    <div class="summary-section">
-      <div class="summary-item">
-        <div class="summary-label">月支出</div>
-        <div class="summary-amount expense">${{ monthlyExpense.toLocaleString() }}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">月收入</div>
-        <div class="summary-amount income">${{ monthlyIncome.toLocaleString() }}</div>
-      </div>
-    </div>
-
-    <!-- Donut Chart -->
-    <div class="chart-section">
-      <svg class="donut-chart" viewBox="0 0 200 200">
-        <!-- Background circle -->
-        <circle
-          cx="100"
-          cy="100"
-          r="70"
-          fill="none"
-          stroke="#f0f0f0"
-          stroke-width="40"
-        />
-        <!-- Income arc (blue) -->
-        <circle
-          cx="100"
-          cy="100"
-          r="70"
-          fill="none"
-          stroke="#47B8E0"
-          stroke-width="40"
-          :stroke-dasharray="`${Math.max(0, incomePercentage * 4.398 - 4)} 439.8`"
-          stroke-dashoffset="-2"
-          transform="rotate(-90 100 100)"
-          class="chart-arc income-arc"
-        />
-        <!-- Expense arc (yellow) -->
-        <circle
-          cx="100"
-          cy="100"
-          r="70"
-          fill="none"
-          stroke="#FFC952"
-          stroke-width="40"
-          :stroke-dasharray="`${Math.max(0, expensePercentage * 4.398 - 2)} 439.8`"
-          :stroke-dashoffset="-(incomePercentage * 4.398 + 1)"
-          transform="rotate(-90 100 100)"
-          class="chart-arc expense-arc"
-        />
-        <!-- Outer border -->
-        <circle
-          cx="100"
-          cy="100"
-          r="90"
-          fill="none"
-          stroke="var(--border-primary)"
-          stroke-width="1"
-        />
-        <!-- Inner border -->
-        <circle
-          cx="100"
-          cy="100"
-          r="50"
-          fill="none"
-          stroke="var(--border-primary)"
-          stroke-width="1"
-        />
-      </svg>
-      <div class="chart-center">
-        <div class="chart-label">月結餘</div>
-        <div class="chart-balance" :class="{ positive: balance >= 0, negative: balance < 0 }">
-          ${{ balance.toLocaleString() }}
-        </div>
-      </div>
-    </div>
+    <StatsChart
+      :monthlyExpense="monthlyExpense"
+      :monthlyIncome="monthlyIncome"
+      :balance="balance"
+      :expensePercentage="expensePercentage"
+      :incomePercentage="incomePercentage"
+    />
 
     <!-- Daily Transaction List -->
     <div class="transaction-list">
@@ -191,17 +103,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import TopNavigation from '../components/TopNavigation.vue'
+import MonthPicker from '../components/MonthPicker.vue'
+import StatsChart from '../components/StatsChart.vue'
 import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
-import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
-import ArrowRightIcon from '../assets/icons/icon-arrow-right.svg?raw'
+import iconArrowDown from '../assets/icons/icon-arrow-down.svg?raw'
 
 const router = useRouter()
 const transactions = ref<Transaction[]>([])
 const categories = ref<Category[]>([])
-const currentDate = ref(new Date())
 const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
 const showMonthPicker = ref(false)
@@ -357,10 +269,6 @@ const goToNewTransaction = () => {
 
 const editTransaction = (id: string) => {
   router.push(`/transaction/${id}/edit`)
-}
-
-const confirmDateSelection = () => {
-  showMonthPicker.value = false
 }
 
 // Swipe-to-delete handlers (Touch)
@@ -573,216 +481,10 @@ onMounted(() => {
   opacity: 0.7;
 }
 
-/* Month Picker Modal */
-.month-picker-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+.icon-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-}
-
-.month-picker {
-  background: var(--bg-page);
-  border-radius: 16px;
-  padding: 24px;
-  min-width: 320px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.month-picker h3 {
-  margin: 0 0 24px;
-  text-align: center;
-  font-size: 18px;
-  color: var(--text-primary);
-}
-
-.picker-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 24px;
-  position: relative;
-  width: 100%;
-}
-
-.picker-controls button {
-  background: #f0f0f0;
-  border: none;
-  border-radius: 8px;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.picker-controls button:hover {
-  background: #e0e0e0;
-}
-
-.picker-controls button svg {
-  width: 16px;
-  height: 16px;
-}
-
-.picker-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-}
-
-.picker-year {
-  font-size: 20px;
-  font-weight: 600;
-  min-width: 80px;
-  text-align: center;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.month-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.month-btn {
-  padding: 12px 8px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  background: var(--bg-page);
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.month-btn:hover {
-  border-color: var(--janote-income);
-  background: var(--janote-income-light);
-}
-
-.month-btn.active {
-  background: var(--janote-income);
-  border-color: var(--janote-income);
-  color: var(--text-light);
-  font-weight: 600;
-}
-
-.confirm-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--text-primary);
-  color: var(--text-light);
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.confirm-btn:hover {
-  background: #333;
-}
-
-/* Summary Section */
-.summary-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 24px 20px 0;
-  gap: 20px;
-  background: var(--bg-page);
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.summary-item:first-child {
-  align-items: flex-start;
-}
-
-.summary-item:last-child {
-  align-items: flex-end;
-}
-
-.summary-label {
-  font-size: 14px;
-  color: var(--text-primary);
-  font-weight: 500;
-  border-bottom: 3px solid;
-  padding-bottom: 4px;
-}
-
-.summary-item:nth-child(1) .summary-label {
-  border-color: var(--janote-expense);
-}
-
-.summary-item:nth-child(2) .summary-label {
-  border-color: var(--janote-income);
-}
-
-.summary-amount {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-/* Chart Section */
-.chart-section {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 20px 40px;
-  background: var(--bg-page);
-}
-
-.donut-chart {
-  width: 280px;
-  height: 280px;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
-}
-
-.chart-arc {
-  transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease;
-}
-
-.chart-center {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.chart-label {
-  font-size: 14px;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.chart-balance {
-  font-size: 28px;
-  font-weight: 700;
   color: var(--text-primary);
 }
 
@@ -963,10 +665,6 @@ onMounted(() => {
 
 /* Responsive */
 @media (max-width: 480px) {
-  .summary-amount {
-    font-size: 20px;
-  }
-  
   .daily-group {
     border-radius: 12px;
   }
