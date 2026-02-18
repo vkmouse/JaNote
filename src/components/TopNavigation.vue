@@ -48,7 +48,7 @@
 @media (max-width: 768px) {
   .top-nav {
     height: 56px;
-    padding: 0 16px;
+    padding: 0 8px;
   }
 
   .page-title {

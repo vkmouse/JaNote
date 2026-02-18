@@ -46,7 +46,7 @@
         <div class="input-group">
           <label class="label">
             <span class="category-name">{{ selectedCategoryName }}</span>
-            <span :class="['amount-display', { 'amount-expense': transactionType === 'EXPENSE', 'amount-income': transactionType === 'INCOME' }]">{{ formattedAmount }}</span>
+              <span :class="['amount-display', { 'amount-expense': transactionType === 'EXPENSE', 'amount-income': transactionType === 'INCOME' }]">{{ '$' + formattedAmount }}</span>
           </label>
           <input
             v-model="notes"
@@ -578,21 +578,27 @@ onMounted(async () => {
 .edit-header-content {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
+  position: relative;
 }
 
+
 .back-btn {
-  background: var(--text-primary);
+  background: transparent;
   border: none;
-  padding: 8px 12px;
+  padding: 8px 0;
   border-radius: 20px;
   cursor: pointer;
-  color: var(--text-light);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: opacity 0.2s;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .back-btn:hover {
@@ -600,13 +606,14 @@ onMounted(async () => {
 }
 
 .back-btn svg {
-  stroke: var(--text-light);
+  stroke: var(--text-primary);
 }
 
 .type-toggle {
   display: flex;
   background: #f5f5f5;
   border-radius: 12px;
+  border: 2px solid var(--border-primary);
 }
 
 .toggle-btn {
@@ -723,11 +730,11 @@ onMounted(async () => {
 
 /* Amount color follows transaction type */
 .amount-display.amount-expense {
-  color: var(--janote-expense);
+  color: var(--text-primary);
 }
 
 .amount-display.amount-income {
-  color: var(--janote-income);
+  color: var(--text-primary);
 }
 
 .notes-input {
@@ -750,8 +757,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  gap: 12px;
+  padding: 0px 12px;
+  gap: 8px;
   border-bottom: 2px solid var(--border-primary);
   background: var(--bg-page);
   margin: 0;
@@ -761,8 +768,8 @@ onMounted(async () => {
   background: #f5f5f5;
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   color: var(--text-primary);
   display: flex;
