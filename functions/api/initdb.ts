@@ -77,8 +77,15 @@ export const onRequest: PagesFunction = async (context) => {
       '娛樂',
       '日用品',
       '房租',
+      '醫療',
+      '社交',
+      '禮物',
+      '數位',
+      '其他',
+      '貓咪',
+      '旅行',
     ];
-    const incomeCategories = ['薪水', '獎金', '利息'];
+    const incomeCategories = ['薪水', '獎金', '利息', '股息', '投資', '其他'];
 
     for (const name of expenseCategories) {
       const id = `cat-expense-${name}`;

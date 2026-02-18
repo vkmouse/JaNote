@@ -57,27 +57,62 @@
         </div>
       </div>
 
-      <!-- Date Picker -->
-      <div class="date-picker">
-        <button class="date-nav-btn" @click="previousDate">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-        </button>
-        <div class="date-display" @click="showCalendar = true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <span>{{ formattedDate }}</span>
+      <!-- Date Picker & Calculator Panel -->
+      <div class="input-panel">
+        <!-- Date Picker -->
+        <div class="date-section">
+          <button class="date-control-btn" @click="previousDate">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button class="date-info" @click="showCalendar = true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span class="date-text">{{ formattedDate }}</span>
+          </button>
+          <button class="date-control-btn" @click="nextDate">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
         </div>
-        <button class="date-nav-btn" @click="nextDate">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
+
+        <!-- Calculator Keyboard -->
+        <div class="calc-section">
+          <div class="calc-grid">
+            <!-- Row 1 -->
+            <button v-for="key in calculatorKeys.slice(0, 3)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+              {{ key }}
+            </button>
+            <button class="calc-btn function-btn" @click="handleCalcKey('÷')">÷</button>
+            <button class="calc-btn function-btn" @click="handleCalcKey('AC')">AC</button>
+
+            <!-- Row 2 -->
+            <button v-for="key in calculatorKeys.slice(4, 7)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+              {{ key }}
+            </button>
+            <button class="calc-btn function-btn" @click="handleCalcKey('×')">×</button>
+            <button class="calc-btn function-btn" @click="handleCalcKey('←')">←</button>
+
+            <!-- Row 3 -->
+            <button v-for="key in calculatorKeys.slice(8, 11)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+              {{ key }}
+            </button>
+            <button class="calc-btn function-btn" @click="handleCalcKey('+')">+</button>
+            <button class="calc-btn confirm-btn" @click="saveTransaction" :disabled="!canSave">確定</button>
+
+            <!-- Row 4 -->
+            <button v-for="key in calculatorKeys.slice(12, 15)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+              {{ key }}
+            </button>
+            <button class="calc-btn function-btn" @click="handleCalcKey('=')">&#61;</button>
+          </div>
+        </div>
       </div>
 
       <!-- Calendar Modal -->
@@ -106,38 +141,6 @@
               {{ day.day }}
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Calculator Keyboard -->
-      <div class="calculator">
-        <div class="calc-grid">
-          <!-- Row 1 -->
-          <button v-for="key in calculatorKeys.slice(0, 3)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
-            {{ key }}
-          </button>
-          <button class="calc-btn operator-btn" @click="handleCalcKey('÷')">÷</button>
-          <button class="calc-btn operator-btn" @click="handleCalcKey('AC')">AC</button>
-
-          <!-- Row 2 -->
-          <button v-for="key in calculatorKeys.slice(4, 7)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
-            {{ key }}
-          </button>
-          <button class="calc-btn operator-btn" @click="handleCalcKey('×')">×</button>
-          <button class="calc-btn operator-btn" @click="handleCalcKey('←')">←</button>
-
-          <!-- Row 3 -->
-          <button v-for="key in calculatorKeys.slice(8, 11)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
-            {{ key }}
-          </button>
-          <button class="calc-btn operator-btn" @click="handleCalcKey('+')">+</button>
-          <button class="calc-btn save-btn-calc" @click="saveTransaction" :disabled="!canSave">確定</button>
-
-          <!-- Row 4 -->
-          <button v-for="key in calculatorKeys.slice(12, 15)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
-            {{ key }}
-          </button>
-          <button class="calc-btn operator-btn" @click="handleCalcKey('=')">&#61;</button>
         </div>
       </div>
     </div>
@@ -619,12 +622,12 @@ onMounted(async () => {
 .toggle-btn {
   padding: 8px 20px;
   border: none;
-  background: none;
+  background: var(--bg-page);
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
   font-size: 15px;
-  color: var(--text-disabled);
+  color: var(--text-primary);
   transition: all 0.2s;
 }
 
@@ -751,23 +754,32 @@ onMounted(async () => {
   border-color: var(--border-primary);
 }
 
-/* Date Picker */
-.date-picker {
+/* Input Panel - Unified Date Picker & Calculator Block (updated per request) */
+.input-panel {
   flex-shrink: 0;
+  background: var(--janote-expense);
+  margin: 0;
+  border-radius: 0;
+  padding: 16px;
+}
+
+/* Date Section */
+.date-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0px 12px;
-  gap: 8px;
-  border-bottom: 2px solid var(--border-primary);
-  background: var(--bg-page);
-  margin: 0;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 2px solid var(--border-primary);
 }
 
-.date-nav-btn {
-  background: #f5f5f5;
-  border: none;
-  border-radius: 50%;
+.date-control-btn {
+  background: #e9ecef;
+  border: 2px solid var(--border-primary);
+  border-radius: 8px;
   width: 36px;
   height: 36px;
   cursor: pointer;
@@ -775,35 +787,46 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
-.date-nav-btn:hover {
-  background: #e0e0e0;
+.date-control-btn:hover {
+  background: #dee2e6;
 }
 
-.date-display {
+.date-control-btn:active {
+  transform: scale(0.95);
+}
+
+.date-info {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  flex: 1;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.date-info:hover {
+  background: #f8f9fa;
+}
+
+.date-text {
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 16px;
-  flex: 1;
-  justify-content: center;
-  cursor: pointer;
-  transition: opacity 0.2s;
+  font-size: 15px;
+  white-space: nowrap;
 }
 
-.date-display:hover {
-  opacity: 0.7;
-}
-
-/* Calculator */
-.calculator {
-  flex-shrink: 0;
-  padding: 16px;
-  background: var(--bg-page);
+/* Calculator Section */
+.calc-section {
+  background: transparent;
 }
 
 .calc-grid {
@@ -815,36 +838,42 @@ onMounted(async () => {
 .calc-btn {
   padding: 18px;
   border: 2px solid var(--border-primary);
-  border-radius: 12px;
-  background: var(--bg-page);
+  border-radius: 10px;
   cursor: pointer;
   font-size: 18px;
   font-weight: 600;
-  transition: all 0.2s;
+  transition: all 0.15s;
   color: var(--text-primary);
-}
-
-.calc-btn:hover {
-  background: #f5f5f5;
+  background: transparent;
 }
 
 .calc-btn:active {
-  background: #e8e8e8;
+  transform: scale(0.95);
 }
 
-.calc-btn.operator-btn {
-  background: #e8e8e8;
+/* Number buttons - White background */
+.calc-btn.number-btn {
+  background: #ffffff;
+}
+
+.calc-btn.number-btn:hover {
+  background: #f8f9fa;
+}
+
+/* Function buttons - Gray background */
+.calc-btn.function-btn {
+  background: #e9ecef;
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.calc-btn.operator-btn:hover {
-  background: #d8d8d8;
+.calc-btn.function-btn:hover {
+  background: #dee2e6;
 }
 
-.calc-btn.save-btn-calc {
+/* Confirm button - Red accent (keeps current style) */
+.calc-btn.confirm-btn {
   background: var(--janote-action);
-  border: 2px solid var(--janote-action);
   color: var(--text-light);
   font-weight: 700;
   font-size: 16px;
@@ -854,19 +883,24 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
+  border: 2px solid var(--janote-action);
 }
 
-.calc-btn.save-btn-calc:hover:not(:disabled) {
-  transform: translateY(-1px);
+.calc-btn.confirm-btn:hover:not(:disabled) {
+  background: #ef4444;
   box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
 }
 
-.calc-btn.save-btn-calc:disabled {
-  background: #e0e0e0;
-  border-color: #e0e0e0;
-  color: var(--text-disabled);
+.calc-btn.confirm-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.calc-btn.confirm-btn:disabled {
+  background: #e9ecef;
+  color: #adb5bd;
   cursor: not-allowed;
   box-shadow: none;
+  border: 2px solid #e9ecef;
 }
 
 

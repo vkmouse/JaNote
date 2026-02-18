@@ -237,6 +237,14 @@ const getCategoryEmoji = (categoryId: string): string => {
     '教育': '📚',
     '薪水': '💰',
     '獎金': '🎁',
+    '股息': '💹',
+    '投資': '📈',
+    '社交': '👥',
+    '禮物': '🎁',
+    '數位': '💻',
+    '其他': '📦',
+    '貓咪': '🐱',
+    '旅行': '✈️',
   }
   
   return emojiMap[category.name] || '📝'
