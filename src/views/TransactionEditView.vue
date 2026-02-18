@@ -198,7 +198,7 @@ const formattedAmount = computed(() => {
   // Add comma separators for numbers
   if (/^[0-9.]+$/.test(num)) {
     const parts = num.split('.')
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    parts[0] = parts[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
     return parts.join('.')
   }
   return num
