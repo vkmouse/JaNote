@@ -563,10 +563,15 @@ onMounted(async () => {
 .transaction-edit-page {
   display: flex;
   flex-direction: column;
-  display: flex;
-  flex-direction: column;
+  height: 100vh;
   background: var(--bg-page);
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .transaction-edit-page {
+    height: calc(100vh - 72px); /* Subtract bottom nav height on mobile */
+  }
 }
 
 /* Header Content inside TopNavigation */
@@ -645,8 +650,8 @@ onMounted(async () => {
 
 /* Categories Section */
 .categories-section {
-  flex: 0 0 auto;
-  max-height: 30vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px;
   border-bottom: 2px solid var(--border-primary);

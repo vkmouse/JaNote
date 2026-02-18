@@ -668,8 +668,9 @@ onMounted(() => {
 /* Floating Action Button */
 .fab {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 82px; /* 72px bottom nav + 10px spacing */
+  left: 50%;
+  transform: translateX(-50%);
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -685,12 +686,12 @@ onMounted(() => {
 }
 
 .fab:hover {
-  transform: translateY(-2px);
+  transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 6px 16px rgba(248, 113, 113, 0.5);
 }
 
 .fab:active {
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Responsive */
@@ -710,8 +711,7 @@ onMounted(() => {
   }
   
   .fab {
-    bottom: 20px;
-    right: 20px;
+    bottom: 82px; /* 72px bottom nav + 10px spacing */
     width: 52px;
     height: 52px;
   }

@@ -36,4 +36,9 @@ html, body {
     margin-right: 0;
     padding-bottom: 72px; /* 底部導覽列高度 */
   }
+  
+  /* 全螢幕頁面需要減去底部導覽列高度 */
+  .app-main .page-fullheight {
+    height: calc(100vh - 72px);
+  }
 }
