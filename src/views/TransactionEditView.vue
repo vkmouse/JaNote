@@ -110,7 +110,7 @@ const formattedAmount = computed(() => {
 
 
 const canSave = computed(() => {
-  return selectedCategoryId.value && amount.value && parseFloat(amount.value) > 0
+  return !!(selectedCategoryId.value && amount.value && parseFloat(amount.value) > 0)
 })
 
 
