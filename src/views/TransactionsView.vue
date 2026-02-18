@@ -921,7 +921,7 @@ onMounted(() => {
   height: 56px;
   border-radius: 50%;
   background: var(--janote-action);
-  border: 2px solid rgba(0,0,0,0.08);
+  border: 2px solid var(--border-primary);
   box-shadow: none;
   cursor: pointer;
   display: flex;
