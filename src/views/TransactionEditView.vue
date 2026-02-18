@@ -4,9 +4,7 @@
     <TopNavigation>
       <div class="edit-header-content">
         <button class="back-btn" @click="goBack">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
+          <span v-html="ArrowLeftIcon" class="back-icon"></span>
         </button>
         <div class="type-toggle">
           <button 
@@ -63,18 +61,14 @@
         <!-- Date Picker -->
         <div class="date-section">
           <button class="date-control-btn" @click="previousDate">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
+            <span v-html="ArrowLeftIcon" class="arrow-icon"></span>
           </button>
           <button class="date-info" @click="showCalendar = true">
             <span v-html="CalendarIcon" class="date-icon"></span>
             <span class="date-text">{{ formattedDate }}</span>
           </button>
           <button class="date-control-btn" @click="nextDate">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
+            <span v-html="ArrowRightIcon" class="arrow-icon"></span>
           </button>
         </div>
 
@@ -115,9 +109,13 @@
       <div v-if="showCalendar" class="calendar-overlay" @click="showCalendar = false">
         <div class="calendar-modal" @click.stop>
           <div class="calendar-header">
-            <button class="calendar-nav-btn" @click="previousMonth">◀</button>
+            <button class="calendar-nav-btn" @click="previousMonth">
+              <span v-html="ArrowLeftIcon" class="arrow-icon"></span>
+            </button>
             <span class="calendar-title">{{ calendarYearMonth }}</span>
-            <button class="calendar-nav-btn" @click="nextMonth">▶</button>
+            <button class="calendar-nav-btn" @click="nextMonth">
+              <span v-html="ArrowRightIcon" class="arrow-icon"></span>
+            </button>
             <button class="today-btn" @click="selectToday">今日</button>
           </div>
           <div class="calendar-weekdays">
@@ -152,6 +150,8 @@ import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
 import CalendarIcon from '../assets/icons/icon-calendar.svg?raw'
+import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
+import ArrowRightIcon from '../assets/icons/icon-arrow-right.svg?raw'
 
 const router = useRouter()
 const route = useRoute()
@@ -762,14 +762,21 @@ onMounted(async () => {
   flex: 1;
   border: 2px solid #e0e0e0;
   border-radius: 10px;
-  padding: 12px;
-  font-size: 16px;
+  padding: 10px;
+  font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .notes-input:focus {
   border-color: var(--border-primary);
+}
+
+@media (max-width: 480px) {
+  .notes-input {
+    padding: 8px;
+    font-size: 13px;
+  }
 }
 
 /* Input Panel - Unified Date Picker & Calculator Block (updated per request) */
@@ -800,7 +807,7 @@ onMounted(async () => {
   width: 36px;
   height: 36px;
   cursor: pointer;
-  color: var(--text-primary);
+  color: #000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -810,10 +817,6 @@ onMounted(async () => {
 
 .date-control-btn:hover {
   background: #dee2e6;
-}
-
-.date-control-btn:active {
-  transform: scale(0.95);
 }
 
 .date-info {
@@ -839,6 +842,25 @@ onMounted(async () => {
   font-weight: 600;
   font-size: 16px;
   white-space: nowrap;
+}
+
+.date-icon {
+  color: #000;
+}
+
+.back-icon {
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
 }
 
 /* Calculator Section */
@@ -971,14 +993,17 @@ onMounted(async () => {
 }
 
 .calendar-nav-btn {
-  background: #f5f5f5;
+  background: #e9ecef;
   border: none;
   border-radius: 8px;
   width: 36px;
   height: 36px;
-  font-size: 16px;
   cursor: pointer;
   transition: background 0.2s;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .calendar-nav-btn:hover {

@@ -15,9 +15,9 @@
       <div class="month-picker" @click.stop>
         <h3>選擇年月</h3>
         <div class="picker-controls">
-          <button @click="selectedYear--">◀</button>
+          <button @click="selectedYear--"><span v-html="ArrowLeftIcon" class="picker-arrow"></span></button>
           <span class="picker-year">{{ selectedYear }}</span>
-          <button @click="selectedYear++">▶</button>
+          <button @click="selectedYear++"><span v-html="ArrowRightIcon" class="picker-arrow"></span></button>
         </div>
         <div class="month-grid">
           <button 
@@ -195,6 +195,8 @@ import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
+import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
+import ArrowRightIcon from '../assets/icons/icon-arrow-right.svg?raw'
 
 const router = useRouter()
 const transactions = ref<Transaction[]>([])
@@ -603,9 +605,11 @@ onMounted(() => {
 .picker-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 20px;
   margin-bottom: 24px;
+  position: relative;
+  width: 100%;
 }
 
 .picker-controls button {
@@ -626,11 +630,27 @@ onMounted(() => {
   background: #e0e0e0;
 }
 
+.picker-controls button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.picker-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
 .picker-year {
   font-size: 20px;
   font-weight: 600;
   min-width: 80px;
   text-align: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .month-grid {
@@ -647,6 +667,7 @@ onMounted(() => {
   background: var(--bg-page);
   cursor: pointer;
   font-size: 13px;
+  color: var(--text-primary);
   transition: all 0.2s;
 }
 
