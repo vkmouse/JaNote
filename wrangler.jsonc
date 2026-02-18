@@ -9,6 +9,7 @@
 	"main": "server/index.ts",
 	"assets": {
 		"directory": "public",
+		"include": ["256x256.png", "512x512.png"],
 		"not_found_handling": "single-page-application"
 	},
 	"observability": {
