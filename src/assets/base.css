@@ -1,27 +1,25 @@
 :root {
-  --bg: #f6f2ec;
-  --bg-elevated: #ffffff;
-  --text: #1c1b1a;
-  --text-muted: #5a4f47;
-  --accent: #d66a3a;
-  --accent-soft: #f6d9cb;
-  --border: #e6dcd1;
-  --nav-shadow: 0 20px 40px rgba(32, 24, 20, 0.12);
-  --nav-width: 240px;
-  --nav-width-mobile: 200px;
-  --radius-lg: 18px;
-  --radius-md: 12px;
-  --font-family: 'Space Grotesk', 'Manrope', 'Noto Sans TC', sans-serif;
-  --janote-primary: #ffc107;
-  --janote-primary-light: #fffaf0;
-  --janote-primary-hover: #E53935;
+  --janote-expense: #FFC952;
+  --janote-expense-light: #FFF4D9;
 
-  --text-primary: #f5f5f5;
-  --text-secondary: #757575;
-  --text-light: #FFFFFF;
+  --janote-income: #47B8E0;
+  --janote-income-light: #E0F4FA;
+
+  --janote-action: #F87171;
+  --janote-action-light: #FDD5D5;
 
   --bg-page: #FFFFFF;
   --bg-body: #FFFFFF;
+  
+  --text-primary: #212121;
+  --text-secondary: #757575;
+  --text-disabled: #CCCCCC;
+  --text-light: #FFFFFF;
+
+  --border-primary: #000000;
+
+  --nav-width: 240px;
+  --nav-width-mobile: 200px;
 }
 
 *,
@@ -34,12 +32,11 @@
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #fff7ef 0%, #f6f2ec 55%, #efe8de 100%);
-  color: var(--text);
-  font-family: var(--font-family);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
   line-height: 1.6;
-  letter-spacing: 0.2px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

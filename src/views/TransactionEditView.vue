@@ -1,27 +1,29 @@
 <template>
   <div class="transaction-edit-page">
     <!-- Header -->
-    <div class="edit-header">
-      <button class="back-btn" @click="goBack">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </button>
-      <div class="type-toggle">
-        <button 
-          :class="['toggle-btn', { active: transactionType === 'EXPENSE' }]"
-          @click="transactionType = 'EXPENSE'"
-        >
-          支出
+    <TopNavigation>
+      <div class="edit-header-content">
+        <button class="back-btn" @click="goBack">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
         </button>
-        <button 
-          :class="['toggle-btn', { active: transactionType === 'INCOME' }]"
-          @click="transactionType = 'INCOME'"
-        >
-          收入
-        </button>
+        <div class="type-toggle">
+          <button 
+            :class="['toggle-btn', { active: transactionType === 'EXPENSE' }]"
+            @click="transactionType = 'EXPENSE'"
+          >
+            支出
+          </button>
+          <button 
+            :class="['toggle-btn', { active: transactionType === 'INCOME' }]"
+            @click="transactionType = 'INCOME'"
+          >
+            收入
+          </button>
+        </div>
       </div>
-    </div>
+    </TopNavigation>
 
     <!-- Main Content -->
     <div class="edit-content">
@@ -141,6 +143,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import TopNavigation from '../components/TopNavigation.vue'
 import type { Category, EntryType, Transaction } from '../types'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
@@ -549,30 +552,27 @@ onMounted(async () => {
 .transaction-edit-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
-  background: #fff;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-page);
   overflow: hidden;
 }
 
-/* Header */
-.edit-header {
+/* Header Content inside TopNavigation */
+.edit-header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .back-btn {
-  background: #000;
+  background: var(--text-primary);
   border: none;
   padding: 8px 12px;
   border-radius: 20px;
   cursor: pointer;
-  color: #fff;
+  color: var(--text-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,7 +584,7 @@ onMounted(async () => {
 }
 
 .back-btn svg {
-  stroke: #fff;
+  stroke: var(--text-light);
 }
 
 .type-toggle {
@@ -603,13 +603,13 @@ onMounted(async () => {
   cursor: pointer;
   font-weight: 600;
   font-size: 15px;
-  color: #999;
+  color: var(--text-disabled);
   transition: all 0.2s;
 }
 
 .toggle-btn.active {
-  background: #000;
-  color: #fff;
+  background: var(--text-primary);
+  color: var(--text-light);
 }
 
 /* Main Content */
@@ -627,7 +627,7 @@ onMounted(async () => {
   max-height: 30vh;
   overflow-y: auto;
   padding: 16px;
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid var(--border-primary);
 }
 
 .categories-grid {
@@ -638,9 +638,9 @@ onMounted(async () => {
 
 .category-item {
   padding: 14px 10px;
-  border: 2px solid #000;
+  border: 2px solid var(--border-primary);
   border-radius: 12px;
-  background: #fff;
+  background: var(--bg-page);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -654,15 +654,15 @@ onMounted(async () => {
 }
 
 .category-item.selected {
-  background: #000;
-  color: #fff;
+  background: var(--text-primary);
+  color: var(--text-light);
 }
 
 /* Input Section */
 .input-section {
   flex-shrink: 0;
   padding: 16px;
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid var(--border-primary);
 }
 
 .input-group {
@@ -682,7 +682,7 @@ onMounted(async () => {
 
 .category-name {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -690,7 +690,7 @@ onMounted(async () => {
 .amount-display {
   font-size: 24px;
   font-weight: 700;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .notes-input {
@@ -704,7 +704,7 @@ onMounted(async () => {
 }
 
 .notes-input:focus {
-  border-color: #000;
+  border-color: var(--border-primary);
 }
 
 /* Date Picker */
@@ -715,8 +715,8 @@ onMounted(async () => {
   justify-content: space-between;
   padding: 12px 16px;
   gap: 12px;
-  border-bottom: 2px solid #000;
-  background: #fff;
+  border-bottom: 2px solid var(--border-primary);
+  background: var(--bg-page);
   margin: 0;
 }
 
@@ -727,7 +727,7 @@ onMounted(async () => {
   width: 40px;
   height: 40px;
   cursor: pointer;
-  color: #000;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -742,7 +742,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #000;
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 15px;
   flex: 1;
@@ -759,7 +759,7 @@ onMounted(async () => {
 .calculator {
   flex-shrink: 0;
   padding: 16px;
-  background: #fff;
+  background: var(--bg-page);
 }
 
 .calc-grid {
@@ -770,9 +770,9 @@ onMounted(async () => {
 
 .calc-btn {
   padding: 18px;
-  border: 2px solid #000;
+  border: 2px solid var(--border-primary);
   border-radius: 12px;
-  background: #fff;
+  background: var(--bg-page);
   cursor: pointer;
   font-size: 18px;
   font-weight: 600;
@@ -789,7 +789,7 @@ onMounted(async () => {
 
 .calc-btn.func-btn {
   background: #f5f5f5;
-  color: #000;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -798,9 +798,9 @@ onMounted(async () => {
 }
 
 .calc-btn.save-btn-calc {
-  background: var(--janote-primary);
-  border: 2px solid var(--janote-primary);
-  color: #fff;
+  background: var(--janote-action);
+  border: 2px solid var(--janote-action);
+  color: var(--text-light);
   font-weight: 700;
   font-size: 16px;
   grid-row: span 2;
@@ -808,18 +808,18 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(255, 82, 82, 0.3);
+  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
 }
 
 .calc-btn.save-btn-calc:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.4);
+  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
 }
 
 .calc-btn.save-btn-calc:disabled {
   background: #e0e0e0;
   border-color: #e0e0e0;
-  color: #999;
+  color: var(--text-disabled);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -840,7 +840,7 @@ onMounted(async () => {
 }
 
 .categories-section::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: var(--text-disabled);
 }
 
 /* Calendar Modal */
@@ -858,7 +858,7 @@ onMounted(async () => {
 }
 
 .calendar-modal {
-  background: #fff;
+  background: var(--bg-page);
   border-radius: 16px;
   padding: 20px;
   max-width: 400px;
@@ -897,8 +897,8 @@ onMounted(async () => {
 }
 
 .today-btn {
-  background: #000;
-  color: #fff;
+  background: var(--text-primary);
+  color: var(--text-light);
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
@@ -923,7 +923,7 @@ onMounted(async () => {
   text-align: center;
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   padding: 8px 0;
 }
 
@@ -950,22 +950,18 @@ onMounted(async () => {
 }
 
 .calendar-day.other-month {
-  color: #ccc;
+  color: var(--text-disabled);
 }
 
 .calendar-day.today {
-  background: #FFE5E5;
-  color: var(--janote-primary);
+  background: var(--janote-action-light);
+  color: var(--janote-action);
   font-weight: 700;
 }
 
 .calendar-day.selected {
-  background: var(--janote-primary);
-  color: #fff;
+  background: var(--janote-action);
+  color: var(--text-light);
   font-weight: 700;
-}
-
-.calendar-day.selected:hover {
-  background: var(--janote-primary-hover);
 }
 </style>

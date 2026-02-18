@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import Navigation from './components/Navigation.vue'
+import SideNavigation from './components/SideNavigation.vue'
+import BottomNavigation from './components/BottomNavigation.vue'
 </script>
 
 <template>
   <div class="app-shell">
-    <Navigation />
+    <SideNavigation />
     <main class="app-main">
       <router-view />
     </main>
+    <BottomNavigation />
   </div>
 </template>

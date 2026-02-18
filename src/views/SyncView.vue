@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import TopNavigation from '../components/TopNavigation.vue'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
@@ -253,35 +254,40 @@ async function syncNow() {
 
 <template>
   <section class="sync-page">
-    <header class="hero">
-      <div class="brand">
-        <p class="eyebrow">Sync Console</p>
-        <h1>即時同步監控台</h1>
-        <p class="subtitle">追蹤本地變更、推送狀態與伺服器回應。</p>
-      </div>
-      <div class="status-card">
-        <div class="status-row">
-          <span class="status-dot" :class="syncStatus"></span>
-          <span class="status-text">
-            {{ syncStatus === 'syncing' ? '同步中' : syncStatus === 'success' ? '就緒' : syncStatus === 'error' ? '同步失敗' : '待命' }}
-          </span>
+    <TopNavigation>
+      <template #title>同步監控台</template>
+    </TopNavigation>
+    
+    <div class="page-content">
+      <header class="hero">
+        <div class="brand">
+          <p class="eyebrow">Sync Console</p>
+          <h1>即時同步監控台</h1>
+          <p class="subtitle">追蹤本地變更、推送狀態與伺服器回應。</p>
         </div>
-        <div class="status-meta">
-          <div>
-            <span>Cursor</span>
-            <strong>{{ lastCursor }}</strong>
+        <div class="status-card">
+          <div class="status-row">
+            <span class="status-dot" :class="syncStatus"></span>
+            <span class="status-text">
+              {{ syncStatus === 'syncing' ? '同步中' : syncStatus === 'success' ? '就緒' : syncStatus === 'error' ? '同步失敗' : '待命' }}
+            </span>
           </div>
-          <div>
-            <span>Queue</span>
-            <strong>{{ activeQueueCount }}</strong>
-          </div>
-          <div>
-            <span>Last Sync</span>
-            <strong>{{ lastSyncAt || '-' }}</strong>
+          <div class="status-meta">
+            <div>
+              <span>Cursor</span>
+              <strong>{{ lastCursor }}</strong>
+            </div>
+            <div>
+              <span>Queue</span>
+              <strong>{{ activeQueueCount }}</strong>
+            </div>
+            <div>
+              <span>Last Sync</span>
+              <strong>{{ lastSyncAt || '-' }}</strong>
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
 
     <section class="controls">
       <div class="control">
@@ -397,60 +403,22 @@ async function syncNow() {
         </ul>
       </article>
     </section>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .sync-page {
-  --sync-bg: #f4f0ea;
-  --sync-bg-dark: #151515;
-  --sync-card: #fffaf3;
-  --sync-ink: #1e1b16;
-  --sync-muted: #6d6257;
-  --sync-accent: #ff7a3d;
-  --sync-accent-2: #1aa6a8;
-  --sync-shadow: rgba(24, 24, 24, 0.12);
-  color-scheme: light;
-  background: radial-gradient(circle at top left, #fff3e6, #f4f0ea 45%, #e9e3db 100%);
-  color: var(--sync-ink);
-  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+}
+
+.page-content {
+  flex: 1;
+  background: var(--bg-page);
+  color: var(--text-primary);
   padding: 36px 48px 60px;
   position: relative;
-  overflow: hidden;
-  border-radius: 28px;
-}
-
-.sync-page::before,
-.sync-page::after {
-  content: '';
-  position: absolute;
-  width: 520px;
-  height: 520px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 122, 61, 0.3), transparent 70%);
-  filter: blur(10px);
-  opacity: 0.7;
-  animation: float 12s ease-in-out infinite;
-}
-
-.sync-page::after {
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle, rgba(26, 166, 168, 0.25), transparent 70%);
-  left: auto;
-  right: -120px;
-  top: 200px;
-  animation-delay: -4s;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(-20px);
-  }
-  50% {
-    transform: translateY(30px);
-  }
 }
 
 .hero {
@@ -459,12 +427,9 @@ async function syncNow() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 28px;
-  position: relative;
-  z-index: 1;
 }
 
 .brand h1 {
-  font-family: 'Fraunces', 'Space Grotesk', serif;
   font-size: 40px;
   margin: 4px 0 6px;
 }
@@ -473,18 +438,18 @@ async function syncNow() {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 12px;
-  color: var(--sync-muted);
+  color: var(--text-secondary);
 }
 
 .subtitle {
   margin: 0;
-  color: var(--sync-muted);
+  color: var(--text-secondary);
 }
 
 .status-card {
-  background: var(--sync-card);
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
   border-radius: 18px;
-  box-shadow: 0 12px 30px var(--sync-shadow);
   padding: 18px 22px;
   min-width: 280px;
 }
@@ -500,22 +465,22 @@ async function syncNow() {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #c2b8aa;
+  background: var(--text-disabled);
 }
 
 .status-dot.syncing {
-  background: var(--sync-accent);
-  box-shadow: 0 0 12px rgba(255, 122, 61, 0.6);
+  background: var(--janote-income);
+  box-shadow: 0 0 12px rgba(255, 201, 82, 0.6);
 }
 
 .status-dot.success {
-  background: var(--sync-accent-2);
-  box-shadow: 0 0 12px rgba(26, 166, 168, 0.6);
+  background: var(--janote-expense);
+  box-shadow: 0 0 12px rgba(71, 184, 224, 0.6);
 }
 
 .status-dot.error {
-  background: #d34b45;
-  box-shadow: 0 0 12px rgba(211, 75, 69, 0.6);
+  background: var(--janote-action);
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.6);
 }
 
 .status-text {
@@ -530,7 +495,7 @@ async function syncNow() {
 
 .status-meta span {
   font-size: 12px;
-  color: var(--sync-muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -544,20 +509,18 @@ async function syncNow() {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
   border-radius: 16px;
   padding: 16px;
-  backdrop-filter: blur(6px);
   margin-bottom: 28px;
-  position: relative;
-  z-index: 1;
 }
 
 .control label {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--sync-muted);
+  color: var(--text-secondary);
   margin-bottom: 6px;
   display: block;
 }
@@ -567,8 +530,8 @@ async function syncNow() {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid #e3d8ca;
-  background: white;
+  border: 1px solid #e0e0e0;
+  background: var(--bg-page);
   font-size: 14px;
 }
 
@@ -588,9 +551,9 @@ async function syncNow() {
 }
 
 .sync-page button.primary {
-  background: var(--sync-bg-dark);
-  color: white;
-  box-shadow: 0 12px 24px rgba(21, 21, 21, 0.2);
+  background: var(--text-primary);
+  color: var(--text-light);
+  box-shadow: 0 2px 8px rgba(33, 33, 33, 0.2);
 }
 
 .sync-page button.primary:disabled {
@@ -601,7 +564,7 @@ async function syncNow() {
 
 .sync-page button.ghost {
   background: transparent;
-  border: 1px solid #d4c7b6;
+  border: 1px solid var(--text-disabled);
 }
 
 .sync-page button:hover:not(:disabled) {
@@ -612,15 +575,13 @@ async function syncNow() {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
-  position: relative;
-  z-index: 1;
 }
 
 .panel {
-  background: var(--sync-card);
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
   border-radius: 20px;
   padding: 18px;
-  box-shadow: 0 16px 30px var(--sync-shadow);
   animation: rise 0.6s ease both;
 }
 
@@ -641,7 +602,7 @@ async function syncNow() {
 
 .panel header p {
   margin: 0 0 16px;
-  color: var(--sync-muted);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -671,8 +632,8 @@ async function syncNow() {
   align-items: center;
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid #efe3d6;
+  background: var(--bg-page);
+  border: 1px solid #e0e0e0;
 }
 
 .list li.muted {
@@ -687,15 +648,15 @@ async function syncNow() {
 }
 
 .list .tag {
-  background: #f1d4c8;
-  color: #9b3a1e;
+  background: var(--janote-expense-light);
+  color: var(--janote-expense);
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
 }
 
 .list .meta {
-  color: var(--sync-muted);
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -704,33 +665,32 @@ async function syncNow() {
 }
 
 .list .mono {
-  font-family: 'Space Grotesk', monospace;
-  color: var(--sync-muted);
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-secondary);
 }
 
 .list li.empty {
   background: transparent;
-  border: 1px dashed #d9cbbb;
-  color: var(--sync-muted);
+  border: 1px dashed var(--text-disabled);
+  color: var(--text-secondary);
   justify-content: center;
 }
 
 .list li.success {
-  border-color: rgba(26, 166, 168, 0.5);
+  border-color: var(--janote-expense);
 }
 
 .list li.error {
-  border-color: rgba(211, 75, 69, 0.5);
+  border-color: var(--janote-action);
 }
 
 .list li.warn {
-  border-color: rgba(255, 122, 61, 0.5);
+  border-color: var(--janote-income);
 }
 
 @media (max-width: 900px) {
-  .sync-page {
+  .page-content {
     padding: 28px 22px 40px;
-    border-radius: 22px;
   }
 
   .hero {

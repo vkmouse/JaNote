@@ -1,38 +1,39 @@
 <template>
   <section class="transactions-page">
     <!-- Top Navigation Bar -->
-    <header class="top-nav">
+    <TopNavigation>
       <button class="month-selector" @click="showMonthPicker = true">
         <span class="month-display">{{ currentMonthDisplay }}</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
+    </TopNavigation>
 
-      <!-- Month Picker Modal -->
-      <div v-if="showMonthPicker" class="month-picker-overlay" @click="showMonthPicker = false">
-        <div class="month-picker" @click.stop>
-          <h3>選擇年月</h3>
-          <div class="picker-controls">
-            <button @click="selectedYear--">◀</button>
-            <span class="picker-year">{{ selectedYear }}</span>
-            <button @click="selectedYear++">▶</button>
-          </div>
-          <div class="month-grid">
-            <button 
-              v-for="month in 12" 
-              :key="month"
-              :class="['month-btn', { active: month === selectedMonth }]"
-              @click="selectedMonth = month"
-            >
-              {{ month }}月
-            </button>
-          </div>
-          <button class="confirm-btn" @click="confirmDateSelection">確認</button>
+    <!-- Month Picker Modal -->
+    <div v-if="showMonthPicker" class="month-picker-overlay" @click="showMonthPicker = false">
+      <div class="month-picker" @click.stop>
+        <h3>選擇年月</h3>
+        <div class="picker-controls">
+          <button @click="selectedYear--">◀</button>
+          <span class="picker-year">{{ selectedYear }}</span>
+          <button @click="selectedYear++">▶</button>
         </div>
+        <div class="month-grid">
+          <button 
+            v-for="month in 12" 
+            :key="month"
+            :class="['month-btn', { active: month === selectedMonth }]"
+            @click="selectedMonth = month"
+          >
+            {{ month }}月
+          </button>
+        </div>
+        <button class="confirm-btn" @click="confirmDateSelection">確認</button>
       </div>
-    </header>
+    </div>
 
+    <div class="page-content">
     <!-- Summary Statistics -->
     <div class="summary-section">
       <div class="summary-item">
@@ -110,12 +111,14 @@
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
     </button>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import TopNavigation from '../components/TopNavigation.vue'
 import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
@@ -311,20 +314,14 @@ const deleteTransaction = async (id: string) => {
         return { ...current, is_deleted: 1, version: current.version + 1 }
       })
 
-      try {
-        await syncQueueRepository.add({
-          mutation_id: crypto.randomUUID(),
-          entity_type: 'TXN',
-          entity_id: id,
-          payload: null,
-          base_version: transaction.version || 0,
-          created_at: Date.now(),
-        })
-
-        const userId = localStorage.getItem('sync_user_id') || 'demo-user'
-      } catch {
-        // Ignore sync errors to avoid blocking the UI
-      }
+      await syncQueueRepository.add({
+        mutation_id: crypto.randomUUID(),
+        entity_type: 'TXN',
+        entity_id: id,
+        payload: null,
+        base_version: transaction.version || 0,
+        created_at: Date.now(),
+      })
       
       // Reload transactions
       await loadTransactions()
@@ -349,24 +346,17 @@ onMounted(() => {
 
 <style scoped>
 .transactions-page {
-  min-height: 100vh;
-  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-content {
+  flex: 1;
+  background: var(--bg-page);
   padding-bottom: 80px;
 }
 
-/* Top Navigation Bar */
-.top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 20px;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
+/* Month Selector Button in Top Nav */
 .month-selector {
   background: none;
   border: none;
@@ -380,7 +370,7 @@ onMounted(() => {
 }
 
 .month-display {
-  color: #000;
+  color: var(--text-primary);
 }
 
 .month-selector:hover {
@@ -402,7 +392,7 @@ onMounted(() => {
 }
 
 .month-picker {
-  background: #fff;
+  background: var(--bg-page);
   border-radius: 16px;
   padding: 24px;
   min-width: 320px;
@@ -413,7 +403,7 @@ onMounted(() => {
   margin: 0 0 24px;
   text-align: center;
   font-size: 18px;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .picker-controls {
@@ -460,29 +450,29 @@ onMounted(() => {
   padding: 12px 8px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
-  background: #fff;
+  background: var(--bg-page);
   cursor: pointer;
   font-size: 13px;
   transition: all 0.2s;
 }
 
 .month-btn:hover {
-  border-color: #ffc107;
-  background: #fffaf0;
+  border-color: var(--janote-income);
+  background: var(--janote-income-light);
 }
 
 .month-btn.active {
-  background: #ffc107;
-  border-color: #ffc107;
-  color: #000;
+  background: var(--janote-income);
+  border-color: var(--janote-income);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .confirm-btn {
   width: 100%;
   padding: 12px;
-  background: #000;
-  color: #fff;
+  background: var(--text-primary);
+  color: var(--text-light);
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -501,7 +491,7 @@ onMounted(() => {
   grid-template-columns: 1fr 1fr;
   padding: 24px 20px;
   gap: 20px;
-  background: #fff;
+  background: var(--bg-page);
 }
 
 .summary-item {
@@ -512,7 +502,7 @@ onMounted(() => {
 
 .summary-label {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -522,11 +512,11 @@ onMounted(() => {
 }
 
 .summary-amount.expense {
-  color: #000;
+  color: var(--janote-expense);
 }
 
 .summary-amount.income {
-  color: #000;
+  color: var(--janote-income);
 }
 
 /* Transaction List */
@@ -539,7 +529,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  color: #999;
+  color: var(--text-disabled);
   font-size: 14px;
 }
 
@@ -550,8 +540,8 @@ onMounted(() => {
 }
 
 .daily-group {
-  background: #fff;
-  border: 2px solid #000;
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
   border-radius: 16px;
   overflow: hidden;
 }
@@ -562,14 +552,14 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #fff;
-  border-bottom: 2px solid #000;
+  background: var(--bg-page);
+  border-bottom: 2px solid var(--border-primary);
 }
 
 .date-title {
   font-size: 14px;
   font-weight: 600;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .daily-total {
@@ -578,16 +568,16 @@ onMounted(() => {
 }
 
 .daily-total.expense {
-  color: #FFA726;
+  color: var(--janote-expense);
 }
 
 .daily-total.income {
-  color: #66BB6A;
+  color: var(--janote-income);
 }
 
 /* Transaction Items */
 .transaction-items {
-  background: #fff;
+  background: var(--bg-page);
 }
 
 .transaction-item-wrapper {
@@ -603,7 +593,7 @@ onMounted(() => {
   cursor: pointer;
   transition: transform 0.3s ease-out;
   position: relative;
-  background: #fff;
+  background: var(--bg-page);
 }
 
 .transaction-item:hover {
@@ -616,19 +606,15 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 80px;
-  background: var(--janote-primary);
+  background: var(--janote-action);
   border: none;
-  color: white;
+  color: var(--text-light);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: opacity 0.3s;
   pointer-events: all;
-}
-
-.delete-btn:active {
-  background: var(--janote-primary-hover);
 }
 
 .item-left {
@@ -652,7 +638,7 @@ onMounted(() => {
 .category-name {
   font-size: 15px;
   font-weight: 500;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .item-amount {
@@ -663,11 +649,11 @@ onMounted(() => {
 }
 
 .item-amount.expense {
-  color: #000;
+  color: var(--janote-expense);
 }
 
 .item-amount.income {
-  color: #66BB6A;
+  color: var(--janote-income);
 }
 
 .item-divider {
@@ -687,9 +673,9 @@ onMounted(() => {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--janote-primary);
+  background: var(--janote-action);
   border: none;
-  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.4);
+  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -700,7 +686,7 @@ onMounted(() => {
 
 .fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 82, 82, 0.5);
+  box-shadow: 0 6px 16px rgba(248, 113, 113, 0.5);
 }
 
 .fab:active {
