@@ -61,7 +61,7 @@
                 <div class="item-left">
                   <div class="category-icon" v-html="getCategoryIconSvg(transaction.category_id)">
                   </div>
-                  <span class="category-name">{{ getCategoryName(transaction.category_id) }}</span>
+                  <span class="category-name">{{ transaction.note || '無備註' }}</span>
                 </div>
                 <div :class="['item-amount', transaction.type.toLowerCase()]">
                   ${{ transaction.type === 'EXPENSE' ? '-' : '' }}{{ transaction.amount.toLocaleString() }}
@@ -583,6 +583,10 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
 
 .item-amount {
