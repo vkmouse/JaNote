@@ -50,6 +50,7 @@
           </label>
           <input
             v-model="notes"
+            @input="onNotesInput"
             type="text"
             placeholder="備註"
             class="notes-input"
@@ -163,6 +164,7 @@ const selectedCategoryId = ref<string>('')
 const selectedCategoryName = ref<string>('選擇分類')
 const amount = ref<string>('')
 const notes = ref<string>('')
+const previousAutoNote = ref<string | null>(null)
 const currentDate = ref<number>(Date.now())
 const allCategories = ref<Category[]>([])
 const showCalendar = ref<boolean>(false)
@@ -305,6 +307,13 @@ const loadTransaction = async (id: string) => {
     const category = allCategories.value.find(c => c.id === transaction.category_id)
     if (category) {
       selectedCategoryName.value = category.name
+      // If the loaded transaction's note is empty or equals the category name,
+      // treat it as an auto-inserted note so future category changes will replace it.
+      if (!transaction.note || transaction.note === category.name) {
+        previousAutoNote.value = category.name
+      } else {
+        previousAutoNote.value = null
+      }
     }
   }
 }
@@ -312,8 +321,21 @@ const loadTransaction = async (id: string) => {
 const selectCategory = (category: Category) => {
   selectedCategoryId.value = category.id
   selectedCategoryName.value = category.name
-  if (!notes.value) {
+  // Only overwrite notes when it's empty or was previously auto-inserted
+  if (!notes.value || notes.value === previousAutoNote.value) {
     notes.value = category.name
+    previousAutoNote.value = category.name
+  } else {
+    // User has a custom note; stop treating notes as auto-inserted
+    previousAutoNote.value = null
+  }
+}
+
+const onNotesInput = () => {
+  // If user changes the notes away from the previously auto-inserted value,
+  // clear the auto-note marker so future category changes won't overwrite.
+  if (previousAutoNote.value && notes.value !== previousAutoNote.value) {
+    previousAutoNote.value = null
   }
 }
 

@@ -123,7 +123,7 @@
           <div class="date-header">
             <span class="date-title">{{ group.dateDisplay }}</span>
             <span class="daily-total" :class="group.total >= 0 ? 'income' : 'expense'">
-              ${{ group.total >= 0 ? group.total : Math.abs(group.total) }}
+              ${{ (group.total >= 0 ? group.total : Math.abs(group.total)).toLocaleString() }}
             </span>
           </div>
 
@@ -153,7 +153,7 @@
                   <span class="category-name">{{ getCategoryName(transaction.category_id) }}</span>
                 </div>
                 <div :class="['item-amount', transaction.type.toLowerCase()]">
-                  ${{ transaction.type === 'EXPENSE' ? '-' : '' }}{{ transaction.amount }}
+                  ${{ transaction.type === 'EXPENSE' ? '-' : '' }}{{ transaction.amount.toLocaleString() }}
                 </div>
                 <div v-if="index < group.transactions.length - 1" class="item-divider"></div>
               </div>
@@ -648,7 +648,7 @@ onMounted(() => {
 .summary-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: 24px 20px;
+  padding: 24px 20px 0;
   gap: 20px;
   background: var(--bg-page);
 }
@@ -669,7 +669,7 @@ onMounted(() => {
 
 .summary-label {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: 500;
   border-bottom: 3px solid;
   padding-bottom: 4px;
@@ -684,7 +684,7 @@ onMounted(() => {
 }
 
 .summary-amount {
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -695,7 +695,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 0 20px 40px;
   background: var(--bg-page);
 }
 
@@ -886,8 +886,8 @@ onMounted(() => {
   height: 56px;
   border-radius: 50%;
   background: var(--janote-action);
-  border: none;
-  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
+  border: 2px solid rgba(0,0,0,0.08);
+  box-shadow: none;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -898,7 +898,7 @@ onMounted(() => {
 
 .fab:hover {
   transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 6px 16px rgba(248, 113, 113, 0.5);
+  box-shadow: none;
 }
 
 .fab:active {
