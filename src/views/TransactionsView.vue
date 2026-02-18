@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <div class="page-content">
+    <div class="page-content page">
     <!-- Summary Statistics -->
     <div class="summary-section">
       <div class="summary-item">

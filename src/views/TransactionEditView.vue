@@ -10,13 +10,13 @@
         </button>
         <div class="type-toggle">
           <button 
-            :class="['toggle-btn', { active: transactionType === 'EXPENSE' }]"
+            :class="['toggle-btn', { active: transactionType === 'EXPENSE', 'expense-active': transactionType === 'EXPENSE' }]"
             @click="transactionType = 'EXPENSE'"
           >
             支出
           </button>
           <button 
-            :class="['toggle-btn', { active: transactionType === 'INCOME' }]"
+            :class="['toggle-btn', { active: transactionType === 'INCOME', 'income-active': transactionType === 'INCOME' }]"
             @click="transactionType = 'INCOME'"
           >
             收入
@@ -26,7 +26,7 @@
     </TopNavigation>
 
     <!-- Main Content -->
-    <div class="edit-content">
+    <div class="edit-content page">
       <!-- Categories Grid -->
       <div class="categories-section">
         <div class="categories-grid">
@@ -46,7 +46,7 @@
         <div class="input-group">
           <label class="label">
             <span class="category-name">{{ selectedCategoryName }}</span>
-            <span class="amount-display">{{ formattedAmount }}</span>
+            <span :class="['amount-display', { 'amount-expense': transactionType === 'EXPENSE', 'amount-income': transactionType === 'INCOME' }]">{{ formattedAmount }}</span>
           </label>
           <input
             v-model="notes"
@@ -113,27 +113,31 @@
       <div class="calculator">
         <div class="calc-grid">
           <!-- Row 1 -->
-          <button v-for="key in calculatorKeys.slice(0, 4)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
+          <button v-for="key in calculatorKeys.slice(0, 3)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
             {{ key }}
           </button>
-          <button class="calc-btn func-btn" @click="handleCalcKey('AC')">AC</button>
+          <button class="calc-btn operator-btn" @click="handleCalcKey('÷')">÷</button>
+          <button class="calc-btn operator-btn" @click="handleCalcKey('AC')">AC</button>
 
           <!-- Row 2 -->
-          <button v-for="key in calculatorKeys.slice(4, 8)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
+          <button v-for="key in calculatorKeys.slice(4, 7)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
             {{ key }}
           </button>
-          <button class="calc-btn func-btn" @click="handleCalcKey('←')">←</button>
+          <button class="calc-btn operator-btn" @click="handleCalcKey('×')">×</button>
+          <button class="calc-btn operator-btn" @click="handleCalcKey('←')">←</button>
 
           <!-- Row 3 -->
-          <button v-for="key in calculatorKeys.slice(8, 12)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
+          <button v-for="key in calculatorKeys.slice(8, 11)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
             {{ key }}
           </button>
+          <button class="calc-btn operator-btn" @click="handleCalcKey('+')">+</button>
           <button class="calc-btn save-btn-calc" @click="saveTransaction" :disabled="!canSave">確定</button>
 
           <!-- Row 4 -->
-          <button v-for="key in calculatorKeys.slice(12, 16)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
+          <button v-for="key in calculatorKeys.slice(12, 15)" :key="key" class="calc-btn" @click="handleCalcKey(key)">
             {{ key }}
           </button>
+          <button class="calc-btn operator-btn" @click="handleCalcKey('=')">&#61;</button>
         </div>
       </div>
     </div>
@@ -190,7 +194,14 @@ const filteredCategories = computed(() => {
 })
 
 const formattedAmount = computed(() => {
-  return amount.value || '0'
+  const num = amount.value || '0'
+  // Add comma separators for numbers
+  if (/^[0-9.]+$/.test(num)) {
+    const parts = num.split('.')
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return parts.join('.')
+  }
+  return num
 })
 
 const formattedDate = computed(() => {
@@ -589,10 +600,8 @@ onMounted(async () => {
 
 .type-toggle {
   display: flex;
-  gap: 8px;
   background: #f5f5f5;
   border-radius: 12px;
-  padding: 4px;
 }
 
 .toggle-btn {
@@ -610,6 +619,19 @@ onMounted(async () => {
 .toggle-btn.active {
   background: var(--text-primary);
   color: var(--text-light);
+}
+
+/* Expense / Income specific active styles */
+.toggle-btn.expense-active {
+  background: var(--janote-expense);
+  color: var(--text-primary);
+  border-color: transparent;
+}
+
+.toggle-btn.income-active {
+  background: var(--janote-income);
+  color: var(--text-light);
+  border-color: transparent;
 }
 
 /* Main Content */
@@ -642,11 +664,12 @@ onMounted(async () => {
   border-radius: 12px;
   background: var(--bg-page);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   text-align: center;
   transition: all 0.2s;
   word-break: break-word;
+  color: var(--text-primary);
 }
 
 .category-item:hover {
@@ -693,12 +716,21 @@ onMounted(async () => {
   color: var(--text-primary);
 }
 
+/* Amount color follows transaction type */
+.amount-display.amount-expense {
+  color: var(--janote-expense);
+}
+
+.amount-display.amount-income {
+  color: var(--janote-income);
+}
+
 .notes-input {
   flex: 1;
   border: 2px solid #e0e0e0;
   border-radius: 10px;
   padding: 12px;
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -744,7 +776,7 @@ onMounted(async () => {
   gap: 8px;
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   flex: 1;
   justify-content: center;
   cursor: pointer;
@@ -777,6 +809,7 @@ onMounted(async () => {
   font-size: 18px;
   font-weight: 600;
   transition: all 0.2s;
+  color: var(--text-primary);
 }
 
 .calc-btn:hover {
@@ -787,14 +820,14 @@ onMounted(async () => {
   background: #e8e8e8;
 }
 
-.calc-btn.func-btn {
-  background: #f5f5f5;
+.calc-btn.operator-btn {
+  background: #e8e8e8;
   color: var(--text-primary);
   font-weight: 600;
 }
 
-.calc-btn.func-btn:hover {
-  background: #e8e8e8;
+.calc-btn.operator-btn:hover {
+  background: #d8d8d8;
 }
 
 .calc-btn.save-btn-calc {

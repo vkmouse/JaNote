@@ -15,6 +15,13 @@
   margin-left: var(--nav-width);
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+
+.app-main .page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
