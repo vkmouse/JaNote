@@ -67,12 +67,7 @@
             </svg>
           </button>
           <button class="date-info" @click="showCalendar = true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
+            <span v-html="CalendarIcon" class="date-icon"></span>
             <span class="date-text">{{ formattedDate }}</span>
           </button>
           <button class="date-control-btn" @click="nextDate">
@@ -155,6 +150,7 @@ import type { Category, EntryType, Transaction } from '../types'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
+import CalendarIcon from '../assets/icons/icon-calendar.svg?raw'
 
 const router = useRouter()
 const route = useRoute()
@@ -590,7 +586,7 @@ onMounted(async () => {
 .back-btn {
   background: transparent;
   border: none;
-  padding: 8px 0;
+  padding: 4px 0;
   border-radius: 20px;
   cursor: pointer;
   color: var(--text-primary);
@@ -620,7 +616,7 @@ onMounted(async () => {
 }
 
 .toggle-btn {
-  padding: 8px 20px;
+  padding: 4px 20px;
   border: none;
   background: var(--bg-page);
   border-radius: 10px;
@@ -770,7 +766,6 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
-  padding: 8px;
   background: #ffffff;
   border-radius: 8px;
   border: 2px solid var(--border-primary);
@@ -778,7 +773,7 @@ onMounted(async () => {
 
 .date-control-btn {
   background: #e9ecef;
-  border: 2px solid var(--border-primary);
+  border: 0;
   border-radius: 8px;
   width: 36px;
   height: 36px;
@@ -820,7 +815,7 @@ onMounted(async () => {
 .date-text {
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   white-space: nowrap;
 }
 
