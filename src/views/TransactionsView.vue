@@ -59,8 +59,7 @@
                 @click="!swipeState[transaction.id]?.hasSwipped && editTransaction(transaction.id)"
               >
                 <div class="item-left">
-                  <div class="category-icon" :style="{ background: getCategoryColor(transaction.category_id) }">
-                    {{ getCategoryEmoji(transaction.category_id) }}
+                  <div class="category-icon" v-html="getCategoryIconSvg(transaction.category_id)">
                   </div>
                   <span class="category-name">{{ getCategoryName(transaction.category_id) }}</span>
                 </div>
@@ -110,6 +109,7 @@ import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
 import iconArrowDown from '../assets/icons/icon-arrow-down.svg?raw'
+import { getCategoryIcon } from '../utils/categoryIcons'
 
 const router = useRouter()
 const transactions = ref<Transaction[]>([])
@@ -221,46 +221,9 @@ const getCategoryName = (categoryId: string): string => {
   return category?.name || '未知分類'
 }
 
-const getCategoryEmoji = (categoryId: string): string => {
+const getCategoryIconSvg = (categoryId: string): string => {
   const category = categories.value.find(c => c.id === categoryId)
-  if (!category) return '📦'
-  
-  // Simple emoji mapping based on category name
-  const emojiMap: Record<string, string> = {
-    '日用品': '🛒',
-    '早餐': '🥤',
-    '午餐': '🍱',
-    '晚餐': '🍽️',
-    '餐飲': '🍜',
-    '交通': '🚗',
-    '娛樂': '🎮',
-    '購物': '🛍️',
-    '醫療': '💊',
-    '教育': '📚',
-    '薪水': '💰',
-    '獎金': '🎁',
-    '股息': '💹',
-    '投資': '📈',
-    '社交': '👥',
-    '禮物': '🎁',
-    '數位': '💻',
-    '其他': '📦',
-    '貓咪': '🐱',
-    '旅行': '✈️',
-  }
-  
-  return emojiMap[category.name] || '📝'
-}
-
-const getCategoryColor = (categoryId: string): string => {
-  const colors = [
-    '#FFB84D', '#FF6B9D', '#A8E6CF', '#FFD93D', 
-    '#95E1D3', '#F38BA0', '#4ECDC4', '#FFE66D'
-  ]
-  
-  // Use category id to consistently assign color
-  const index = categoryId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return colors[index % colors.length] ?? colors[0]!
+  return getCategoryIcon(category?.name || '其他')
 }
 
 const goToNewTransaction = () => {
@@ -600,12 +563,20 @@ onMounted(() => {
 .category-icon {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   flex-shrink: 0;
+}
+
+.category-icon :deep(svg) {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .category-name {

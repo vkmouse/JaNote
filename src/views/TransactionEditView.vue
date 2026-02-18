@@ -34,7 +34,8 @@
             :class="['category-item', { selected: selectedCategoryId === category.id }]"
             @click="selectCategory(category)"
           >
-            {{ category.name }}
+            <div class="category-icon-wrapper" v-html="getCategoryIcon(category.name)"></div>
+            <span class="category-label">{{ category.name }}</span>
           </button>
         </div>
       </div>
@@ -43,7 +44,7 @@
       <div class="input-section">
         <div class="input-group">
           <label class="label">
-            <span class="category-name">{{ selectedCategoryName }}</span>
+            <div class="category-icon-display" v-html="selectedCategoryIcon"></div>
               <span :class="['amount-display', { 'amount-expense': transactionType === 'EXPENSE', 'amount-income': transactionType === 'INCOME' }]">{{ '$' + formattedAmount }}</span>
           </label>
           <input
@@ -76,6 +77,7 @@ import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
 import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
+import { getCategoryIcon } from '../utils/categoryIcons'
 
 const router = useRouter()
 const route = useRoute()
@@ -111,6 +113,12 @@ const formattedAmount = computed(() => {
 
 const canSave = computed(() => {
   return !!(selectedCategoryId.value && amount.value && parseFloat(amount.value) > 0)
+})
+
+const selectedCategoryIcon = computed(() => {
+  return selectedCategoryName.value && selectedCategoryName.value !== '選擇分類' 
+    ? getCategoryIcon(selectedCategoryName.value) 
+    : getCategoryIcon('其他')
 })
 
 
@@ -338,21 +346,19 @@ onMounted(async () => {
 .categories-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 6px;
 }
 
 .category-item {
-  padding: 14px 10px;
-  border: 2px solid var(--border-primary);
+  padding: 6px 4px;
+  border: none;
   border-radius: 12px;
-  background: var(--bg-page);
+  background: transparent;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transition: all 0.2s;
-  word-break: break-word;
-  color: var(--text-primary);
 }
 
 .category-item:hover {
@@ -360,8 +366,34 @@ onMounted(async () => {
 }
 
 .category-item.selected {
-  background: var(--text-primary);
-  color: var(--text-light);
+  background: #f0f0f0;
+}
+
+.category-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.category-icon-wrapper :deep(svg) {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.category-label {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  word-break: break-word;
+  color: var(--text-primary);
+  line-height: 1.2;
 }
 
 /* Input Section */
@@ -386,11 +418,22 @@ onMounted(async () => {
   min-width: 150px;
 }
 
-.category-name {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  white-space: nowrap;
+.category-icon-display {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.category-icon-display :deep(svg) {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .amount-display {
