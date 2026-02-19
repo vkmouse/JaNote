@@ -47,7 +47,7 @@
               class="transaction-item-wrapper"
               @touchstart="handleTouchStart($event, transaction.id)"
               @touchmove="handleTouchMove($event, transaction.id)"
-              @touchend="handleTouchEnd(transaction.id)"
+              @touchend="handleTouchEnd($event, transaction.id)"
               @mousedown="handleMouseDown($event, transaction.id)"
               @mousemove="handleMouseMove($event, transaction.id)"
               @mouseup="handleMouseUp(transaction.id)"
@@ -120,7 +120,15 @@ const showMonthPicker = ref(false)
 const syncApiBase = '/api'
 
 // Swipe-to-delete state
-const swipeState = ref<Record<string, { offset: number; startX: number; showDelete: boolean; isDragging: boolean; hasSwipped: boolean }>>({})
+const swipeState = ref<Record<string, { 
+  offset: number
+  startX: number
+  startY: number
+  showDelete: boolean
+  isDragging: boolean
+  hasSwipped: boolean
+  isHorizontal: boolean | null
+}>>({})
 
 interface DailyGroup {
   date: string
@@ -251,9 +259,11 @@ const handleTouchStart = (event: TouchEvent, id: string) => {
   swipeState.value[id] = {
     offset: swipeState.value[id]?.offset || 0,
     startX: touch.clientX,
+    startY: touch.clientY,
     showDelete: swipeState.value[id]?.showDelete || false,
     isDragging: true,
-    hasSwipped: false
+    hasSwipped: false,
+    isHorizontal: swipeState.value[id]?.offset !== 0 ? true : null
   }
 }
 
@@ -263,31 +273,42 @@ const handleTouchMove = (event: TouchEvent, id: string) => {
   const touch = event.touches[0]
   if (!touch) return
   const currentX = touch.clientX
+  const currentY = touch.clientY
   const startX = swipeState.value[id].startX
+  const startY = swipeState.value[id].startY
   const diff = currentX - startX
+
+  // 判斷滑動方向（尚未確定時）
+  if (swipeState.value[id].isHorizontal === null) {
+    const dx = Math.abs(currentX - startX)
+    const dy = Math.abs(currentY - startY)
+    if (dx < 3 && dy < 3) return // 還沒移動足夠距離，等待
+    swipeState.value[id].isHorizontal = dx >= dy
+  }
+
+  // 若為垂直滑動，放行讓頁面正常滾動
+  if (!swipeState.value[id].isHorizontal) return
+
+  // 確定是水平滑動，動態設定 touch-action 以阻止頁面滾動
+  (event.currentTarget as HTMLElement).style.touchAction = 'none'
   
-  // Mark as swiped if movement exceeds 5px
   if (Math.abs(diff) > 5) {
     swipeState.value[id].hasSwipped = true
   }
   
-  // Get current offset
   const currentOffset = swipeState.value[id].offset
-  
-  // Calculate new offset based on current state
-  // If we already have a negative offset (open), allow positive movements (closing)
-  // If we have no offset (closed), allow negative movements (opening)
   let newOffset = currentOffset + diff
-  
-  // Limit to -80px to 0px range
   newOffset = Math.min(0, Math.max(newOffset, -80))
   
   swipeState.value[id].offset = newOffset
   swipeState.value[id].showDelete = newOffset < -40
-  swipeState.value[id].startX = currentX // Update start position for continuous tracking
+  swipeState.value[id].startX = currentX
 }
 
-const handleTouchEnd = (id: string) => {
+const handleTouchEnd = (event: TouchEvent, id: string) => {
+  // 還原 touch-action 設定
+  (event.currentTarget as HTMLElement).style.touchAction = 'pan-y'
+  
   if (!swipeState.value[id]) return
   
   swipeState.value[id].isDragging = false
@@ -517,6 +538,7 @@ onMounted(() => {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: pan-y;
 }
 
 .transaction-item {

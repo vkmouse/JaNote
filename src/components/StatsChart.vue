@@ -3,63 +3,31 @@
     <div class="summary-section">
       <div class="summary-item">
         <div class="summary-label">月支出</div>
-        <div class="summary-amount expense">${{ monthlyExpense.toLocaleString() }}</div>
+        <div class="summary-amount">${{ monthlyExpense.toLocaleString() }}</div>
       </div>
       <div class="summary-item">
         <div class="summary-label">月收入</div>
-        <div class="summary-amount income">${{ monthlyIncome.toLocaleString() }}</div>
+        <div class="summary-amount">${{ monthlyIncome.toLocaleString() }}</div>
       </div>
     </div>
 
     <div class="chart-section">
       <svg class="donut-chart" viewBox="0 0 200 200">
-        <circle
-          cx="100"
-          cy="100"
-          r="70"
-          fill="none"
-          stroke="#f0f0f0"
-          stroke-width="40"
-        />
-        <circle
-          cx="100"
-          cy="100"
-          r="70"
-          fill="none"
-          stroke="#47B8E0"
-          stroke-width="40"
-          :stroke-dasharray="`${Math.max(0, incomePercentage * 4.398 - 4)} 439.8`"
-          stroke-dashoffset="-2"
-          transform="rotate(-90 100 100)"
-          class="chart-arc income-arc"
-        />
-        <circle
-          cx="100"
-          cy="100"
-          r="70"
-          fill="none"
-          stroke="#FFC952"
-          stroke-width="40"
-          :stroke-dasharray="`${Math.max(0, expensePercentage * 4.398 - 2)} 439.8`"
-          :stroke-dashoffset="-(incomePercentage * 4.398 + 1)"
-          transform="rotate(-90 100 100)"
-          class="chart-arc expense-arc"
-        />
-        <circle
-          cx="100"
-          cy="100"
-          r="90"
-          fill="none"
-          stroke="var(--border-primary)"
+        <path
+          v-if="incomePercentage > 0"
+          :d="incomeArcPath"
+          fill="#47B8E0"
+          stroke="#333"
           stroke-width="1"
+          stroke-linejoin="round"
         />
-        <circle
-          cx="100"
-          cy="100"
-          r="50"
-          fill="none"
-          stroke="var(--border-primary)"
+        <path
+          v-if="expensePercentage > 0"
+          :d="expenseArcPath"
+          fill="#FFC952"
+          stroke="#333"
           stroke-width="1"
+          stroke-linejoin="round"
         />
       </svg>
       <div class="chart-center">
@@ -73,16 +41,97 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   monthlyExpense: number
   monthlyIncome: number
   balance: number
   expensePercentage: number
   incomePercentage: number
 }>()
+
+const cx = 100
+const cy = 100
+const outerR = 90
+const innerR = 55
+const gapPx = 2 // 白色間隔的實際像素寬度
+
+// 各半徑對應的間隔角度（弧長 = r * θ，θ = 弧長 / r，轉為度數）
+const outerGapDeg = computed(() => (gapPx / outerR) * (180 / Math.PI))
+const innerGapDeg = computed(() => (gapPx / innerR) * (180 / Math.PI))
+
+const incomeAngle = computed(() => props.incomePercentage * 3.6)
+
+function toRad(deg: number) {
+  return ((deg - 90) * Math.PI) / 180
+}
+
+/**
+ * 產生甜甜圈弧形，外圈與內圈各自用對應半徑的間隔角度
+ * outerStart/outerEnd: 外圈弧的起訖角度
+ * innerStart/innerEnd: 內圈弧的起訖角度
+ */
+function getArcPath(
+  outerStartDeg: number,
+  outerEndDeg: number,
+  innerStartDeg: number,
+  innerEndDeg: number,
+  r1: number,
+  r2: number
+): string {
+  const os = toRad(outerStartDeg)
+  const oe = toRad(outerEndDeg)
+  const is = toRad(innerStartDeg)
+  const ie = toRad(innerEndDeg)
+
+  const x1 = cx + r2 * Math.cos(os)
+  const y1 = cy + r2 * Math.sin(os)
+  const x2 = cx + r2 * Math.cos(oe)
+  const y2 = cy + r2 * Math.sin(oe)
+  const x3 = cx + r1 * Math.cos(ie)
+  const y3 = cy + r1 * Math.sin(ie)
+  const x4 = cx + r1 * Math.cos(is)
+  const y4 = cy + r1 * Math.sin(is)
+
+  const large = outerEndDeg - outerStartDeg > 180 ? 1 : 0
+
+  return [
+    `M ${x1} ${y1}`,
+    `A ${r2} ${r2} 0 ${large} 1 ${x2} ${y2}`,
+    `L ${x3} ${y3}`,
+    `A ${r1} ${r1} 0 ${large} 0 ${x4} ${y4}`,
+    'Z',
+  ].join(' ')
+}
+
+// 收入弧 (藍色)
+const incomeArcPath = computed(() =>
+  getArcPath(
+    outerGapDeg.value,                        // 外圈起點
+    incomeAngle.value - outerGapDeg.value,    // 外圈終點
+    innerGapDeg.value,                        // 內圈起點
+    incomeAngle.value - innerGapDeg.value,    // 內圈終點
+    innerR,
+    outerR
+  )
+)
+
+// 支出弧 (黃色)
+const expenseArcPath = computed(() =>
+  getArcPath(
+    incomeAngle.value + outerGapDeg.value,    // 外圈起點
+    360 - outerGapDeg.value,                  // 外圈終點
+    incomeAngle.value + innerGapDeg.value,    // 內圈起點
+    360 - innerGapDeg.value,                  // 內圈終點
+    innerR,
+    outerR
+  )
+)
 </script>
 
 <style scoped>
+/* 同原本樣式，僅補充 filter */
 .summary-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -97,13 +146,8 @@ defineProps<{
   gap: 8px;
 }
 
-.summary-item:first-child {
-  align-items: flex-start;
-}
-
-.summary-item:last-child {
-  align-items: flex-end;
-}
+.summary-item:first-child { align-items: flex-start; }
+.summary-item:last-child  { align-items: flex-end; }
 
 .summary-label {
   font-size: 14px;
@@ -113,13 +157,8 @@ defineProps<{
   padding-bottom: 4px;
 }
 
-.summary-item:nth-child(1) .summary-label {
-  border-color: var(--janote-expense);
-}
-
-.summary-item:nth-child(2) .summary-label {
-  border-color: var(--janote-income);
-}
+.summary-item:nth-child(1) .summary-label { border-color: var(--janote-expense); }
+.summary-item:nth-child(2) .summary-label { border-color: var(--janote-income); }
 
 .summary-amount {
   font-size: 24px;
@@ -140,10 +179,6 @@ defineProps<{
   width: 280px;
   height: 280px;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
-}
-
-.chart-arc {
-  transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease;
 }
 
 .chart-center {
@@ -168,8 +203,6 @@ defineProps<{
 }
 
 @media (max-width: 480px) {
-  .summary-amount {
-    font-size: 20px;
-  }
+  .summary-amount { font-size: 20px; }
 }
 </style>
