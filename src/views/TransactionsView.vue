@@ -337,9 +337,11 @@ const handleMouseDown = (event: MouseEvent, id: string) => {
   swipeState.value[id] = {
     offset: swipeState.value[id]?.offset || 0,
     startX: event.clientX,
+    startY: event.clientY,
     showDelete: swipeState.value[id]?.showDelete || false,
     isDragging: true,
-    hasSwipped: false
+    hasSwipped: false,
+    isHorizontal: swipeState.value[id]?.offset !== 0 ? true : null
   }
 }
 
