@@ -5,12 +5,13 @@ import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
 import { syncMetaRepository } from '../repositories/syncMetaRepository'
+import { userRepository } from '../repositories/userRepository'
 import { performSync } from '../services/sync.service'
 import type { Category, Transaction, SyncQueueItem, LogEntry, EntryType } from '../types'
 
-const userId = ref(localStorage.getItem('sync_user_id') || 'demo-user')
 const apiBase = ref('/api')
 const lastCursor = ref(0)
+const userEmail = ref('-')
 const categories = ref<Category[]>([])
 const transactions = ref<Transaction[]>([])
 const queueItems = ref<SyncQueueItem[]>([])
@@ -37,10 +38,6 @@ const categoryMap = computed(() => {
 })
 
 const activeQueueCount = computed(() => queueItems.value.length)
-
-watch(userId, (value) => {
-  localStorage.setItem('sync_user_id', value.trim())
-})
 
 onMounted(() => {
   refreshLocalState()
@@ -114,7 +111,6 @@ async function enqueueCategory() {
   const mutationId = crypto.randomUUID()
   const payload = JSON.stringify({
     id,
-    user_id: userId.value.trim(),
     name,
     type: newCategoryType.value,
   })
@@ -170,7 +166,6 @@ async function enqueueTransaction() {
   const id = crypto.randomUUID()
   const payload = JSON.stringify({
     id,
-    user_id: userId.value.trim(),
     category_id: categoryId,
     type: newTransaction.value.type,
     amount,
@@ -228,26 +223,44 @@ async function deleteTransaction(id: string) {
 }
 
 async function syncNow() {
-  const trimmedUserId = userId.value.trim()
-  if (!trimmedUserId) {
-    addLog('請先輸入 user_id', 'warn')
-    return
-  }
-
   syncStatus.value = 'syncing'
   addLog('開始同步...', 'info')
 
   try {
-    const responseData = await performSync(trimmedUserId, apiBase.value)
+    const responseData = await performSync(apiBase.value)
 
+    userEmail.value = responseData.user?.email || '-'
     await refreshLocalState()
 
     lastSyncAt.value = new Date().toLocaleString()
     syncStatus.value = 'success'
-    addLog(`同步完成 (cursor: ${responseData.new_cursor})`, 'success', `Cursor: ${responseData.new_cursor}`)
+    addLog(`同步完成 (cursor: ${responseData.new_cursor})`, 'success', `Email: ${userEmail.value}`)
   } catch (error) {
     syncStatus.value = 'error'
     addLog((error as Error).message || '同步失敗', 'error')
+  }
+}
+
+async function clearAllData() {
+  if (!confirm('確定要清空所有本地資料嗎？此操作無法復原。')) {
+    return
+  }
+
+  try {
+    await categoryRepository.deleteAll()
+    await transactionRepository.deleteAll()
+    await syncQueueRepository.clear()
+    await syncMetaRepository.clear()
+    await userRepository.clear()
+    
+    userEmail.value = '-'
+    lastCursor.value = 0
+    lastSyncAt.value = ''
+    
+    await refreshLocalState()
+    addLog('已清空所有本地資料', 'success')
+  } catch (error) {
+    addLog((error as Error).message || '清空資料失敗', 'error')
   }
 }
 </script>
@@ -274,6 +287,10 @@ async function syncNow() {
           </div>
           <div class="status-meta">
             <div>
+              <span>Email</span>
+              <strong>{{ userEmail }}</strong>
+            </div>
+            <div>
               <span>Cursor</span>
               <strong>{{ lastCursor }}</strong>
             </div>
@@ -291,10 +308,6 @@ async function syncNow() {
 
     <section class="controls">
       <div class="control">
-        <label>user_id</label>
-        <input v-model="userId" placeholder="demo-user" />
-      </div>
-      <div class="control">
         <label>API Base</label>
         <input v-model="apiBase" placeholder="/api" />
       </div>
@@ -303,6 +316,7 @@ async function syncNow() {
           {{ isSyncing ? '同步中...' : '立即同步' }}
         </button>
         <button class="ghost" @click="refreshLocalState">重新整理</button>
+        <button class="danger" @click="clearAllData">清空所有資料</button>
       </div>
     </section>
 
@@ -451,7 +465,7 @@ async function syncNow() {
   border: 2px solid var(--border-primary);
   border-radius: 18px;
   padding: 18px 22px;
-  min-width: 280px;
+  min-width: 360px;
 }
 
 .status-row {
@@ -489,7 +503,7 @@ async function syncNow() {
 
 .status-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -565,6 +579,17 @@ async function syncNow() {
 .sync-page button.ghost {
   background: transparent;
   border: 1px solid var(--text-disabled);
+}
+
+.sync-page button.danger {
+  background: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+}
+
+.sync-page button.danger:hover:not(:disabled) {
+  background: #c82333;
+  border-color: #bd2130;
 }
 
 .sync-page button:hover:not(:disabled) {

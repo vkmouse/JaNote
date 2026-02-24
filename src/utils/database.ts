@@ -37,6 +37,9 @@ export function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('sync_meta')) {
         db.createObjectStore('sync_meta', { keyPath: 'key' })
       }
+      if (!db.objectStoreNames.contains('user')) {
+        db.createObjectStore('user', { keyPath: 'id' })
+      }
     }
 
     request.onsuccess = () => resolve(request.result)

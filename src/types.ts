@@ -1,5 +1,10 @@
 export type EntryType = 'EXPENSE' | 'INCOME'
 
+export interface User {
+  id: string
+  email: string
+}
+
 export interface Category {
   id: string
   name: string
@@ -51,15 +56,16 @@ export interface PullEvent {
 }
 
 export interface SyncRequest {
-  user_id: string
   last_cursor: number
   push_events: PushEvent[]
+  user?: User | null
 }
 
 export interface SyncResponse {
   new_cursor: number
   processed_mutation_ids: string[]
   pull_events: PullEvent[]
+  user: User
 }
 
 export interface CategoryPayload {
@@ -88,6 +94,6 @@ export interface LogEntry {
   tone: 'info' | 'warn' | 'error' | 'success'
 }
 
-export type StoreName = 'categories' | 'transactions' | 'sync_queue' | 'sync_meta'
+export type StoreName = 'categories' | 'transactions' | 'sync_queue' | 'sync_meta' | 'user'
 export type StoreMode = 'readonly' | 'readwrite'
 export type StoreCallback<T = any> = (store: IDBObjectStore, tx: IDBTransaction) => T | IDBRequest<any>

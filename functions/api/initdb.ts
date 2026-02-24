@@ -1,4 +1,8 @@
-export const onRequest: PagesFunction = async (context) => {
+interface Env {
+  DB: D1Database;
+}
+
+export const onRequest: PagesFunction<Env> = async (context) => {
   const { DB } = context.env;
 
   try {
@@ -13,7 +17,6 @@ export const onRequest: PagesFunction = async (context) => {
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
-        display_name TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -58,86 +61,6 @@ export const onRequest: PagesFunction = async (context) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
-
-    const demoUserId = 'demo-user';
-    await DB.prepare(
-      `INSERT OR IGNORE INTO users (id, email, display_name) VALUES (?, ?, ?)`
-    )
-      .bind(demoUserId, 'demo-user', 'Demo User')
-      .run();
-
-    const expenseCategories = [
-      '早餐',
-      '午餐',
-      '晚餐',
-      '飲品',
-      '點心',
-      '交通',
-      '購物',
-      '娛樂',
-      '日用品',
-      '房租',
-      '醫療',
-      '社交',
-      '禮物',
-      '數位',
-      '其他',
-      '貓咪',
-      '旅行',
-    ];
-    const incomeCategories = ['薪水', '獎金', '利息', '股息', '投資', '其他'];
-
-    for (const name of expenseCategories) {
-      const id = `cat-expense-${name}`;
-      await DB.prepare(
-        `INSERT OR IGNORE INTO categories (id, user_id, name, type, version, is_deleted) VALUES (?, ?, ?, ?, ?, 0)`
-      )
-        .bind(id, demoUserId, name, 'EXPENSE', 1)
-        .run();
-
-      const payload = JSON.stringify({
-        action: 'PUT',
-        version: 1,
-        payload: JSON.stringify({
-          id,
-          user_id: demoUserId,
-          name,
-          type: 'EXPENSE',
-        }),
-      });
-
-      await DB.prepare(
-        `INSERT OR IGNORE INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)`
-      )
-        .bind(demoUserId, `init-cat-${id}`, 'CAT', id, payload)
-        .run();
-    }
-
-    for (const name of incomeCategories) {
-      const id = `cat-income-${name}`;
-      await DB.prepare(
-        `INSERT OR IGNORE INTO categories (id, user_id, name, type, version, is_deleted) VALUES (?, ?, ?, ?, ?, 0)`
-      )
-        .bind(id, demoUserId, name, 'INCOME', 1)
-        .run();
-
-      const payload = JSON.stringify({
-        action: 'PUT',
-        version: 1,
-        payload: JSON.stringify({
-          id,
-          user_id: demoUserId,
-          name,
-          type: 'INCOME',
-        }),
-      });
-
-      await DB.prepare(
-        `INSERT OR IGNORE INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)`
-      )
-        .bind(demoUserId, `init-cat-${id}`, 'CAT', id, payload)
-        .run();
-    }
 
     return new Response(JSON.stringify({ message: "Database initialized successfully" }), {
       headers: { "content-type": "application/json" },

@@ -1,5 +1,14 @@
+import type { AuthContext } from '../_middleware';
+
 interface Env {
 	DB: D1Database;
+}
+
+interface User {
+	id: string;
+	email: string;
+	created_at: string;
+	updated_at: string;
 }
 
 type EntityType = "CAT" | "TXN";
@@ -9,9 +18,9 @@ type ActionType = "PUT" | "DELETE";
 type EntryType = "EXPENSE" | "INCOME";
 
 interface SyncRequest {
-	user_id: string;
 	last_cursor: number;
 	push_events?: PushEvent[];
+	user?: { id: string; email: string } | null;
 }
 
 interface PushEvent {
@@ -33,8 +42,102 @@ interface PullEvent {
 	payload?: string | null;
 }
 
-export const onRequest: PagesFunction<Env> = async (context) => {
+async function getUserIdByEmail(email: string, DB: D1Database): Promise<string> {
+	// Try to get existing user
+	const existing = await DB.prepare(
+		'SELECT id FROM users WHERE email = ?'
+	)
+		.bind(email)
+		.first<{ id: string }>();
+	
+	if (existing) {
+		return existing.id;
+	}
+	
+	// Create new user if doesn't exist
+	const userId = crypto.randomUUID();
+	const now = new Date().toISOString();
+	
+	await DB.prepare(
+		'INSERT INTO users (id, email, created_at, updated_at) VALUES (?, ?, ?, ?)'
+	)
+		.bind(userId, email, now, now)
+		.run();
+	
+	// Initialize default categories for new user
+	await initializeDefaultCategories(userId, DB);
+	
+	return userId;
+}
+
+async function initializeDefaultCategories(userId: string, DB: D1Database): Promise<void> {
+	const expenseCategories = [
+		'早餐', '午餐', '晚餐',   '飲品', '點心', '交通',
+		'購物', '娛樂', '日用品', '房租', '醫療', '社交',
+		'禮物', '數位', '其他',   '貓咪', '旅行'
+	];
+	const incomeCategories = [
+		'薪水', '獎金', '利息', '股息', '投資', '其他'
+	];
+
+	// Create expense categories
+	for (const name of expenseCategories) {
+		const id = crypto.randomUUID();
+		await DB.prepare(
+			`INSERT INTO categories (id, user_id, name, type, version, is_deleted) VALUES (?, ?, ?, ?, ?, 0)`
+		)
+			.bind(id, userId, name, 'EXPENSE', 1)
+			.run();
+
+		const payload = JSON.stringify({
+			action: 'PUT',
+			version: 1,
+			payload: JSON.stringify({
+				id,
+				name,
+				type: 'EXPENSE',
+			}),
+		});
+
+		await DB.prepare(
+			`INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)`
+		)
+			.bind(userId, `init-cat-${id}`, 'CAT', id, payload)
+			.run();
+	}
+
+	// Create income categories
+	for (const name of incomeCategories) {
+		const id = crypto.randomUUID();
+		await DB.prepare(
+			`INSERT INTO categories (id, user_id, name, type, version, is_deleted) VALUES (?, ?, ?, ?, ?, 0)`
+		)
+			.bind(id, userId, name, 'INCOME', 1)
+			.run();
+
+		const payload = JSON.stringify({
+			action: 'PUT',
+			version: 1,
+			payload: JSON.stringify({
+				id,
+				name,
+				type: 'INCOME',
+			}),
+		});
+
+		await DB.prepare(
+			`INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)`
+		)
+			.bind(userId, `init-cat-${id}`, 'CAT', id, payload)
+			.run();
+	}
+}
+
+export const onRequest: PagesFunction<Env, any, AuthContext> = async (context) => {
 	const { DB } = context.env;
+	const userEmail = context.data.email;
+	const userId = await getUserIdByEmail(userEmail, DB);
+	
 	if (context.request.method !== "POST") {
 		return new Response("Method Not Allowed", { status: 405 });
 	}
@@ -46,14 +149,20 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 		return jsonResponse({ error: "Invalid JSON body" }, { status: 400 });
 	}
 
-	if (!isNonEmptyString(body?.user_id)) {
-		return jsonResponse({ error: "user_id is required" }, { status: 400 });
-	}
 	if (!isNumber(body?.last_cursor)) {
 		return jsonResponse({ error: "last_cursor must be a number" }, { status: 400 });
 	}
 
-	const userId = body.user_id.trim();
+	// Validate user field if provided
+	if (body.user !== undefined && body.user !== null) {
+		if (body.user.email !== userEmail) {
+			return jsonResponse({ error: "User email mismatch" }, { status: 403 });
+		}
+		if (body.user.id !== userId) {
+			return jsonResponse({ error: "User id mismatch" }, { status: 403 });
+		}
+	}
+
 	const pushEvents = Array.isArray(body.push_events) ? body.push_events : [];
 	const processedMutationIds: string[] = [];
 
@@ -123,7 +232,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 	pullQuery += " ORDER BY id ASC";
 
 	const pullResults = await DB.prepare(pullQuery).bind(...pullBinds).all();
-	const pullEvents: PullEvent[] = pullResults.results.map((row: any) => {
+	const pullEvents: PullEvent[] = (pullResults.results || []).map((row: any) => {
 		let action: ActionType = "PUT";
 		let version = 0;
 		let payload: string | null = row.payload ?? null;
@@ -160,6 +269,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 		new_cursor: newCursor,
 		processed_mutation_ids: processedMutationIds,
 		pull_events: pullEvents,
+		user: { id: userId, email: userEmail },
 	});
 };
 
@@ -225,7 +335,6 @@ async function processCategoryEvent(event: PushEvent, userId: string, DB: D1Data
 
 	if (event.action === "PUT") {
 		const name = payloadObject?.name;
-		const payloadUserId = payloadObject?.user_id;
 		const type = payloadObject?.type;
 
 		if (!isNonEmptyString(name)) {
@@ -234,10 +343,6 @@ async function processCategoryEvent(event: PushEvent, userId: string, DB: D1Data
 
 		if (!isValidEntryType(type)) {
 			return jsonResponse({ error: "Category type is required" }, { status: 400 });
-		}
-
-		if (payloadUserId !== undefined && payloadUserId !== userId) {
-			return jsonResponse({ error: "payload user_id mismatch" }, { status: 400 });
 		}
 
 		const newVersion = currentVersion + 1;
@@ -299,11 +404,6 @@ async function processTransactionEvent(
 	const { payloadString, payloadObject } = parsePayload(event.payload);
 
 	if (event.action === "PUT") {
-		const payloadUserId = payloadObject?.user_id;
-		if (payloadUserId !== undefined && payloadUserId !== userId) {
-			return jsonResponse({ error: "payload user_id mismatch" }, { status: 400 });
-		}
-
 		const categoryId = payloadObject?.category_id;
 		const type = payloadObject?.type;
 		const amount = payloadObject?.amount;

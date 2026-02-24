@@ -187,7 +187,7 @@ const saveTransaction = async () => {
   const baseVersion = isEditing ? (editingTransaction.value?.version || 0) : 0
   
   const transaction: Transaction = {
-    id: isEditing ? editingTransactionId.value! : `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: isEditing ? editingTransactionId.value! : crypto.randomUUID(),
     category_id: selectedCategoryId.value,
     type: transactionType.value,
     amount: parseFloat(amount.value),
@@ -203,7 +203,6 @@ const saveTransaction = async () => {
     const mutationId = crypto.randomUUID()
     const payload = JSON.stringify({
       id: transaction.id,
-      user_id: localStorage.getItem('sync_user_id') || 'demo-user',
       category_id: transaction.category_id,
       type: transaction.type,
       amount: transaction.amount,

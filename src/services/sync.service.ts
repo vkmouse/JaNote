@@ -2,6 +2,7 @@ import { syncQueueRepository } from '../repositories/syncQueueRepository'
 import { syncMetaRepository } from '../repositories/syncMetaRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
+import { userRepository } from '../repositories/userRepository'
 import type {
   SyncQueueItem,
   PushEvent,
@@ -124,9 +125,10 @@ async function bumpLocalVersion(
   })
 }
 
-export async function performSync(userId: string, apiBase: string): Promise<SyncResponse> {
+export async function performSync(apiBase: string): Promise<SyncResponse> {
   const lastCursor = await syncMetaRepository.getLastCursor()
   const queue = await syncQueueRepository.getAllOrdered()
+  const localUser = await userRepository.get()
 
   const pushEvents: PushEvent[] = queue.map(item => ({
     mutation_id: item.mutation_id,
@@ -144,9 +146,9 @@ export async function performSync(userId: string, apiBase: string): Promise<Sync
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      user_id: userId,
       last_cursor: lastCursor,
       push_events: pushEvents,
+      user: localUser,
     }),
   })
 
@@ -188,6 +190,11 @@ export async function performSync(userId: string, apiBase: string): Promise<Sync
   }
 
   await syncMetaRepository.setLastCursor(responseData.new_cursor || lastCursor)
+  
+  // Save user info from response
+  if (responseData.user) {
+    await userRepository.set(responseData.user)
+  }
 
   return responseData
 }
