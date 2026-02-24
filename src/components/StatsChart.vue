@@ -1,11 +1,21 @@
 <template>
   <div>
     <div class="summary-section">
-      <div class="summary-item">
+      <!-- Left: Monthly Expense -->
+      <div class="summary-item summary-item-left">
         <div class="summary-label">月支出</div>
         <div class="summary-amount">${{ monthlyExpense.toLocaleString() }}</div>
       </div>
-      <div class="summary-item">
+      
+      <!-- Center: Month Selector -->
+      <div class="summary-item-center">
+        <button class="month-selector" @click="$emit('open-month-picker')">
+          <span class="month-display">{{ currentMonthDisplay }}</span>
+        </button>
+      </div>
+      
+      <!-- Right: Monthly Income -->
+      <div class="summary-item summary-item-right">
         <div class="summary-label">月收入</div>
         <div class="summary-amount">${{ monthlyIncome.toLocaleString() }}</div>
       </div>
@@ -42,6 +52,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import iconArrowDown from '../assets/icons/icon-arrow-down.svg?raw'
 
 const props = defineProps<{
   monthlyExpense: number
@@ -49,6 +60,11 @@ const props = defineProps<{
   balance: number
   expensePercentage: number
   incomePercentage: number
+  currentMonthDisplay: string
+}>()
+
+defineEmits<{
+  'open-month-picker': []
 }>()
 
 const cx = 100
@@ -134,36 +150,75 @@ const expenseArcPath = computed(() =>
 /* 同原本樣式，僅補充 filter */
 .summary-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 24px 20px 0;
-  gap: 20px;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 6px 20px 0;
   background: var(--bg-page);
 }
 
 .summary-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
-.summary-item:first-child { align-items: flex-start; }
-.summary-item:last-child  { align-items: flex-end; }
+.summary-item-left {
+  align-items: flex-start;
+}
+
+.summary-item-center {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.summary-item-right {
+  align-items: flex-end;
+}
 
 .summary-label {
   font-size: 14px;
   color: var(--text-primary);
   font-weight: 500;
   border-bottom: 3px solid;
-  padding-bottom: 4px;
 }
 
 .summary-item:nth-child(1) .summary-label { border-color: var(--janote-expense); }
-.summary-item:nth-child(2) .summary-label { border-color: var(--janote-income); }
+.summary-item:nth-child(3) .summary-label { border-color: var(--janote-income); }
 
 .summary-amount {
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+/* Month Selector */
+.month-selector {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.month-display {
+  color: var(--text-primary);
+}
+
+.month-selector:hover {
+  opacity: 0.7;
+}
+
+.icon-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.icon-arrow :deep(svg) {
+  width: 20px;
+  height: 20px;
 }
 
 .chart-section {
@@ -176,8 +231,8 @@ const expenseArcPath = computed(() =>
 }
 
 .donut-chart {
-  width: 280px;
-  height: 280px;
+  width: 240px;
+  height: 240px;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
 }
 
@@ -197,12 +252,12 @@ const expenseArcPath = computed(() =>
 }
 
 .chart-balance {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 @media (max-width: 480px) {
-  .summary-amount { font-size: 20px; }
+  .summary-amount { font-size: 18px; }
 }
 </style>

@@ -2,10 +2,7 @@
   <section class="transactions-page">
     <!-- Top Navigation Bar -->
     <TopNavigation>
-      <button class="month-selector" @click="showMonthPicker = true">
-        <span class="month-display">{{ currentMonthDisplay }}</span>
-        <span class="icon-arrow" v-html="iconArrowDown"></span>
-      </button>
+      <template #title>收支明細</template>
     </TopNavigation>
 
     <MonthPicker
@@ -21,6 +18,8 @@
       :balance="balance"
       :expensePercentage="expensePercentage"
       :incomePercentage="incomePercentage"
+      :currentMonthDisplay="currentMonthDisplay"
+      @open-month-picker="showMonthPicker = true"
     />
 
     <!-- Daily Transaction List -->
@@ -108,7 +107,6 @@ import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
-import iconArrowDown from '../assets/icons/icon-arrow-down.svg?raw'
 import { getCategoryIcon } from '../utils/categoryIcons'
 
 const router = useRouter()
@@ -444,34 +442,6 @@ onMounted(() => {
   flex: 1;
   background: var(--bg-page);
   padding-bottom: 80px;
-}
-
-/* Month Selector Button in Top Nav */
-.month-selector {
-  background: none;
-  border: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 8px 16px;
-}
-
-.month-display {
-  color: var(--text-primary);
-}
-
-.month-selector:hover {
-  opacity: 0.7;
-}
-
-.icon-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-primary);
 }
 
 /* Transaction List */
