@@ -180,18 +180,11 @@ export async function performSync(apiBase: string): Promise<SyncResponse> {
   const localUser = await userRepository.get()
 
   const pushEvents: PushEvent[] = queue.map(item => {
-    let action: 'PUT' | 'DELETE' | 'POST' = item.payload ? 'PUT' : 'DELETE'
-    
-    // SHR 類型的 sync_queue 中，如果有 payload 則是 POST action
-    if (item.entity_type === 'SHR' && item.payload) {
-      action = 'POST'
-    }
-    
     return {
       mutation_id: item.mutation_id,
       entity_type: item.entity_type,
       entity_id: item.entity_id,
-      action,
+      action: item.action,
       base_version: item.base_version,
       payload: parsePayload(item.payload),
     }

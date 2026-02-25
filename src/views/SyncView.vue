@@ -8,9 +8,11 @@ import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { userShareRepository } from '../repositories/userShareRepository'
 import { performSync } from '../services/sync.service'
+import type { UserShare } from '../types'
 
 const apiBase = ref('/api')
 const lastCursor = ref(0)
+const userId = ref('')
 const userEmail = ref('-')
 const activeQueueCount = ref(0)
 const syncStatus = ref<'idle' | 'syncing' | 'success' | 'error'>('idle')
@@ -19,8 +21,11 @@ const isResetting = ref(false)
 
 // 共享邀請相關
 const inviteEmail = ref('')
-const pendingInvites = ref<string[]>([])
+const sentPendingInvites = ref<UserShare[]>([]) // 作為 owner 發出的 PENDING 邀請
+const receivedPendingInvites = ref<UserShare[]>([]) // 作為 viewer 收到的 PENDING 邀請
+const activeShares = ref<UserShare[]>([]) // ACTIVE 的共享
 const isInviting = ref(false)
+const operatingShareId = ref<string | null>(null)
 
 const isSyncing = computed(() => syncStatus.value === 'syncing')
 
@@ -33,13 +38,25 @@ async function refreshLocalState() {
   const queueItems = await syncQueueRepository.getAllOrdered()
   activeQueueCount.value = queueItems.length
   const user = await userRepository.get()
+  if (user?.id) {
+    userId.value = user.id
+  }
   if (user?.email) {
     userEmail.value = user.email
   }
   
-  // 載入 pending invites
-  const shares = await userShareRepository.getPendingInvites()
-  pendingInvites.value = shares.map(share => share.viewer_email)
+  // 載入所有共享
+  const allShares = await userShareRepository.getAll()
+  const validShares = allShares.filter(share => share.is_deleted === 0)
+  
+  // 分類共享
+  sentPendingInvites.value = validShares.filter(
+    share => share.status === 'PENDING' && share.owner_id === userId.value
+  )
+  receivedPendingInvites.value = validShares.filter(
+    share => share.status === 'PENDING' && share.viewer_id === userId.value
+  )
+  activeShares.value = validShares.filter(share => share.status === 'ACTIVE')
 }
 
 async function syncNow() {
@@ -70,11 +87,14 @@ async function clearAllData() {
     await syncMetaRepository.clear()
     await userRepository.clear()
     
+    userId.value = ''
     userEmail.value = '-'
     lastCursor.value = 0
     lastSyncAt.value = ''
     activeQueueCount.value = 0
-    pendingInvites.value = []
+    sentPendingInvites.value = []
+    receivedPendingInvites.value = []
+    activeShares.value = []
     
     alert('已清空所有本地資料')
   } catch (error) {
@@ -129,7 +149,8 @@ async function sendInvite() {
   }
 
   // 檢查是否已經邀請過
-  if (pendingInvites.value.includes(email)) {
+  const existingInvite = sentPendingInvites.value.find(invite => invite.viewer_email === email)
+  if (existingInvite) {
     alert('已經邀請過此 Email')
     return
   }
@@ -152,6 +173,7 @@ async function sendInvite() {
       mutation_id: mutationId,
       entity_type: 'SHR',
       entity_id: shareId,
+      action: 'POST',
       payload: JSON.stringify({
         id: shareId,
         owner_id: user.id,
@@ -177,7 +199,7 @@ async function sendInvite() {
     })
 
     // 更新 UI
-    pendingInvites.value.push(email)
+    await refreshLocalState()
     inviteEmail.value = ''
     
     alert('邀請已發送，請執行同步')
@@ -186,6 +208,97 @@ async function sendInvite() {
     console.error('發送邀請失敗:', error)
   } finally {
     isInviting.value = false
+  }
+}
+
+async function acceptInvitation(share: UserShare) {
+  if (operatingShareId.value) return
+  
+  operatingShareId.value = share.id
+
+  try {
+    const mutationId = crypto.randomUUID()
+    const now = Date.now()
+
+    // 寫入 sync_queue - 發送 PUT 請求
+    await syncQueueRepository.add({
+      mutation_id: mutationId,
+      entity_type: 'SHR',
+      entity_id: share.id,
+      action: 'PUT',
+      payload: JSON.stringify({
+        id: share.id,
+        owner_id: share.owner_id,
+        owner_email: share.owner_email,
+        viewer_id: share.viewer_id,
+        viewer_email: share.viewer_email,
+        status: 'ACTIVE',
+      }),
+      base_version: share.version,
+      created_at: now,
+    })
+
+    // 更新本地 user_shares (樂觀更新)
+    await userShareRepository.update(share.id, (current) => {
+      if (!current) return null
+      return {
+        ...current,
+        status: 'ACTIVE',
+        version: current.version + 1,
+      }
+    })
+
+    await refreshLocalState()
+    alert('已接受邀請，請執行同步')
+  } catch (error) {
+    alert('接受邀請失敗')
+    console.error('接受邀請失敗:', error)
+  } finally {
+    operatingShareId.value = null
+  }
+}
+
+async function rejectOrCancelShare(share: UserShare, actionName: string) {
+  if (operatingShareId.value) return
+  
+  if (!confirm(`確定要${actionName}嗎？`)) {
+    return
+  }
+
+  operatingShareId.value = share.id
+
+  try {
+    const mutationId = crypto.randomUUID()
+    const now = Date.now()
+
+    // 寫入 sync_queue - 發送 DELETE 請求
+    await syncQueueRepository.add({
+      mutation_id: mutationId,
+      entity_type: 'SHR',
+      entity_id: share.id,
+      action: 'DELETE',
+      payload: null,
+      base_version: share.version,
+      created_at: now,
+    })
+
+    // 更新本地 user_shares (樂觀刪除)
+    await userShareRepository.update(share.id, (current) => {
+      if (!current) return null
+      return {
+        ...current,
+        is_deleted: 1,
+        version: current.version + 1,
+      }
+    })
+
+    await refreshLocalState()
+    alert(`已${actionName}，請執行同步`)
+  } catch (error) {
+    alert(`${actionName}失敗`)
+    console.error(`${actionName}失敗:`, error)
+  } finally {
+    operatingShareId.value = null
   }
 }</script>
 
@@ -262,19 +375,92 @@ async function sendInvite() {
           </button>
         </div>
 
-        <div v-if="pendingInvites.length > 0" class="invites-list">
-          <h3>正在邀請中 ({{ pendingInvites.length }})</h3>
+        <!-- 收到的邀請 (作為 viewer) -->
+        <div v-if="receivedPendingInvites.length > 0" class="invites-list">
+          <h3>收到的邀請 ({{ receivedPendingInvites.length }})</h3>
           <div class="invite-items">
-            <div v-for="email in pendingInvites" :key="email" class="invite-item">
-              <div class="invite-email">
-                <span class="email-address">{{ email }}</span>
-                <span class="status-pending">邀請中</span>
+            <div v-for="share in receivedPendingInvites" :key="share.id" class="invite-item received">
+              <div class="invite-info">
+                <div class="invite-email">
+                  <span class="label">來自</span>
+                  <span class="email-address">{{ share.owner_email }}</span>
+                </div>
+                <span class="status-badge pending">待接受</span>
+              </div>
+              <div class="invite-actions">
+                <button
+                  class="btn-action btn-accept"
+                  :disabled="operatingShareId === share.id"
+                  @click="acceptInvitation(share)"
+                >
+                  接受
+                </button>
+                <button
+                  class="btn-action btn-reject"
+                  :disabled="operatingShareId === share.id"
+                  @click="rejectOrCancelShare(share, '拒絕邀請')"
+                >
+                  拒絕
+                </button>
               </div>
             </div>
           </div>
         </div>
-        <div v-else class="empty-state">
-          <p>暫無邀請中的EMAIL</p>
+
+        <!-- 發出的邀請 (作為 owner) -->
+        <div v-if="sentPendingInvites.length > 0" class="invites-list">
+          <h3>發出的邀請 ({{ sentPendingInvites.length }})</h3>
+          <div class="invite-items">
+            <div v-for="share in sentPendingInvites" :key="share.id" class="invite-item sent">
+              <div class="invite-info">
+                <div class="invite-email">
+                  <span class="label">邀請</span>
+                  <span class="email-address">{{ share.viewer_email }}</span>
+                </div>
+                <span class="status-badge pending">邀請中</span>
+              </div>
+              <div class="invite-actions">
+                <button
+                  class="btn-action btn-cancel"
+                  :disabled="operatingShareId === share.id"
+                  @click="rejectOrCancelShare(share, '取消邀請')"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 活躍的共享 -->
+        <div v-if="activeShares.length > 0" class="invites-list">
+          <h3>活躍的共享 ({{ activeShares.length }})</h3>
+          <div class="invite-items">
+            <div v-for="share in activeShares" :key="share.id" class="invite-item active">
+              <div class="invite-info">
+                <div class="invite-email">
+                  <span class="label">{{ share.owner_id === userId ? '共享給' : '來自' }}</span>
+                  <span class="email-address">
+                    {{ share.owner_id === userId ? share.viewer_email : share.owner_email }}
+                  </span>
+                </div>
+                <span class="status-badge active">已啟用</span>
+              </div>
+              <div class="invite-actions">
+                <button
+                  class="btn-action btn-remove"
+                  :disabled="operatingShareId === share.id"
+                  @click="rejectOrCancelShare(share, '刪除共享')"
+                >
+                  刪除
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="sentPendingInvites.length === 0 && receivedPendingInvites.length === 0 && activeShares.length === 0" class="empty-state">
+          <p>暫無共享記錄</p>
         </div>
       </section>
     </div>
@@ -501,22 +687,125 @@ async function sendInvite() {
 .invite-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   background: rgba(71, 184, 224, 0.06);
   border: 1px solid rgba(71, 184, 224, 0.2);
   border-radius: 12px;
   padding: 12px 14px;
+  gap: 12px;
+}
+
+.invite-item.received {
+  background: rgba(255, 201, 82, 0.06);
+  border-color: rgba(255, 201, 82, 0.2);
+}
+
+.invite-item.sent {
+  background: rgba(71, 184, 224, 0.06);
+  border-color: rgba(71, 184, 224, 0.2);
+}
+
+.invite-item.active {
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.invite-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .invite-email {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
+  min-width: 0;
+}
+
+.invite-email .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .email-address {
   font-size: 14px;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.status-badge.pending {
+  color: var(--janote-income);
+  background: rgba(71, 184, 224, 0.15);
+}
+
+.status-badge.active {
+  color: rgb(34, 197, 94);
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-action {
+  font-family: inherit;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-accept {
+  background: var(--janote-expense);
+  color: var(--text-primary);
+  box-shadow: 0 2px 6px rgba(255, 201, 82, 0.3);
+}
+
+.btn-accept:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(255, 201, 82, 0.4);
+}
+
+.btn-reject,
+.btn-cancel,
+.btn-remove {
+  background: var(--janote-action);
+  color: var(--text-light);
+  box-shadow: 0 2px 6px rgba(248, 113, 113, 0.3);
+}
+
+.btn-reject:hover:not(:disabled),
+.btn-cancel:hover:not(:disabled),
+.btn-remove:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(248, 113, 113, 0.4);
 }
 
 .status-pending {
@@ -685,10 +974,27 @@ async function sendInvite() {
 
   .invite-item {
     padding: 10px 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .invite-info {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .invite-email {
     width: 100%;
+  }
+
+  .invite-actions {
+    width: 100%;
+  }
+
+  .btn-action {
+    flex: 1;
   }
 }
 </style>

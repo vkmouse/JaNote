@@ -208,6 +208,7 @@ const saveTransaction = async () => {
       mutation_id: mutationId,
       entity_type: 'TXN',
       entity_id: transaction.id,
+      action: 'PUT',
       payload,
       base_version: baseVersion,
       created_at: Date.now(),

@@ -403,6 +403,7 @@ const deleteTransaction = async (id: string) => {
         mutation_id: crypto.randomUUID(),
         entity_type: 'TXN',
         entity_id: id,
+        action: 'DELETE',
         payload: null,
         base_version: transaction.version || 0,
         created_at: Date.now(),

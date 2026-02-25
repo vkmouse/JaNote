@@ -490,9 +490,136 @@ async function processUserShareEvent(
 	userEmail: string,
 	DB: D1Database
 ): Promise<Response | null> {
-	// Only handle POST action for SHR events
+	const currentVersion = await getUserShareVersion(event.entity_id, DB);
+	const shareExists = currentVersion > 0;
+
+	// Handle DELETE action
+	if (event.action === "DELETE") {
+		if (!shareExists) {
+			return null; // Nothing to delete
+		}
+
+		// Get the share to verify user is owner or viewer
+		const share = await DB.prepare(
+			"SELECT owner_id, owner_email, viewer_id, viewer_email FROM user_shares WHERE id = ? AND is_deleted = 0"
+		)
+			.bind(event.entity_id)
+			.first<{ owner_id: string; owner_email: string; viewer_id: string; viewer_email: string }>();
+
+		if (!share) {
+			return null; // Share already deleted or doesn't exist
+		}
+
+		// Verify user is owner or viewer
+		const isOwner = share.owner_id === userId && share.owner_email === userEmail;
+		const isViewer = share.viewer_id === userId && share.viewer_email === userEmail;
+
+		if (!isOwner && !isViewer) {
+			return jsonResponse({ error: "User must be owner or viewer to delete share" }, { status: 403 });
+		}
+
+		// Check base version
+		if (event.base_version < currentVersion) {
+			return null;
+		}
+
+		// Delete the share
+		const newVersion = currentVersion + 1;
+		await DB.prepare("UPDATE user_shares SET version = ?, is_deleted = 1 WHERE id = ?")
+			.bind(newVersion, event.entity_id)
+			.run();
+
+		const syncPayload = JSON.stringify({ action: "DELETE", version: newVersion, payload: null });
+
+		// Write event to both owner and viewer
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(share.owner_id, event.mutation_id, event.entity_type, event.entity_id, syncPayload)
+			.run();
+
+		const viewerMutationId = crypto.randomUUID();
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(share.viewer_id, viewerMutationId, event.entity_type, event.entity_id, syncPayload)
+			.run();
+
+		return null;
+	}
+
+	// Handle PUT action (accept invitation)
+	if (event.action === "PUT") {
+		if (!shareExists) {
+			return jsonResponse({ error: "Share does not exist" }, { status: 400 });
+		}
+
+		// Get the share to verify user is viewer
+		const share = await DB.prepare(
+			"SELECT owner_id, owner_email, viewer_id, viewer_email, status FROM user_shares WHERE id = ? AND is_deleted = 0"
+		)
+			.bind(event.entity_id)
+			.first<{ owner_id: string; owner_email: string; viewer_id: string; viewer_email: string; status: string }>();
+
+		if (!share) {
+			return jsonResponse({ error: "Share not found or deleted" }, { status: 404 });
+		}
+
+		// Verify user is viewer
+		const isViewer = share.viewer_id === userId && share.viewer_email === userEmail;
+		if (!isViewer) {
+			return jsonResponse({ error: "Only viewer can accept invitation" }, { status: 403 });
+		}
+
+		// Check base version
+		if (event.base_version < currentVersion) {
+			return null;
+		}
+
+		const { payloadString, payloadObject } = parsePayload(event.payload);
+
+		// Validate payload status is ACTIVE
+		if (payloadObject?.status !== "ACTIVE") {
+			return jsonResponse({ error: "Status must be ACTIVE for PUT action" }, { status: 400 });
+		}
+
+		// Update status to ACTIVE
+		const newVersion = currentVersion + 1;
+		await DB.prepare("UPDATE user_shares SET status = ?, version = ? WHERE id = ?")
+			.bind("ACTIVE", newVersion, event.entity_id)
+			.run();
+
+		const updatedPayloadString = JSON.stringify({
+			id: event.entity_id,
+			owner_id: share.owner_id,
+			owner_email: share.owner_email,
+			viewer_id: share.viewer_id,
+			viewer_email: share.viewer_email,
+			status: "ACTIVE",
+		});
+
+		const syncPayload = JSON.stringify({ action: "PUT", version: newVersion, payload: updatedPayloadString });
+
+		// Write event to both owner and viewer
+		const ownerMutationId = crypto.randomUUID();
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(share.owner_id, ownerMutationId, event.entity_type, event.entity_id, syncPayload)
+			.run();
+
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(share.viewer_id, event.mutation_id, event.entity_type, event.entity_id, syncPayload)
+			.run();
+
+		return null;
+	}
+
+	// Handle POST action (create invitation)
 	if (event.action !== "POST") {
-		return jsonResponse({ error: "SHR only supports POST action" }, { status: 400 });
+		return jsonResponse({ error: "SHR only supports POST, PUT, and DELETE actions" }, { status: 400 });
 	}
 
 	const { payloadString, payloadObject } = parsePayload(event.payload);

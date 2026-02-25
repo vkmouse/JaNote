@@ -39,6 +39,7 @@ export interface SyncQueueItem {
   mutation_id: string
   entity_type: 'CAT' | 'TXN' | 'SHR'
   entity_id: string
+  action: 'PUT' | 'DELETE' | 'POST'
   payload: string | null
   base_version: number
   created_at: number
