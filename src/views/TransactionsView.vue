@@ -104,7 +104,7 @@ import StatsChart from '../components/StatsChart.vue'
 import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
-import { syncQueueRepository } from '../repositories/syncQueueRepository'
+import { transactionService } from '../services/transactionService'
 import { getCategoryIcon } from '../utils/categoryIcons'
 
 const router = useRouter()
@@ -394,20 +394,7 @@ const deleteTransaction = async (id: string) => {
     // Mark as deleted (soft delete)
     const transaction = transactions.value.find(t => t.id === id)
     if (transaction) {
-      await transactionRepository.update(id, (current) => {
-        if (!current) return null
-        return { ...current, is_deleted: 1, version: current.version + 1 }
-      })
-
-      await syncQueueRepository.add({
-        mutation_id: crypto.randomUUID(),
-        entity_type: 'TXN',
-        entity_id: id,
-        action: 'DELETE',
-        payload: null,
-        base_version: transaction.version || 0,
-        created_at: Date.now(),
-      })
+      await transactionService.deleteTransaction(id, transaction.version || 0)
       
       // Reload transactions
       await loadTransactions()

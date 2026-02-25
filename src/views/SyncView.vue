@@ -5,9 +5,10 @@ import { syncQueueRepository } from '../repositories/syncQueueRepository'
 import { syncMetaRepository } from '../repositories/syncMetaRepository'
 import { userRepository } from '../repositories/userRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
-import { transactionRepository } from '../repositories/transactionRepository'
 import { userShareRepository } from '../repositories/userShareRepository'
-import { performSync } from '../services/sync.service'
+import { syncService } from '../services/syncService'
+import { transactionService } from '../services/transactionService'
+import { userShareService } from '../services/userShareService'
 import type { UserShare } from '../types'
 
 const apiBase = ref('/api')
@@ -63,7 +64,7 @@ async function syncNow() {
   syncStatus.value = 'syncing'
 
   try {
-    const responseData = await performSync(apiBase.value)
+    const responseData = await syncService.performSync(apiBase.value)
     userEmail.value = responseData.user?.email || '-'
     await refreshLocalState()
     lastSyncAt.value = new Date().toLocaleString()
@@ -81,8 +82,8 @@ async function clearAllData() {
 
   try {
     await categoryRepository.deleteAll()
-    await transactionRepository.deleteAll()
-    await userShareRepository.deleteAll()
+    await transactionService.deleteAllTransactions()
+    await userShareService.deleteAllShares()
     await syncQueueRepository.clear()
     await syncMetaRepository.clear()
     await userRepository.clear()
@@ -164,39 +165,7 @@ async function sendInvite() {
       return
     }
 
-    const shareId = crypto.randomUUID()
-    const mutationId = crypto.randomUUID()
-    const now = Date.now()
-
-    // 寫入 sync_queue
-    await syncQueueRepository.add({
-      mutation_id: mutationId,
-      entity_type: 'SHR',
-      entity_id: shareId,
-      action: 'POST',
-      payload: JSON.stringify({
-        id: shareId,
-        owner_id: user.id,
-        owner_email: user.email,
-        viewer_id: '',
-        viewer_email: email,
-        status: 'PENDING',
-      }),
-      base_version: 0,
-      created_at: now,
-    })
-
-    // 寫入 user_shares
-    await userShareRepository.upsert({
-      id: shareId,
-      owner_id: user.id,
-      owner_email: user.email,
-      viewer_id: '',
-      viewer_email: email,
-      status: 'PENDING',
-      version: 0,
-      is_deleted: 0,
-    })
+    await userShareService.sendInvite(user.id, user.email, email)
 
     // 更新 UI
     await refreshLocalState()
@@ -217,36 +186,7 @@ async function acceptInvitation(share: UserShare) {
   operatingShareId.value = share.id
 
   try {
-    const mutationId = crypto.randomUUID()
-    const now = Date.now()
-
-    // 寫入 sync_queue - 發送 PUT 請求
-    await syncQueueRepository.add({
-      mutation_id: mutationId,
-      entity_type: 'SHR',
-      entity_id: share.id,
-      action: 'PUT',
-      payload: JSON.stringify({
-        id: share.id,
-        owner_id: share.owner_id,
-        owner_email: share.owner_email,
-        viewer_id: share.viewer_id,
-        viewer_email: share.viewer_email,
-        status: 'ACTIVE',
-      }),
-      base_version: share.version,
-      created_at: now,
-    })
-
-    // 更新本地 user_shares (樂觀更新)
-    await userShareRepository.update(share.id, (current) => {
-      if (!current) return null
-      return {
-        ...current,
-        status: 'ACTIVE',
-        version: current.version + 1,
-      }
-    })
+    await userShareService.acceptInvitation(share)
 
     await refreshLocalState()
     alert('已接受邀請，請執行同步')
@@ -268,29 +208,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   operatingShareId.value = share.id
 
   try {
-    const mutationId = crypto.randomUUID()
-    const now = Date.now()
-
-    // 寫入 sync_queue - 發送 DELETE 請求
-    await syncQueueRepository.add({
-      mutation_id: mutationId,
-      entity_type: 'SHR',
-      entity_id: share.id,
-      action: 'DELETE',
-      payload: null,
-      base_version: share.version,
-      created_at: now,
-    })
-
-    // 更新本地 user_shares (樂觀刪除)
-    await userShareRepository.update(share.id, (current) => {
-      if (!current) return null
-      return {
-        ...current,
-        is_deleted: 1,
-        version: current.version + 1,
-      }
-    })
+    await userShareService.rejectOrCancelShare(share)
 
     await refreshLocalState()
     alert(`已${actionName}，請執行同步`)

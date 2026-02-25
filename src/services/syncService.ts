@@ -256,3 +256,7 @@ export async function performSync(apiBase: string): Promise<SyncResponse> {
 
   return responseData
 }
+
+export const syncService = {
+  performSync
+}

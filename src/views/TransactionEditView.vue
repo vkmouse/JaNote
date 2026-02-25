@@ -70,7 +70,7 @@ import CalculatorPad from '../components/CalculatorPad.vue'
 import type { Category, EntryType, Transaction } from '../types'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
-import { syncQueueRepository } from '../repositories/syncQueueRepository'
+import { transactionService } from '../services/transactionService'
 import { getCategoryIcon } from '../utils/categoryIcons'
 
 const router = useRouter()
@@ -191,32 +191,7 @@ const saveTransaction = async () => {
     is_deleted: 0
   }
 
-  await transactionRepository.upsert(transaction)
-  // Enqueue sync operation so the change will be pushed to server
-  try {
-    const mutationId = crypto.randomUUID()
-    const payload = JSON.stringify({
-      id: transaction.id,
-      category_id: transaction.category_id,
-      type: transaction.type,
-      amount: transaction.amount,
-      note: transaction.note,
-      date: transaction.date,
-    })
-
-    await syncQueueRepository.add({
-      mutation_id: mutationId,
-      entity_type: 'TXN',
-      entity_id: transaction.id,
-      action: 'PUT',
-      payload,
-      base_version: baseVersion,
-      created_at: Date.now(),
-    })
-  } catch (e) {
-    // If enqueuing fails, still navigate back; queue can be reconstructed later
-    // avoid blocking the user flow
-  }
+  await transactionService.upsertTransaction(transaction, isEditing)
   router.push('/transactions')
 }
 
