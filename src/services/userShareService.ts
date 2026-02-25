@@ -40,7 +40,7 @@ async function sendInvite(
     viewer_id: '',
     viewer_email: viewerEmail,
     status: 'PENDING',
-    version: 0,
+    version: 1,
     is_deleted: 0,
   })
 }

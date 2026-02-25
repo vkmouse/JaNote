@@ -178,20 +178,26 @@ const saveTransaction = async () => {
   if (!canSave.value) return
 
   const isEditing = !!editingTransactionId.value
-  const baseVersion = isEditing ? (editingTransaction.value?.version || 0) : 0
   
-  const transaction: Transaction = {
-    id: isEditing ? editingTransactionId.value! : crypto.randomUUID(),
-    category_id: selectedCategoryId.value,
-    type: transactionType.value,
-    amount: parseFloat(amount.value),
-    note: notes.value,
-    date: currentDate.value, // Use milliseconds timestamp directly
-    version: baseVersion + 1,
-    is_deleted: 0
+  if (isEditing) {
+    await transactionService.updateTransaction({
+      id: editingTransactionId.value!,
+      category_id: selectedCategoryId.value,
+      type: transactionType.value,
+      amount: parseFloat(amount.value),
+      note: notes.value,
+      date: currentDate.value
+    })
+  } else {
+    await transactionService.addTransaction({
+      category_id: selectedCategoryId.value,
+      type: transactionType.value,
+      amount: parseFloat(amount.value),
+      note: notes.value,
+      date: currentDate.value
+    })
   }
-
-  await transactionService.upsertTransaction(transaction, isEditing)
+  
   router.push('/transactions')
 }
 

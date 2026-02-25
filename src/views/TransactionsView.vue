@@ -394,7 +394,7 @@ const deleteTransaction = async (id: string) => {
     // Mark as deleted (soft delete)
     const transaction = transactions.value.find(t => t.id === id)
     if (transaction) {
-      await transactionService.deleteTransaction(id, transaction.version || 0)
+      await transactionService.deleteTransaction(id)
       
       // Reload transactions
       await loadTransactions()
