@@ -598,7 +598,7 @@ async function processUserShareEvent(
 		.bind(shareId, userId, userEmail, viewerId, viewerEmail, "PENDING", newVersion)
 		.run();
 
-	// 處理成功，寫入 PUT 事件（包含完整的 viewer_id）
+	// 處理成功，寫入 PUT 事件給 owner 和 viewer
 	const putMutationId = crypto.randomUUID();
 	const putPayloadString = JSON.stringify({
 		id: shareId,
@@ -617,6 +617,13 @@ async function processUserShareEvent(
 		"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
 	)
 		.bind(userId, putMutationId, event.entity_type, event.entity_id, putSyncPayload)
+		.run();
+
+	const viewerPutMutationId = crypto.randomUUID();
+	await DB.prepare(
+		"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+	)
+		.bind(viewerId, viewerPutMutationId, event.entity_type, event.entity_id, putSyncPayload)
 		.run();
 
 	return null;
