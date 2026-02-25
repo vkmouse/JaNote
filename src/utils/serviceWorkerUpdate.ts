@@ -37,7 +37,7 @@ export function useServiceWorkerUpdate(): UseServiceWorkerUpdateReturn {
       // 監聽 updatefound 事件（當發現新的 Service Worker 時）
       registration.addEventListener('updatefound', () => {
         console.log('Update found - new Service Worker installing')
-        const newWorker = registration.installing
+        const newWorker = registration?.installing
 
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
