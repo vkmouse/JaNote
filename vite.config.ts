@@ -11,8 +11,12 @@ export default defineConfig({
 		vue(),
 		cloudflare(),
 		VitePWA({
-			registerType: 'autoUpdate',
+			registerType: 'prompt',
 			includeAssets: ['favicon.ico', '256x256.png', '512x512.png', '766x766.png'],
+			devOptions: {
+				enabled: true, // 在開發模式也啟用 SW，方便測試
+				type: 'module'
+			},
 			manifest: {
 				name: 'JaNote',
 				short_name: 'JaNote',
@@ -42,6 +46,8 @@ export default defineConfig({
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+				skipWaiting: false, // 手動控制 skipWaiting，由前端觸發
+				clientsClaim: true, // 讓新的 SW 立即接管所有頁面
 				runtimeCaching: [
 					{
 						urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
