@@ -18,10 +18,10 @@ html, body {
 .app-main {
   flex: 1;
   min-height: 100vh;
-  margin-left: var(--nav-width);
   display: flex;
   flex-direction: column;
   width: 100%;
+  padding-bottom: 72px; /* 底部導覽列高度 */
 }
 
 .app-main .page {
@@ -30,15 +30,7 @@ html, body {
   margin: 0 auto;
 }
 
-@media (max-width: 768px) {
-  .app-main {
-    margin-left: 0;
-    margin-right: 0;
-    padding-bottom: 72px; /* 底部導覽列高度 */
-  }
-  
-  /* 全螢幕頁面需要減去底部導覽列高度 */
-  .app-main .page-fullheight {
-    height: calc(100vh - 72px);
-  }
+/* 全螢幕頁面需要減去底部導覽列高度 */
+.app-main .page-fullheight {
+  height: calc(100vh - 72px);
 }

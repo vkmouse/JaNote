@@ -12,6 +12,7 @@ export default defineConfig({
 		cloudflare(),
 		VitePWA({
 			registerType: 'prompt',
+			useCredentials: true,
 			includeAssets: ['favicon.ico', '256x256.png', '512x512.png', '766x766.png'],
 			devOptions: {
 				enabled: true, // 在開發模式也啟用 SW，方便測試

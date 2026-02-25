@@ -4,9 +4,7 @@ import TopNavigation from '../components/TopNavigation.vue'
 
 <template>
   <section class="page">
-    <TopNavigation>
-      <template #title>共享帳本</template>
-    </TopNavigation>
+    <TopNavigation mode="menu-title-avatar" title="共享帳本" />
     <div class="page-content">
       <!-- 內容待實作 -->
     </div>

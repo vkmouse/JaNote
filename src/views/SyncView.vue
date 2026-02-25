@@ -104,9 +104,7 @@ async function resetServerData() {
 
 <template>
   <section class="sync-page">
-    <TopNavigation>
-      <template #title>同步管理</template>
-    </TopNavigation>
+    <TopNavigation mode="menu-title-avatar" title="同步管理" />
     
     <div class="page-content">
       <header class="hero">

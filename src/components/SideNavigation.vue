@@ -1,62 +1,144 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import SyncIcon from '../assets/icons/icon-sync.svg?raw'
-import PieChartIcon from '../assets/icons/icon-pie-chart.svg?raw'
-import DollarCircleIcon from '../assets/icons/icon-dollar-circle.svg?raw'
-import UserGroupIcon from '../assets/icons/icon-user-group.svg?raw'
+
+interface Props {
+  isOpen?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  isOpen: false
+})
+
+const emit = defineEmits<{
+  close: []
+}>()
 
 const route = useRoute()
 
 const navItems = [
-  { to: '/', label: '同步頁面', icon: SyncIcon },
-  { to: '/dashboard', label: '帳務總覽', icon: PieChartIcon },
-  { to: '/transactions', label: '月收支', icon: DollarCircleIcon },
-  { to: '/share', label: '共享帳本', icon: UserGroupIcon },
+  { to: '/', label: '同步管理', icon: SyncIcon },
 ]
 
 const isActive = (path: string) => route.path === path
+
+const handleClose = () => {
+  emit('close')
+}
+
+const handleNavClick = () => {
+  // 點擊導航項目後關閉側邊欄
+  emit('close')
+}
 </script>
 
 <template>
-  <nav class="side-nav" aria-label="Side navigation">
-    <div class="nav-brand">JaNote</div>
-    <div class="nav-links">
-      <router-link
-        v-for="item in navItems"
-        :key="item.to"
-        :to="item.to"
-        class="nav-link"
-        :class="{ active: isActive(item.to) }"
-      >
-        <span class="nav-icon" v-html="item.icon" aria-hidden="true"></span>
-        <span class="nav-label">{{ item.label }}</span>
-      </router-link>
-    </div>
-  </nav>
+  <!-- 遮罩層 -->
+  <Transition name="fade">
+    <div 
+      v-if="isOpen" 
+      class="drawer-overlay" 
+      @click="handleClose"
+      aria-hidden="true"
+    ></div>
+  </Transition>
+
+  <!-- 側邊抽屜 -->
+  <Transition name="slide">
+    <nav v-if="isOpen" class="side-drawer" aria-label="Side navigation">
+      <div class="drawer-header">
+        <div class="nav-brand">JaNote</div>
+        <button class="close-btn" @click="handleClose" aria-label="關閉選單">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="nav-links">
+        <router-link
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          class="nav-link"
+          :class="{ active: isActive(item.to) }"
+          @click="handleNavClick"
+        >
+          <span class="nav-icon" v-html="item.icon" aria-hidden="true"></span>
+          <span class="nav-label">{{ item.label }}</span>
+        </router-link>
+      </div>
+    </nav>
+  </Transition>
 </template>
 
 <style scoped>
-.side-nav {
+/* 遮罩層 */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+
+/* 側邊抽屜 */
+.side-drawer {
   position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
-  width: var(--nav-width);
+  width: 280px;
+  max-width: 80vw;
   padding: 24px 16px;
   background: var(--bg-elevated, #ffffff);
-  border-right: 1px solid var(--border, #e0e0e0);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   gap: 24px;
-  z-index: 10;
+  z-index: 999;
+  overflow-y: auto;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border, #e0e0e0);
 }
 
 .nav-brand {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.8px;
   color: var(--text-primary);
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.close-btn:active {
+  background: var(--bg-active, #e0e0e0);
 }
 
 .nav-links {
@@ -70,10 +152,11 @@ const isActive = (path: string) => route.path === path
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   background: var(--bg-page);
   color: var(--text-primary);
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
+  text-decoration: none;
 }
 
 .nav-link:hover {
@@ -101,10 +184,25 @@ const isActive = (path: string) => route.path === path
   font-size: 14px;
 }
 
-/* 手機版隱藏側邊導覽列 */
-@media (max-width: 768px) {
-  .side-nav {
-    display: none;
-  }
+/* 過渡動畫 - 遮罩淡入淡出 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 過渡動畫 - 抽屜滑入滑出 */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
 }
 </style>

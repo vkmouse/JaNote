@@ -1,9 +1,7 @@
 <template>
   <section class="transactions-page">
     <!-- Top Navigation Bar -->
-    <TopNavigation>
-      <template #title>收支明細</template>
-    </TopNavigation>
+    <TopNavigation mode="menu-title-avatar" title="收支明細" />
 
     <MonthPicker
       v-model:open="showMonthPicker"

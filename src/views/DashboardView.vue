@@ -4,9 +4,7 @@ import TopNavigation from '../components/TopNavigation.vue'
 
 <template>
   <section class="page">
-    <TopNavigation>
-      <template #title>帳務總覽</template>
-    </TopNavigation>
+    <TopNavigation mode="menu-title-avatar" title="帳務總覽" />
     <div class="page-content">
       <!-- 內容待實作 -->
     </div>

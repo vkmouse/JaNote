@@ -1,25 +1,20 @@
 <template>
   <div class="transaction-edit-page">
     <!-- Header -->
-    <TopNavigation>
-      <div class="edit-header-content">
-        <button class="back-btn" @click="goBack">
-          <span v-html="ArrowLeftIcon" class="back-icon"></span>
+    <TopNavigation mode="back-toggle" :onBack="goBack">
+      <div class="type-toggle">
+        <button 
+          :class="['toggle-btn', { active: transactionType === 'EXPENSE', 'expense-active': transactionType === 'EXPENSE' }]"
+          @click="transactionType = 'EXPENSE'"
+        >
+          支出
         </button>
-        <div class="type-toggle">
-          <button 
-            :class="['toggle-btn', { active: transactionType === 'EXPENSE', 'expense-active': transactionType === 'EXPENSE' }]"
-            @click="transactionType = 'EXPENSE'"
-          >
-            支出
-          </button>
-          <button 
-            :class="['toggle-btn', { active: transactionType === 'INCOME', 'income-active': transactionType === 'INCOME' }]"
-            @click="transactionType = 'INCOME'"
-          >
-            收入
-          </button>
-        </div>
+        <button 
+          :class="['toggle-btn', { active: transactionType === 'INCOME', 'income-active': transactionType === 'INCOME' }]"
+          @click="transactionType = 'INCOME'"
+        >
+          收入
+        </button>
       </div>
     </TopNavigation>
 
@@ -76,7 +71,6 @@ import type { Category, EntryType, Transaction } from '../types'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
-import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
 import { getCategoryIcon } from '../utils/categoryIcons'
 
 const router = useRouter()
@@ -252,41 +246,7 @@ onMounted(async () => {
   }
 }
 
-/* Header Content inside TopNavigation */
-.edit-header-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  position: relative;
-}
-
-
-.back-btn {
-  background: transparent;
-  border: none;
-  padding: 4px 0;
-  border-radius: 20px;
-  cursor: pointer;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s;
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.back-btn:hover {
-  opacity: 0.8;
-}
-
-.back-btn svg {
-  stroke: var(--text-primary);
-}
-
+/* Type Toggle inside TopNavigation */
 .type-toggle {
   display: flex;
   background: #f5f5f5;
