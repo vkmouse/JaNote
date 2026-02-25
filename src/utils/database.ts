@@ -40,6 +40,9 @@ export function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains('user')) {
         db.createObjectStore('user', { keyPath: 'id' })
       }
+      if (!db.objectStoreNames.contains('user_shares')) {
+        db.createObjectStore('user_shares', { keyPath: 'id' })
+      }
     }
 
     request.onsuccess = () => resolve(request.result)

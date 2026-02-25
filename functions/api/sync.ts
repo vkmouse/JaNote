@@ -11,9 +11,9 @@ interface User {
 	updated_at: string;
 }
 
-type EntityType = "CAT" | "TXN";
+type EntityType = "CAT" | "TXN" | "SHR";
 
-type ActionType = "PUT" | "DELETE";
+type ActionType = "PUT" | "DELETE" | "POST";
 
 type EntryType = "EXPENSE" | "INCOME";
 
@@ -102,7 +102,7 @@ async function initializeDefaultCategories(userId: string, DB: D1Database): Prom
 		await DB.prepare(
 			`INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)`
 		)
-			.bind(userId, `init-cat-${id}`, 'CAT', id, payload)
+			.bind(userId, crypto.randomUUID(), 'CAT', id, payload)
 			.run();
 	}
 
@@ -128,7 +128,7 @@ async function initializeDefaultCategories(userId: string, DB: D1Database): Prom
 		await DB.prepare(
 			`INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)`
 		)
-			.bind(userId, `init-cat-${id}`, 'CAT', id, payload)
+            .bind(userId, crypto.randomUUID(), 'CAT', id, payload)
 			.run();
 	}
 }
@@ -201,8 +201,10 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (context) =
 			let errorResponse: Response | null = null;
 			if (event.entity_type === "CAT") {
 				errorResponse = await processCategoryEvent(event, userId, DB);
-			} else {
+			} else if (event.entity_type === "TXN") {
 				errorResponse = await processTransactionEvent(event, userId, DB);
+			} else if (event.entity_type === "SHR") {
+				errorResponse = await processUserShareEvent(event, userId, userEmail, DB);
 			}
 
 			if (errorResponse) {
@@ -307,16 +309,16 @@ function isNumber(value: unknown): value is number {
 }
 
 function sortPushEvents(events: PushEvent[]): PushEvent[] {
-	const priority: Record<EntityType, number> = { CAT: 0, TXN: 1 };
+	const priority: Record<EntityType, number> = { CAT: 0, TXN: 1, SHR: 2 };
 	return [...events].sort((a, b) => priority[a.entity_type] - priority[b.entity_type]);
 }
 
 function isValidEntityType(value: unknown): value is EntityType {
-	return value === "CAT" || value === "TXN";
+	return value === "CAT" || value === "TXN" || value === "SHR";
 }
 
 function isValidAction(value: unknown): value is ActionType {
-	return value === "PUT" || value === "DELETE";
+	return value === "PUT" || value === "DELETE" || value === "POST";
 }
 
 function isValidEntryType(value: unknown): value is EntryType {
@@ -473,4 +475,149 @@ async function getTransactionVersion(id: string, userId: string, DB: D1Database)
 		.bind(id, userId)
 		.first<{ version: number }>();
 	return row?.version ?? 0;
+}
+
+async function getUserShareVersion(id: string, DB: D1Database): Promise<number> {
+	const row = await DB.prepare("SELECT version FROM user_shares WHERE id = ?")
+		.bind(id)
+		.first<{ version: number }>();
+	return row?.version ?? 0;
+}
+
+async function processUserShareEvent(
+	event: PushEvent,
+	userId: string,
+	userEmail: string,
+	DB: D1Database
+): Promise<Response | null> {
+	// Only handle POST action for SHR events
+	if (event.action !== "POST") {
+		return jsonResponse({ error: "SHR only supports POST action" }, { status: 400 });
+	}
+
+	const { payloadString, payloadObject } = parsePayload(event.payload);
+
+	// 首先寫入前端送來的 POST 事件
+	const postSyncPayload = JSON.stringify({
+		action: "POST",
+		version: 0,
+		payload: payloadString,
+	});
+	await DB.prepare(
+		"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+	)
+		.bind(userId, event.mutation_id, event.entity_type, event.entity_id, postSyncPayload)
+		.run();
+
+	// Validate owner_id and owner_email match middleware info
+	if (payloadObject?.owner_id !== userId || payloadObject?.owner_email !== userEmail) {
+		// 驗證失敗，寫入 DELETE 事件
+		const deleteMutationId = crypto.randomUUID();
+		const deletePayload = JSON.stringify({
+			action: "DELETE",
+			version: 1,
+			payload: null,
+		});
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload)
+			.run();
+		return null;
+	}
+
+	const viewerEmail = payloadObject?.viewer_email;
+	if (!isNonEmptyString(viewerEmail)) {
+		// viewer_email 驗證失敗，寫入 DELETE 事件
+		const deleteMutationId = crypto.randomUUID();
+		const deletePayload = JSON.stringify({
+			action: "DELETE",
+			version: 1,
+			payload: null,
+		});
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload)
+			.run();
+		return null;
+	}
+
+	// Get viewer_id from users table by viewer_email
+	const viewerUser = await DB.prepare("SELECT id FROM users WHERE email = ?")
+		.bind(viewerEmail)
+		.first<{ id: string }>();
+
+	if (!viewerUser) {
+		// Viewer not found, write DELETE event
+		const deleteMutationId = crypto.randomUUID();
+		const deletePayload = JSON.stringify({
+			action: "DELETE",
+			version: 1,
+			payload: null,
+		});
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload)
+			.run();
+		return null;
+	}
+
+	const viewerId = viewerUser.id;
+
+	// Check if share already exists (is_deleted = 0)
+	const existingShare = await DB.prepare(
+		"SELECT id FROM user_shares WHERE owner_id = ? AND viewer_id = ? AND is_deleted = 0"
+	)
+		.bind(userId, viewerId)
+		.first<{ id: string }>();
+
+	if (existingShare) {
+		// Share already exists, write DELETE event
+		const deleteMutationId = crypto.randomUUID();
+		const deletePayload = JSON.stringify({
+			action: "DELETE",
+			version: 1,
+			payload: null,
+		});
+		await DB.prepare(
+			"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+		)
+			.bind(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload)
+			.run();
+		return null;
+	}
+
+	// 驗證全部通過，插入新的分享記錄
+	const shareId = event.entity_id;
+	const newVersion = 1;
+	await DB.prepare(
+		"INSERT INTO user_shares (id, owner_id, owner_email, viewer_id, viewer_email, status, version, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, 0)"
+	)
+		.bind(shareId, userId, userEmail, viewerId, viewerEmail, "PENDING", newVersion)
+		.run();
+
+	// 處理成功，寫入 PUT 事件（包含完整的 viewer_id）
+	const putMutationId = crypto.randomUUID();
+	const putPayloadString = JSON.stringify({
+		id: shareId,
+		owner_id: userId,
+		owner_email: userEmail,
+		viewer_id: viewerId,
+		viewer_email: viewerEmail,
+		status: "PENDING",
+	});
+	const putSyncPayload = JSON.stringify({
+		action: "PUT",
+		version: newVersion,
+		payload: putPayloadString,
+	});
+	await DB.prepare(
+		"INSERT INTO sync_events (user_id, mutation_id, entity_type, entity_id, payload) VALUES (?, ?, ?, ?, ?)"
+	)
+		.bind(userId, putMutationId, event.entity_type, event.entity_id, putSyncPayload)
+		.run();
+
+	return null;
 }

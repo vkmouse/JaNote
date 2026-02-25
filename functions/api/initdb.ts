@@ -10,6 +10,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     await DB.prepare(`DROP TABLE IF EXISTS sync_events`).run();
     await DB.prepare(`DROP TABLE IF EXISTS transactions`).run();
     await DB.prepare(`DROP TABLE IF EXISTS categories`).run();
+    await DB.prepare(`DROP TABLE IF EXISTS user_shares`).run();
     await DB.prepare(`DROP TABLE IF EXISTS users`).run();
 
     // Create users table
@@ -44,6 +45,20 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         amount REAL NOT NULL,
         note TEXT,
         date BIGINT NOT NULL,
+        version INTEGER NOT NULL,
+        is_deleted INTEGER NOT NULL DEFAULT 0
+      )
+    `).run();
+
+    // Create user_shares table
+    await DB.prepare(`
+      CREATE TABLE IF NOT EXISTS user_shares (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        owner_email TEXT NOT NULL,
+        viewer_id TEXT,
+        viewer_email TEXT NOT NULL,
+        status TEXT NOT NULL,
         version INTEGER NOT NULL,
         is_deleted INTEGER NOT NULL DEFAULT 0
       )

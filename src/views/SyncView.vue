@@ -6,6 +6,7 @@ import { syncMetaRepository } from '../repositories/syncMetaRepository'
 import { userRepository } from '../repositories/userRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionRepository } from '../repositories/transactionRepository'
+import { userShareRepository } from '../repositories/userShareRepository'
 import { performSync } from '../services/sync.service'
 
 const apiBase = ref('/api')
@@ -15,6 +16,11 @@ const activeQueueCount = ref(0)
 const syncStatus = ref<'idle' | 'syncing' | 'success' | 'error'>('idle')
 const lastSyncAt = ref('')
 const isResetting = ref(false)
+
+// 共享邀請相關
+const inviteEmail = ref('')
+const pendingInvites = ref<string[]>([])
+const isInviting = ref(false)
 
 const isSyncing = computed(() => syncStatus.value === 'syncing')
 
@@ -30,6 +36,10 @@ async function refreshLocalState() {
   if (user?.email) {
     userEmail.value = user.email
   }
+  
+  // 載入 pending invites
+  const shares = await userShareRepository.getPendingInvites()
+  pendingInvites.value = shares.map(share => share.viewer_email)
 }
 
 async function syncNow() {
@@ -55,6 +65,7 @@ async function clearAllData() {
   try {
     await categoryRepository.deleteAll()
     await transactionRepository.deleteAll()
+    await userShareRepository.deleteAll()
     await syncQueueRepository.clear()
     await syncMetaRepository.clear()
     await userRepository.clear()
@@ -63,6 +74,7 @@ async function clearAllData() {
     lastCursor.value = 0
     lastSyncAt.value = ''
     activeQueueCount.value = 0
+    pendingInvites.value = []
     
     alert('已清空所有本地資料')
   } catch (error) {
@@ -100,7 +112,82 @@ async function resetServerData() {
     isResetting.value = false
   }
 }
-</script>
+
+async function sendInvite() {
+  const email = inviteEmail.value.trim()
+  
+  if (!email) {
+    alert('請輸入 Email 地址')
+    return
+  }
+
+  // 簡單的 email 驗證
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    alert('請輸入有效的 Email 地址')
+    return
+  }
+
+  // 檢查是否已經邀請過
+  if (pendingInvites.value.includes(email)) {
+    alert('已經邀請過此 Email')
+    return
+  }
+
+  isInviting.value = true
+
+  try {
+    const user = await userRepository.get()
+    if (!user?.id || !user?.email) {
+      alert('無法取得使用者資訊')
+      return
+    }
+
+    const shareId = crypto.randomUUID()
+    const mutationId = crypto.randomUUID()
+    const now = Date.now()
+
+    // 寫入 sync_queue
+    await syncQueueRepository.add({
+      mutation_id: mutationId,
+      entity_type: 'SHR',
+      entity_id: shareId,
+      payload: JSON.stringify({
+        id: shareId,
+        owner_id: user.id,
+        owner_email: user.email,
+        viewer_id: '',
+        viewer_email: email,
+        status: 'PENDING',
+      }),
+      base_version: 0,
+      created_at: now,
+    })
+
+    // 寫入 user_shares
+    await userShareRepository.upsert({
+      id: shareId,
+      owner_id: user.id,
+      owner_email: user.email,
+      viewer_id: '',
+      viewer_email: email,
+      status: 'PENDING',
+      version: 0,
+      is_deleted: 0,
+    })
+
+    // 更新 UI
+    pendingInvites.value.push(email)
+    inviteEmail.value = ''
+    
+    alert('邀請已發送，請執行同步')
+  } catch (error) {
+    alert('發送邀請失敗')
+    console.error('發送邀請失敗:', error)
+  } finally {
+    isInviting.value = false
+  }
+}</script>
 
 <template>
   <section class="sync-page">
@@ -154,6 +241,40 @@ async function resetServerData() {
             {{ isResetting ? '清空中...' : '清空伺服器資料' }}
           </button>
           <button class="btn-primary btn-danger" @click="clearAllData">清空本機資料</button>
+        </div>
+      </section>
+
+      <section class="share-section">
+        <h2>共享邀請</h2>
+        <div class="invite-form">
+          <input
+            v-model="inviteEmail"
+            type="email"
+            placeholder="輸入要邀請的 Email"
+            @keyup.enter="sendInvite"
+          />
+          <button
+            class="btn-primary btn-invite"
+            :disabled="isInviting"
+            @click="sendInvite"
+          >
+            {{ isInviting ? '發送中...' : '發送邀請' }}
+          </button>
+        </div>
+
+        <div v-if="pendingInvites.length > 0" class="invites-list">
+          <h3>正在邀請中 ({{ pendingInvites.length }})</h3>
+          <div class="invite-items">
+            <div v-for="email in pendingInvites" :key="email" class="invite-item">
+              <div class="invite-email">
+                <span class="email-address">{{ email }}</span>
+                <span class="status-pending">邀請中</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <p>暫無邀請中的EMAIL</p>
         </div>
       </section>
     </div>
@@ -320,6 +441,100 @@ async function resetServerData() {
   justify-content: flex-end;
 }
 
+.share-section {
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 28px;
+}
+
+.share-section h2 {
+  font-size: 20px;
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.share-section h3 {
+  font-size: 14px;
+  margin: 0 0 12px 0;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.invite-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.invite-form input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-page);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.invite-form input::placeholder {
+  color: var(--text-disabled);
+}
+
+.btn-invite {
+  padding: 12px 24px;
+  white-space: nowrap;
+}
+
+.invites-list {
+  margin-top: 20px;
+}
+
+.invite-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invite-item {
+  display: flex;
+  align-items: center;
+  background: rgba(71, 184, 224, 0.06);
+  border: 1px solid rgba(71, 184, 224, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.invite-email {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.email-address {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.status-pending {
+  font-size: 12px;
+  color: var(--janote-income);
+  background: rgba(71, 184, 224, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 .sync-page button {
   font-family: inherit;
   border: none;
@@ -412,6 +627,18 @@ async function resetServerData() {
     width: 100%;
     padding: 14px 20px;
   }
+
+  .invite-form {
+    flex-direction: column;
+  }
+
+  .invite-form input {
+    width: 100%;
+  }
+
+  .btn-invite {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -441,6 +668,27 @@ async function resetServerData() {
 
   .sync-time {
     font-size: 10px !important;
+  }
+
+  .share-section {
+    padding: 16px;
+  }
+
+  .invite-form {
+    flex-direction: column;
+  }
+
+  .invite-form input,
+  .btn-invite {
+    width: 100%;
+  }
+
+  .invite-item {
+    padding: 10px 12px;
+  }
+
+  .invite-email {
+    width: 100%;
   }
 }
 </style>
