@@ -2,14 +2,12 @@
 import { useRoute } from 'vue-router'
 import PieChartIcon from '../assets/icons/icon-pie-chart.svg?raw'
 import DollarCircleIcon from '../assets/icons/icon-dollar-circle.svg?raw'
-import UserGroupIcon from '../assets/icons/icon-user-group.svg?raw'
 
 const route = useRoute()
 
 const navItems = [
-  { to: '/dashboard', label: '總覽', icon: PieChartIcon },
   { to: '/transactions', label: '收支', icon: DollarCircleIcon },
-  { to: '/share', label: '共享', icon: UserGroupIcon },
+  { to: '/dashboard', label: '總覽', icon: PieChartIcon },
 ]
 
 const isActive = (path: string) => route.path === path

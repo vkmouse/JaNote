@@ -54,7 +54,7 @@ const handleBackClick = () => {
         <span v-html="MenuIcon" class="icon"></span>
       </button>
       <h1 class="page-title">{{ title }}</h1>
-      <div class="avatar" :title="userEmail">
+      <div v-if="userEmail" class="avatar" :title="userEmail">
         {{ userInitial }}
       </div>
     </template>

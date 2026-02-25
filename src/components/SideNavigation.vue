@@ -17,7 +17,7 @@ const emit = defineEmits<{
 const route = useRoute()
 
 const navItems = [
-  { to: '/', label: '同步管理', icon: SyncIcon },
+  { to: '/sync', label: '同步管理', icon: SyncIcon },
 ]
 
 const isActive = (path: string) => route.path === path
