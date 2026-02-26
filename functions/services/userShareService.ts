@@ -51,24 +51,10 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   const { userId, userEmail, DB } = context;
   const { payloadString, payloadObject } = parsePayload(event.payload);
 
-  // 首先寫入前端送來的 POST 事件
-  const postSyncPayload = JSON.stringify({
-    action: "POST",
-    version: 0,
-    payload: payloadString,
-  });
-  await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, postSyncPayload, DB);
+  // ===== 先完成所有驗證，只有成功才寫入 sync_event =====
 
   // Validate owner_id and owner_email match middleware info
   if (payloadObject?.owner_id !== userId || payloadObject?.owner_email !== userEmail) {
-    // 驗證失敗，寫入 DELETE 事件
-    const deleteMutationId = crypto.randomUUID();
-    const deletePayload = JSON.stringify({
-      action: "DELETE",
-      version: 1,
-      payload: null,
-    });
-    await insertSyncEvent(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload, DB);
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
@@ -79,14 +65,6 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
 
   const viewerEmail = payloadObject?.viewer_email;
   if (!isNonEmptyString(viewerEmail)) {
-    // viewer_email 驗證失敗，寫入 DELETE 事件
-    const deleteMutationId = crypto.randomUUID();
-    const deletePayload = JSON.stringify({
-      action: "DELETE",
-      version: 1,
-      payload: null,
-    });
-    await insertSyncEvent(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload, DB);
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
@@ -99,14 +77,6 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   const viewerUser = await getUserByEmail(viewerEmail, DB);
 
   if (!viewerUser) {
-    // Viewer not found, write DELETE event
-    const deleteMutationId = crypto.randomUUID();
-    const deletePayload = JSON.stringify({
-      action: "DELETE",
-      version: 1,
-      payload: null,
-    });
-    await insertSyncEvent(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload, DB);
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
@@ -121,14 +91,6 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   const existingShare = await getActiveUserShare(userId, viewerId, DB);
 
   if (existingShare) {
-    // Share already exists, write DELETE event
-    const deleteMutationId = crypto.randomUUID();
-    const deletePayload = JSON.stringify({
-      action: "DELETE",
-      version: 1,
-      payload: null,
-    });
-    await insertSyncEvent(userId, deleteMutationId, event.entity_type, event.entity_id, deletePayload, DB);
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
@@ -137,13 +99,13 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
     };
   }
 
-  // 驗證全部通過，插入新的分享記錄
+  // ===== 驗證全部通過，插入新的分享記錄並寫入事實 =====
+
   const shareId = event.entity_id;
   const newVersion = 1;
   await createUserShare(shareId, userId, userEmail, viewerId, viewerEmail, "PENDING", newVersion, DB);
 
-  // 處理成功，寫入 PUT 事件給 owner 和 viewer
-  const putMutationId = crypto.randomUUID();
+  // 處理成功，寫入 PUT 事件（事實）給 owner 和 viewer
   const putPayloadString = JSON.stringify({
     id: shareId,
     owner_id: userId,
@@ -157,7 +119,11 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
     version: newVersion,
     payload: putPayloadString,
   });
-  await insertSyncEvent(userId, putMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
+
+  // 給 owner 和 viewer 都使用 server-generated mutation_id
+  // 這樣雙方都能收到 pull_event（不會被 excludeMutationIds 排除）
+  const ownerPutMutationId = crypto.randomUUID();
+  await insertSyncEvent(userId, ownerPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
 
   const viewerPutMutationId = crypto.randomUUID();
   await insertSyncEvent(viewerId, viewerPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
@@ -237,11 +203,12 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
 
   const syncPayload = JSON.stringify({ action: "PUT", version: newVersion, payload: updatedPayloadString });
 
-  // Write event to both owner and viewer
+  // Write event to both owner and viewer，都使用 server-generated mutation_id
   const ownerMutationId = crypto.randomUUID();
   await insertSyncEvent(share.owner_id, ownerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
 
-  await insertSyncEvent(share.viewer_id, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
+  const viewerMutationId = crypto.randomUUID();
+  await insertSyncEvent(share.viewer_id, viewerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
 }
@@ -289,8 +256,9 @@ export async function deleteUserShare(event: PushCommand, context: ServiceContex
 
   const syncPayload = JSON.stringify({ action: "DELETE", version: newVersion, payload: null });
 
-  // Write event to both owner and viewer
-  await insertSyncEvent(share.owner_id, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
+  // Write event to both owner and viewer，都使用 server-generated mutation_id
+  const ownerMutationId = crypto.randomUUID();
+  await insertSyncEvent(share.owner_id, ownerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
 
   const viewerMutationId = crypto.randomUUID();
   await insertSyncEvent(share.viewer_id, viewerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
