@@ -1,3 +1,9 @@
+import { dropUsersTable, createUsersTable } from '../repositories/userRepository';
+import { dropCategoriesTable, createCategoriesTable } from '../repositories/categoryRepository';
+import { dropTransactionsTable, createTransactionsTable } from '../repositories/transactionRepository';
+import { dropUserSharesTable, createUserSharesTable } from '../repositories/userShareRepository';
+import { dropSyncEventsTable, createSyncEventsTable } from '../repositories/syncEventRepository';
+
 interface Env {
   DB: D1Database;
 }
@@ -7,75 +13,18 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   try {
     // Drop existing tables to ensure clean state
-    await DB.prepare(`DROP TABLE IF EXISTS sync_events`).run();
-    await DB.prepare(`DROP TABLE IF EXISTS transactions`).run();
-    await DB.prepare(`DROP TABLE IF EXISTS categories`).run();
-    await DB.prepare(`DROP TABLE IF EXISTS user_shares`).run();
-    await DB.prepare(`DROP TABLE IF EXISTS users`).run();
+    await dropSyncEventsTable(DB);
+    await dropTransactionsTable(DB);
+    await dropCategoriesTable(DB);
+    await dropUserSharesTable(DB);
+    await dropUsersTable(DB);
 
-    // Create users table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
-
-    // Create categories table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        type TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        is_deleted INTEGER NOT NULL DEFAULT 0
-      )
-    `).run();
-
-    // Create transactions table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        category_id TEXT NOT NULL,
-        type TEXT NOT NULL,
-        amount REAL NOT NULL,
-        note TEXT,
-        date BIGINT NOT NULL,
-        version INTEGER NOT NULL,
-        is_deleted INTEGER NOT NULL DEFAULT 0
-      )
-    `).run();
-
-    // Create user_shares table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS user_shares (
-        id TEXT PRIMARY KEY,
-        owner_id TEXT NOT NULL,
-        owner_email TEXT NOT NULL,
-        viewer_id TEXT,
-        viewer_email TEXT NOT NULL,
-        status TEXT NOT NULL,
-        version INTEGER NOT NULL,
-        is_deleted INTEGER NOT NULL DEFAULT 0
-      )
-    `).run();
-
-    // Create sync_events table
-    await DB.prepare(`
-      CREATE TABLE IF NOT EXISTS sync_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        mutation_id TEXT UNIQUE NOT NULL,
-        entity_type TEXT NOT NULL,
-        entity_id TEXT NOT NULL,
-        payload TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `).run();
+    // Create tables
+    await createUsersTable(DB);
+    await createCategoriesTable(DB);
+    await createTransactionsTable(DB);
+    await createUserSharesTable(DB);
+    await createSyncEventsTable(DB);
 
     return new Response(JSON.stringify({ message: "Database initialized successfully" }), {
       headers: { "content-type": "application/json" },

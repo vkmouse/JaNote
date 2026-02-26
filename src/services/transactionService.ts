@@ -41,9 +41,10 @@ async function addTransaction({ category_id, type, amount, note, date }: {
       mutation_id: mutationId,
       entity_type: 'TXN',
       entity_id: id,
-      action: 'PUT',
+      action: 'POST',
       payload,
       base_version: 0,
+      snapshot_before: null, // POST 沒有之前的狀態
       created_at: Date.now(),
     })
   } catch (e) {
@@ -67,6 +68,9 @@ async function updateTransaction({ id, category_id, type, amount, note, date }: 
   if (!existingTransaction) {
     throw new Error('Transaction not found')
   }
+
+  // 保存快照用於 rollback
+  const snapshot = JSON.stringify(existingTransaction)
 
   const updatedTransaction: Transaction = {
     ...existingTransaction,
@@ -98,6 +102,7 @@ async function updateTransaction({ id, category_id, type, amount, note, date }: 
       action: 'PUT',
       payload,
       base_version: existingTransaction.version,
+      snapshot_before: snapshot,
       created_at: Date.now(),
     })
   } catch (e) {
@@ -115,6 +120,9 @@ async function deleteTransaction(id: string): Promise<void> {
     throw new Error('Transaction not found')
   }
 
+  // 保存快照用於 rollback
+  const snapshot = JSON.stringify(transaction)
+
   await transactionRepository.update(id, (current) => {
     if (!current) return null
     return { ...current, is_deleted: 1, version: current.version + 1 }
@@ -127,6 +135,7 @@ async function deleteTransaction(id: string): Promise<void> {
     action: 'DELETE',
     payload: null,
     base_version: transaction.version,
+    snapshot_before: snapshot,
     created_at: Date.now(),
   })
 }

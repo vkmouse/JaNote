@@ -29,6 +29,7 @@ async function sendInvite(
       status: 'PENDING',
     }),
     base_version: 0,
+    snapshot_before: null, // POST 沒有之前的狀態
     created_at: now,
   })
 
@@ -52,6 +53,9 @@ async function acceptInvitation(share: UserShare): Promise<void> {
   const mutationId = crypto.randomUUID()
   const now = Date.now()
 
+  // 保存快照用於 rollback
+  const snapshot = JSON.stringify(share)
+
   // 寫入 sync_queue - 發送 PUT 請求
   await syncQueueRepository.add({
     mutation_id: mutationId,
@@ -67,6 +71,7 @@ async function acceptInvitation(share: UserShare): Promise<void> {
       status: 'ACTIVE',
     }),
     base_version: share.version,
+    snapshot_before: snapshot,
     created_at: now,
   })
 
@@ -88,6 +93,9 @@ async function rejectOrCancelShare(share: UserShare): Promise<void> {
   const mutationId = crypto.randomUUID()
   const now = Date.now()
 
+  // 保存快照用於 rollback
+  const snapshot = JSON.stringify(share)
+
   // 寫入 sync_queue - 發送 DELETE 請求
   await syncQueueRepository.add({
     mutation_id: mutationId,
@@ -96,6 +104,7 @@ async function rejectOrCancelShare(share: UserShare): Promise<void> {
     action: 'DELETE',
     payload: null,
     base_version: share.version,
+    snapshot_before: snapshot,
     created_at: now,
   })
 

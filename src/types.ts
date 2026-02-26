@@ -42,6 +42,7 @@ export interface SyncQueueItem {
   action: 'PUT' | 'DELETE' | 'POST'
   payload: string | null
   base_version: number
+  snapshot_before: string | null
   created_at: number
 }
 
@@ -50,13 +51,21 @@ export interface SyncMeta {
   value: string
 }
 
-export interface PushEvent {
+export interface PushCommand {
   mutation_id: string
   entity_type: 'CAT' | 'TXN' | 'SHR'
   entity_id: string
   action: 'PUT' | 'DELETE' | 'POST'
   base_version: number
   payload: CategoryPayload | TransactionPayload | UserSharePayload | null
+}
+
+export interface PushResult {
+  mutation_id: string
+  status: 'OK' | 'ERROR' | 'SKIPPED'
+  version?: number | null
+  error_code?: string | null
+  error_message?: string | null
 }
 
 export interface PullEvent {
@@ -69,13 +78,13 @@ export interface PullEvent {
 
 export interface SyncRequest {
   last_cursor: number
-  push_events: PushEvent[]
+  push_commands: PushCommand[]
   user?: User | null
 }
 
 export interface SyncResponse {
   new_cursor: number
-  processed_mutation_ids: string[]
+  push_results: PushResult[]
   pull_events: PullEvent[]
   user: User
 }

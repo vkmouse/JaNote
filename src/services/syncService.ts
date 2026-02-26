@@ -6,7 +6,8 @@ import { userShareRepository } from '../repositories/userShareRepository'
 import { userRepository } from '../repositories/userRepository'
 import type {
   SyncQueueItem,
-  PushEvent,
+  PushCommand,
+  PushResult,
   PullEvent,
   SyncResponse,
   CategoryPayload,
@@ -174,12 +175,88 @@ async function bumpLocalVersion(
   }
 }
 
+async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
+  if (!entry.snapshot_before) {
+    // 沒有快照，無法 rollback（可能是 POST 操作）
+    if (entry.action === 'POST') {
+      // POST 失敗，刪除本地創建的 entity
+      if (entry.entity_type === 'TXN') {
+        await transactionRepository.update(entry.entity_id, (record) => {
+          if (!record) return null
+          return { ...record, is_deleted: 1 }
+        })
+      } else if (entry.entity_type === 'SHR') {
+        await userShareRepository.update(entry.entity_id, (record) => {
+          if (!record) return null
+          return { ...record, is_deleted: 1 }
+        })
+      }
+    }
+    return
+  }
+
+  try {
+    const snapshot = JSON.parse(entry.snapshot_before)
+
+    if (entry.entity_type === 'CAT') {
+      await categoryRepository.upsert(snapshot)
+    } else if (entry.entity_type === 'TXN') {
+      await transactionRepository.upsert(snapshot)
+    } else if (entry.entity_type === 'SHR') {
+      await userShareRepository.upsert(snapshot)
+    }
+  } catch (error) {
+    console.error('Failed to rollback entity', entry.entity_id, error)
+  }
+}
+
+async function handleError(
+  errorResult: PushResult,
+  entry: SyncQueueItem,
+  mutationMap: Map<string, SyncQueueItem>,
+  allResults: PushResult[],
+  pullEntityIds: Set<string>
+): Promise<void> {
+  // 找出這個 entity 後續的操作結果
+  const laterResults = allResults.filter(r => {
+    const e = mutationMap.get(r.mutation_id)
+    return e?.entity_id === entry.entity_id && e.created_at > entry.created_at
+  })
+
+  const lastResult = laterResults.length > 0 ? laterResults[laterResults.length - 1] : undefined
+
+  // 如果最後的操作成功了，以最後結果為準，不需要 rollback
+  if (lastResult?.status === 'OK' || lastResult?.status === 'SKIPPED') {
+    await syncQueueRepository.removeByEntityId(entry.entity_id)
+    return
+  }
+
+  // 如果有 pull_event，以 pull_event 為準
+  if (pullEntityIds.has(entry.entity_id)) {
+    await syncQueueRepository.removeByEntityId(entry.entity_id)
+    return
+  }
+
+  // 真正需要 rollback：回到 snapshot_before 的狀態
+  await rollbackEntity(entry)
+  await syncQueueRepository.removeByEntityId(entry.entity_id)
+
+  // TODO: 通知使用者（視 error_code 決定是否顯示）
+  console.warn('Operation failed and rolled back:', {
+    entity_id: entry.entity_id,
+    entity_type: entry.entity_type,
+    action: entry.action,
+    error_code: errorResult.error_code,
+    error_message: errorResult.error_message,
+  })
+}
+
 export async function performSync(apiBase: string): Promise<SyncResponse> {
   const lastCursor = await syncMetaRepository.getLastCursor()
   const queue = await syncQueueRepository.getAllOrdered()
   const localUser = await userRepository.get()
 
-  const pushEvents: PushEvent[] = queue.map(item => {
+  const pushCommands: PushCommand[] = queue.map(item => {
     return {
       mutation_id: item.mutation_id,
       entity_type: item.entity_type,
@@ -198,7 +275,7 @@ export async function performSync(apiBase: string): Promise<SyncResponse> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       last_cursor: lastCursor,
-      push_events: pushEvents,
+      push_commands: pushCommands,
       user: localUser,
     }),
   })
@@ -209,42 +286,46 @@ export async function performSync(apiBase: string): Promise<SyncResponse> {
 
   responseData = await response.json()
 
-  const processedIds = responseData.processed_mutation_ids || []
+  const pushResultsList: PushResult[] = responseData.push_results || []
   const pullEvents = responseData.pull_events || []
   const pullEntityIds = new Set(pullEvents.map(event => event.entity_id))
 
-  await syncQueueRepository.removeByMutationIds(processedIds)
-
+  // 1. 先 apply pull_events（server 事實優先）
   for (const event of pullEvents) {
-    const queuedForEntity = await syncQueueRepository.getByEntityId(event.entity_id)
+    await applyPullEvent(event)
+  }
 
-    if (queuedForEntity.length) {
-      await applyPullEvent(event)
-      await syncQueueRepository.removeByEntityId(event.entity_id)
-    } else {
-      await applyPullEvent(event)
+  // 2. 處理每個 push_result
+  for (const result of pushResultsList) {
+    const entry = mutationMap.get(result.mutation_id)
+    if (!entry) continue
+
+    if (result.status === 'OK') {
+      if (result.version == null) continue
+      
+      // 如果有 pull_event，已經 apply 過了，不需要 bump
+      if (!pullEntityIds.has(entry.entity_id)) {
+        const action: 'PUT' | 'DELETE' | 'POST' = entry.action as 'PUT' | 'DELETE' | 'POST'
+        await bumpLocalVersion(
+          entry.entity_type,
+          entry.entity_id,
+          result.version,
+          action
+        )
+      }
+      await syncQueueRepository.removeByMutationIds([result.mutation_id])
+    } else if (result.status === 'SKIPPED') {
+      // SKIPPED：目標已達成，清除 queue 即可
+      await syncQueueRepository.removeByMutationIds([result.mutation_id])
+    } else if (result.status === 'ERROR') {
+      // ERROR：需要根據情況決定是否 rollback
+      await handleError(result, entry, mutationMap, pushResultsList, pullEntityIds)
     }
   }
 
-  for (const mutationId of processedIds) {
-    const entry = mutationMap.get(mutationId)
-    if (!entry) continue
-    if (pullEntityIds.has(entry.entity_id)) continue
-
-    const newVersion = (entry.base_version || 0) + 1
-    let action: 'PUT' | 'DELETE' | 'POST' = entry.payload ? 'PUT' : 'DELETE'
-    
-    // SHR 類型的 sync_queue 中，如果有 payload 則是 POST action
-    if (entry.entity_type === 'SHR' && entry.payload) {
-      action = 'POST'
-    }
-    
-    await bumpLocalVersion(
-      entry.entity_type,
-      entry.entity_id,
-      newVersion,
-      action
-    )
+  // 3. 清除所有涉及 pull_events 的 entity 的 queue
+  for (const entityId of pullEntityIds) {
+    await syncQueueRepository.removeByEntityId(entityId)
   }
 
   await syncMetaRepository.setLastCursor(responseData.new_cursor || lastCursor)
