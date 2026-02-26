@@ -87,6 +87,16 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
 
   const viewerId = viewerUser.id;
 
+  // Prevent inviting self: owner and viewer must be different users
+  if (viewerId === userId) {
+    return {
+      mutation_id: event.mutation_id,
+      status: 'ERROR',
+      error_code: 'CANNOT_INVITE_SELF',
+      error_message: 'Owner and viewer must be different users',
+    };
+  }
+
   // Check if share already exists (is_deleted = 0)
   const existingShare = await getActiveUserShare(userId, viewerId, DB);
 
