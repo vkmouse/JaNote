@@ -1,11 +1,4 @@
-export interface Category {
-  id: string;
-  user_id: string;
-  name: string;
-  type: string;
-  version: number;
-  is_deleted: number;
-}
+import type { Category } from '../types';
 
 export async function getCategoryVersion(id: string, userId: string, DB: D1Database): Promise<number> {
   const row = await DB.prepare('SELECT version FROM categories WHERE id = ? AND user_id = ?')

@@ -1,9 +1,4 @@
-export interface User {
-  id: string;
-  email: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { User } from '../types';
 
 export async function getUserByEmail(email: string, DB: D1Database): Promise<User | null> {
   return await DB.prepare('SELECT id, email, created_at, updated_at FROM users WHERE email = ?')

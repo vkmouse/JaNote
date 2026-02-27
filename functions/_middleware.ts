@@ -1,13 +1,5 @@
+import type { AuthContext, Env } from './types';
 import { jwtVerify, createRemoteJWKSet } from "jose";
-
-export interface AuthContext extends Record<string, unknown> {
-	email: string;
-}
-
-interface Env {
-	POLICY_AUD?: string;
-	TEAM_DOMAIN?: string;
-}
 
 async function verifyCloudflareAccessToken(token: string, env: Env): Promise<string | null> {
 	// Check if environment variables are configured

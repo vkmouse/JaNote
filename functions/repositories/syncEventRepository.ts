@@ -1,12 +1,4 @@
-export interface SyncEvent {
-  id: number;
-  user_id: string;
-  mutation_id: string;
-  entity_type: string;
-  entity_id: string;
-  payload: string | null;
-  created_at: string;
-}
+import type { SyncEvent } from '../types';
 
 export async function getSyncEventByMutationId(
   mutationId: string,

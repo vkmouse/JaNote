@@ -1,30 +1,6 @@
+import type { PushCommand, PushResult, ServiceContext, EntryType } from '../types';
 import { getTransactionVersion, updateTransaction, createTransaction, deleteTransaction as deleteTransactionRepo } from '../repositories/transactionRepository';
 import { insertSyncEvent } from '../repositories/syncEventRepository';
-
-interface PushCommand {
-  mutation_id: string;
-  entity_type: string;
-  entity_id: string;
-  action: string;
-  base_version: number;
-  payload?: unknown;
-}
-
-interface PushResult {
-  mutation_id: string;
-  status: 'OK' | 'ERROR' | 'SKIPPED';
-  version?: number | null;
-  error_code?: string | null;
-  error_message?: string | null;
-}
-
-interface ServiceContext {
-  userId: string;
-  userEmail: string;
-  DB: D1Database;
-}
-
-type EntryType = "EXPENSE" | "INCOME";
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;

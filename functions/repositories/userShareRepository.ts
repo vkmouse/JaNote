@@ -1,13 +1,4 @@
-export interface UserShare {
-  id: string;
-  owner_id: string;
-  owner_email: string;
-  viewer_id: string;
-  viewer_email: string;
-  status: string;
-  version: number;
-  is_deleted: number;
-}
+import type { UserShare } from '../types';
 
 export async function getUserShareVersion(id: string, DB: D1Database): Promise<number> {
   const row = await DB.prepare('SELECT version FROM user_shares WHERE id = ?')

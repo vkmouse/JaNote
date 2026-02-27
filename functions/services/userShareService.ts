@@ -1,29 +1,7 @@
+import type { PushCommand, PushResult, ServiceContext } from '../types';
 import { getUserShareVersion, getUserShareById, getActiveUserShare, createUserShare, updateUserShareStatus, deleteUserShare as deleteUserShareRepo } from '../repositories/userShareRepository';
 import { getUserByEmail } from '../repositories/userRepository';
 import { insertSyncEvent } from '../repositories/syncEventRepository';
-
-interface PushCommand {
-  mutation_id: string;
-  entity_type: string;
-  entity_id: string;
-  action: string;
-  base_version: number;
-  payload?: unknown;
-}
-
-interface PushResult {
-  mutation_id: string;
-  status: 'OK' | 'ERROR' | 'SKIPPED';
-  version?: number | null;
-  error_code?: string | null;
-  error_message?: string | null;
-}
-
-interface ServiceContext {
-  userId: string;
-  userEmail: string;
-  DB: D1Database;
-}
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;

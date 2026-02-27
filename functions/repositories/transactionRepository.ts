@@ -1,14 +1,4 @@
-export interface Transaction {
-  id: string;
-  user_id: string;
-  category_id: string;
-  type: string;
-  amount: number;
-  note: string | null;
-  date: number;
-  version: number;
-  is_deleted: number;
-}
+import type { Transaction } from '../types';
 
 export async function getTransactionVersion(id: string, userId: string, DB: D1Database): Promise<number> {
   const row = await DB.prepare('SELECT version FROM transactions WHERE id = ? AND user_id = ?')

@@ -1,12 +1,9 @@
+import type { Env } from '../types';
 import { dropUsersTable, createUsersTable } from '../repositories/userRepository';
 import { dropCategoriesTable, createCategoriesTable } from '../repositories/categoryRepository';
 import { dropTransactionsTable, createTransactionsTable } from '../repositories/transactionRepository';
 import { dropUserSharesTable, createUserSharesTable } from '../repositories/userShareRepository';
 import { dropSyncEventsTable, createSyncEventsTable } from '../repositories/syncEventRepository';
-
-interface Env {
-  DB: D1Database;
-}
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { DB } = context.env;

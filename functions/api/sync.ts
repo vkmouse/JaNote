@@ -1,58 +1,23 @@
-import type { AuthContext } from '../_middleware';
+/// <reference path="../types.d.ts" />
+
+import type {
+	AuthContext,
+	Env,
+	EntityType,
+	ActionType,
+	SyncRequest,
+	PushCommand,
+	PushResult,
+	PullEvent,
+	ServiceContext,
+	EntityHandler,
+} from '../types';
 import { getUserIdByEmail as getUserIdByEmailRepo } from '../repositories/userRepository';
 import { initializeDefaultCategories } from '../repositories/categoryRepository';
 import { getSyncEventByMutationId, getMaxSyncEventId, getPullEvents } from '../repositories/syncEventRepository';
 import { postCategory, putCategory, deleteCategory } from '../services/categoryService';
 import { postTransaction, putTransaction, deleteTransaction } from '../services/transactionService';
 import { postUserShare, putUserShare, deleteUserShare } from '../services/userShareService';
-
-interface Env {
-	DB: D1Database;
-}
-
-interface User {
-	id: string;
-	email: string;
-	created_at: string;
-	updated_at: string;
-}
-
-type EntityType = "CAT" | "TXN" | "SHR";
-
-type ActionType = "PUT" | "DELETE" | "POST";
-
-interface SyncRequest {
-	last_cursor: number;
-	push_commands?: PushCommand[];
-	user?: { id: string; email: string } | null;
-}
-
-interface PushCommand {
-	mutation_id: string;
-	entity_type: EntityType;
-	entity_id: string;
-	action: ActionType;
-	base_version: number;
-	payload?: unknown;
-}
-
-interface PushResult {
-	mutation_id: string;
-	status: 'OK' | 'ERROR' | 'SKIPPED';
-	version?: number | null;
-	error_code?: string | null;
-	error_message?: string | null;
-}
-
-interface PullEvent {
-	id: number;
-	mutation_id: string;
-	entity_type: EntityType;
-	entity_id: string;
-	action: ActionType;
-	version: number;
-	payload?: string | null;
-}
 
 async function getUserIdByEmail(email: string, DB: D1Database): Promise<string> {
 	const userId = await getUserIdByEmailRepo(email, DB);
@@ -77,12 +42,6 @@ async function getUserIdByEmail(email: string, DB: D1Database): Promise<string> 
 }
 
 // Entity handlers map
-type EntityHandler = (event: PushCommand, context: ServiceContext) => Promise<PushResult>;
-interface ServiceContext {
-	userId: string;
-	userEmail: string;
-	DB: D1Database;
-}
 
 const entityHandlers: Record<string, EntityHandler> = {
 	"POST:CAT": postCategory,
