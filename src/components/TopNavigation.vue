@@ -243,32 +243,35 @@ const handleAvatarDoubleClick = () => {
 
 .avatar-shared {
   position: relative;
-  width: 40px;
+  width: 60px;
   height: 40px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
-/* 本人頭貼（背景，半透明） */
-.avatar-owner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.5;
-  z-index: 0;
-}
-
-/* 共享者頭貼（前景，遮住1/3） */
+/* 共享者頭貼（左邊） */
 .avatar-sharer {
   position: absolute;
-  bottom: -8px;
-  right: -8px;
-  width: 27px;
-  height: 27px;
-  font-size: 11px;
-  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 40px;
+  height: 40px;
   background: var(--janote-expense, #ff6b6b);
+  color: var(--text-primary, #333);
+  font-size: 16px;
+  z-index: 1;
+}
+
+/* 本人頭貼（右邊，半透明） */
+.avatar-owner {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  opacity: 0.5;
+  z-index: 0;
 }
 
 .center-content {
@@ -313,16 +316,19 @@ const handleAvatarDoubleClick = () => {
   }
 
   .avatar-shared {
-    width: 36px;
+    width: 54px;
     height: 36px;
   }
 
   .avatar-sharer {
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
-    bottom: -6px;
-    right: -6px;
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .avatar-owner {
+    width: 36px;
+    height: 36px;
   }
 
   .nav-spacer {
