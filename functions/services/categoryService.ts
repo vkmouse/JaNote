@@ -1,29 +1,7 @@
-import type { PushCommand, PushResult, ServiceContext, EntryType } from '../types';
+import type { PushCommand, PushResult, ServiceContext } from '../types';
+import { isNonEmptyString, isValidEntryType, parsePayload } from '../utils/validators';
 import { getCategoryVersion, updateCategory, createCategory, deleteCategory as deleteCategoryRepo } from '../repositories/categoryRepository';
 import { insertSyncEvent } from '../repositories/syncEventRepository';
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function isValidEntryType(value: unknown): value is EntryType {
-  return value === "EXPENSE" || value === "INCOME";
-}
-
-function parsePayload(payload: unknown): { payloadString: string | null; payloadObject: any } {
-  if (payload === undefined || payload === null) {
-    return { payloadString: null, payloadObject: null };
-  }
-  if (typeof payload === "string") {
-    try {
-      const parsed = JSON.parse(payload);
-      return { payloadString: payload, payloadObject: parsed };
-    } catch {
-      return { payloadString: payload, payloadObject: payload };
-    }
-  }
-  return { payloadString: JSON.stringify(payload), payloadObject: payload };
-}
 
 /**
  * Handle POST action for category (create only)

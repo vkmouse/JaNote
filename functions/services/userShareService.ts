@@ -1,26 +1,8 @@
 import type { PushCommand, PushResult, ServiceContext } from '../types';
+import { isNonEmptyString, parsePayload } from '../utils/validators';
 import { getUserShareVersion, getUserShareById, getActiveUserShare, createUserShare, updateUserShareStatus, deleteUserShare as deleteUserShareRepo } from '../repositories/userShareRepository';
 import { getUserByEmail } from '../repositories/userRepository';
 import { insertSyncEvent } from '../repositories/syncEventRepository';
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function parsePayload(payload: unknown): { payloadString: string | null; payloadObject: any } {
-  if (payload === undefined || payload === null) {
-    return { payloadString: null, payloadObject: null };
-  }
-  if (typeof payload === "string") {
-    try {
-      const parsed = JSON.parse(payload);
-      return { payloadString: payload, payloadObject: parsed };
-    } catch {
-      return { payloadString: payload, payloadObject: payload };
-    }
-  }
-  return { payloadString: JSON.stringify(payload), payloadObject: payload };
-}
 
 /**
  * Handle POST action for user share
