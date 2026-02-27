@@ -22,8 +22,8 @@ const isResetting = ref(false)
 
 // 共享邀請相關
 const inviteEmail = ref('')
-const sentPendingInvites = ref<UserShare[]>([]) // 作為 owner 發出的 PENDING 邀請
-const receivedPendingInvites = ref<UserShare[]>([]) // 作為 viewer 收到的 PENDING 邀請
+const sentPendingInvites = ref<UserShare[]>([]) // 發出 PENDING 邀請
+const receivedPendingInvites = ref<UserShare[]>([]) // 收到 PENDING 邀請
 const activeShares = ref<UserShare[]>([]) // ACTIVE 的共享
 const isInviting = ref(false)
 const operatingShareId = ref<string | null>(null)
@@ -52,10 +52,10 @@ async function refreshLocalState() {
   
   // 分類共享
   sentPendingInvites.value = validShares.filter(
-    share => share.status === 'PENDING' && share.owner_id === userId.value
+    share => share.status === 'PENDING' && share.sender_id === userId.value
   )
   receivedPendingInvites.value = validShares.filter(
-    share => share.status === 'PENDING' && share.viewer_id === userId.value
+    share => share.status === 'PENDING' && share.receiver_id === userId.value
   )
   activeShares.value = validShares.filter(share => share.status === 'ACTIVE')
 }
@@ -150,7 +150,7 @@ async function sendInvite() {
   }
 
   // 檢查是否已經邀請過
-  const existingInvite = sentPendingInvites.value.find(invite => invite.viewer_email === email)
+  const existingInvite = sentPendingInvites.value.find(invite => invite.receiver_email === email)
   if (existingInvite) {
     alert('已經邀請過此 Email')
     return
@@ -293,7 +293,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
           </button>
         </div>
 
-        <!-- 收到的邀請 (作為 viewer) -->
+        <!-- 收到的邀請 -->
         <div v-if="receivedPendingInvites.length > 0" class="invites-list">
           <h3>收到的邀請 ({{ receivedPendingInvites.length }})</h3>
           <div class="invite-items">
@@ -301,7 +301,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
               <div class="invite-info">
                 <div class="invite-email">
                   <span class="label">來自</span>
-                  <span class="email-address">{{ share.owner_email }}</span>
+                  <span class="email-address">{{ share.sender_email }}</span>
                 </div>
                 <span class="status-badge pending">待接受</span>
               </div>
@@ -333,7 +333,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
               <div class="invite-info">
                 <div class="invite-email">
                   <span class="label">邀請</span>
-                  <span class="email-address">{{ share.viewer_email }}</span>
+                  <span class="email-address">{{ share.receiver_email }}</span>
                 </div>
                 <span class="status-badge pending">邀請中</span>
               </div>
@@ -357,9 +357,9 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
             <div v-for="share in activeShares" :key="share.id" class="invite-item active">
               <div class="invite-info">
                 <div class="invite-email">
-                  <span class="label">{{ share.owner_id === userId ? '共享給' : '來自' }}</span>
+                  <span class="label">{{ share.sender_id === userId ? '共享給' : '來自' }}</span>
                   <span class="email-address">
-                    {{ share.owner_id === userId ? share.viewer_email : share.owner_email }}
+                    {{ share.sender_id === userId ? share.receiver_email : share.sender_email }}
                   </span>
                 </div>
                 <span class="status-badge active">已啟用</span>

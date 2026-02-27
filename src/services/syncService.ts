@@ -137,10 +137,10 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
     const shrPayload = payload as UserSharePayload
     await userShareRepository.upsert({
       id: event.entity_id,
-      owner_id: shrPayload.owner_id || '',
-      owner_email: shrPayload.owner_email || '',
-      viewer_id: shrPayload.viewer_id || '',
-      viewer_email: shrPayload.viewer_email || '',
+      sender_id: shrPayload.sender_id || '',
+      sender_email: shrPayload.sender_email || '',
+      receiver_id: shrPayload.receiver_id || '',
+      receiver_email: shrPayload.receiver_email || '',
       status: shrPayload.status || 'PENDING',
       version: event.version,
       is_deleted: 0,

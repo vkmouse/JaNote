@@ -6,9 +6,9 @@ import type { UserShare } from '../types'
  * 發送共享邀請
  */
 async function sendInvite(
-  ownerId: string,
-  ownerEmail: string,
-  viewerEmail: string
+  senderId: string,
+  senderEmail: string,
+  receiverEmail: string
 ): Promise<void> {
   const shareId = crypto.randomUUID()
   const mutationId = crypto.randomUUID()
@@ -22,10 +22,10 @@ async function sendInvite(
     action: 'POST',
     payload: JSON.stringify({
       id: shareId,
-      owner_id: ownerId,
-      owner_email: ownerEmail,
-      viewer_id: '',
-      viewer_email: viewerEmail,
+      sender_id: senderId,
+      sender_email: senderEmail,
+      receiver_id: '',
+      receiver_email: receiverEmail,
       status: 'PENDING',
     }),
     base_version: 0,
@@ -36,10 +36,10 @@ async function sendInvite(
   // 寫入 user_shares
   await userShareRepository.upsert({
     id: shareId,
-    owner_id: ownerId,
-    owner_email: ownerEmail,
-    viewer_id: '',
-    viewer_email: viewerEmail,
+    sender_id: senderId,
+    sender_email: senderEmail,
+    receiver_id: '',
+    receiver_email: receiverEmail,
     status: 'PENDING',
     version: 1,
     is_deleted: 0,
@@ -64,10 +64,10 @@ async function acceptInvitation(share: UserShare): Promise<void> {
     action: 'PUT',
     payload: JSON.stringify({
       id: share.id,
-      owner_id: share.owner_id,
-      owner_email: share.owner_email,
-      viewer_id: share.viewer_id,
-      viewer_email: share.viewer_email,
+      sender_id: share.sender_id,
+      sender_email: share.sender_email,
+      receiver_id: share.receiver_id,
+      receiver_email: share.receiver_email,
       status: 'ACTIVE',
     }),
     base_version: share.version,

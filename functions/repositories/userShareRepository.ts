@@ -14,43 +14,43 @@ export async function getUserShareById(id: string, DB: D1Database): Promise<User
 }
 
 export async function getActiveUserShare(
-  ownerId: string,
-  viewerId: string,
+  senderId: string,
+  receiverId: string,
   DB: D1Database
 ): Promise<UserShare | null> {
   return await DB.prepare(
-    'SELECT * FROM user_shares WHERE owner_id = ? AND viewer_id = ? AND is_deleted = 0'
+    'SELECT * FROM user_shares WHERE sender_id = ? AND receiver_id = ? AND is_deleted = 0'
   )
-    .bind(ownerId, viewerId)
+    .bind(senderId, receiverId)
     .first<UserShare>();
 }
 
 export async function getActiveOwnersByViewerId(
-  viewerId: string,
+  receiverId: string,
   DB: D1Database
 ): Promise<UserShare[]> {
   const results = await DB.prepare(
-    "SELECT * FROM user_shares WHERE viewer_id = ? AND status = 'ACTIVE' AND is_deleted = 0"
+    "SELECT * FROM user_shares WHERE receiver_id = ? AND status = 'ACTIVE' AND is_deleted = 0"
   )
-    .bind(viewerId)
+    .bind(receiverId)
     .all<UserShare>();
   return results.results || [];
 }
 
 export async function createUserShare(
   id: string,
-  ownerId: string,
-  ownerEmail: string,
-  viewerId: string,
-  viewerEmail: string,
+  senderId: string,
+  senderEmail: string,
+  receiverId: string,
+  receiverEmail: string,
   status: string,
   version: number,
   DB: D1Database
 ): Promise<void> {
   await DB.prepare(
-    'INSERT INTO user_shares (id, owner_id, owner_email, viewer_id, viewer_email, status, version, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, 0)'
+    'INSERT INTO user_shares (id, sender_id, sender_email, receiver_id, receiver_email, status, version, is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, 0)'
   )
-    .bind(id, ownerId, ownerEmail, viewerId, viewerEmail, status, version)
+    .bind(id, senderId, senderEmail, receiverId, receiverEmail, status, version)
     .run();
 }
 
@@ -79,10 +79,10 @@ export async function createUserSharesTable(DB: D1Database): Promise<void> {
   await DB.prepare(`
     CREATE TABLE IF NOT EXISTS user_shares (
       id TEXT PRIMARY KEY,
-      owner_id TEXT NOT NULL,
-      owner_email TEXT NOT NULL,
-      viewer_id TEXT,
-      viewer_email TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      sender_email TEXT NOT NULL,
+      receiver_id TEXT,
+      receiver_email TEXT NOT NULL,
       status TEXT NOT NULL,
       version INTEGER NOT NULL,
       is_deleted INTEGER NOT NULL DEFAULT 0

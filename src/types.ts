@@ -28,10 +28,10 @@ export interface Transaction {
 
 export interface UserShare {
   id: string
-  owner_id: string
-  owner_email: string
-  viewer_id: string
-  viewer_email: string
+  sender_id: string
+  sender_email: string
+  receiver_id: string
+  receiver_email: string
   status: 'PENDING' | 'ACTIVE'
   version: number
   is_deleted: number
@@ -110,10 +110,10 @@ export interface TransactionPayload {
 
 export interface UserSharePayload {
   id: string
-  owner_id: string
-  owner_email: string
-  viewer_id: string
-  viewer_email: string
+  sender_id: string
+  sender_email: string
+  receiver_id: string
+  receiver_email: string
   status: 'PENDING' | 'ACTIVE'
 }
 

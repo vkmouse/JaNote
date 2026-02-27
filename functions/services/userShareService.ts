@@ -13,52 +13,52 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
 
   // ===== 先完成所有驗證，只有成功才寫入 sync_event =====
 
-  // Validate owner_id and owner_email match middleware info
-  if (payloadObject?.owner_id !== userId || payloadObject?.owner_email !== userEmail) {
+  // Validate sender_id and sender_email match middleware info
+  if (payloadObject?.sender_id !== userId || payloadObject?.sender_email !== userEmail) {
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
-      error_code: 'OWNER_MISMATCH',
-      error_message: 'Owner id/email does not match authenticated user',
+      error_code: 'SENDER_MISMATCH',
+      error_message: 'Sender id/email does not match authenticated user',
     };
   }
 
-  const viewerEmail = payloadObject?.viewer_email;
-  if (!isNonEmptyString(viewerEmail)) {
+  const receiverEmail = payloadObject?.receiver_email;
+  if (!isNonEmptyString(receiverEmail)) {
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
       error_code: 'INVALID_PAYLOAD',
-      error_message: 'Viewer email is required',
+      error_message: 'Receiver email is required',
     };
   }
 
-  // Get viewer_id from users table by viewer_email
-  const viewerUser = await getUserByEmail(viewerEmail, DB);
+  // Get receiver_id from users table by receiver_email
+  const receiverUser = await getUserByEmail(receiverEmail, DB);
 
-  if (!viewerUser) {
+  if (!receiverUser) {
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
-      error_code: 'VIEWER_NOT_FOUND',
-      error_message: 'Viewer user does not exist',
+      error_code: 'RECEIVER_NOT_FOUND',
+      error_message: 'Receiver user does not exist',
     };
   }
 
-  const viewerId = viewerUser.id;
+  const receiverId = receiverUser.id;
 
-  // Prevent inviting self: owner and viewer must be different users
-  if (viewerId === userId) {
+  // Prevent inviting self: sender and receiver must be different users
+  if (receiverId === userId) {
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
       error_code: 'CANNOT_INVITE_SELF',
-      error_message: 'Owner and viewer must be different users',
+      error_message: 'Sender and receiver must be different users',
     };
   }
 
   // Check if share already exists (is_deleted = 0)
-  const existingShare = await getActiveUserShare(userId, viewerId, DB);
+  const existingShare = await getActiveUserShare(userId, receiverId, DB);
 
   if (existingShare) {
     return {
@@ -73,15 +73,15 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
 
   const shareId = event.entity_id;
   const newVersion = 1;
-  await createUserShare(shareId, userId, userEmail, viewerId, viewerEmail, "PENDING", newVersion, DB);
+  await createUserShare(shareId, userId, userEmail, receiverId, receiverEmail, "PENDING", newVersion, DB);
 
-  // 處理成功，寫入 PUT 事件（事實）給 owner 和 viewer
+  // 處理成功，寫入 PUT 事件（事實）給 sender 和 receiver
   const putPayloadString = JSON.stringify({
     id: shareId,
-    owner_id: userId,
-    owner_email: userEmail,
-    viewer_id: viewerId,
-    viewer_email: viewerEmail,
+    sender_id: userId,
+    sender_email: userEmail,
+    receiver_id: receiverId,
+    receiver_email: receiverEmail,
     status: "PENDING",
   });
   const putSyncPayload = JSON.stringify({
@@ -90,13 +90,13 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
     payload: putPayloadString,
   });
 
-  // 給 owner 和 viewer 都使用 server-generated mutation_id
+  // 給 sender 和 receiver 都使用 server-generated mutation_id
   // 這樣雙方都能收到 pull_event（不會被 excludeMutationIds 排除）
-  const ownerPutMutationId = crypto.randomUUID();
-  await insertSyncEvent(userId, ownerPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
+  const senderPutMutationId = crypto.randomUUID();
+  await insertSyncEvent(userId, senderPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
 
-  const viewerPutMutationId = crypto.randomUUID();
-  await insertSyncEvent(viewerId, viewerPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
+  const receiverPutMutationId = crypto.randomUUID();
+  await insertSyncEvent(receiverId, receiverPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
 }
@@ -118,7 +118,7 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
     };
   }
 
-  // Get the share to verify user is viewer
+  // Get the share to verify user is receiver
   const share = await getUserShareById(event.entity_id, DB);
 
   if (!share) {
@@ -130,14 +130,14 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
     };
   }
 
-  // Verify user is viewer
-  const isViewer = share.viewer_id === userId && share.viewer_email === userEmail;
-  if (!isViewer) {
+  // Verify user is receiver
+  const isReceiver = share.receiver_id === userId && share.receiver_email === userEmail;
+  if (!isReceiver) {
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
       error_code: 'FORBIDDEN',
-      error_message: 'Only viewer can accept invitation',
+      error_message: 'Only receiver can accept invitation',
     };
   }
 
@@ -164,21 +164,21 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
 
   const updatedPayloadString = JSON.stringify({
     id: event.entity_id,
-    owner_id: share.owner_id,
-    owner_email: share.owner_email,
-    viewer_id: share.viewer_id,
-    viewer_email: share.viewer_email,
+    sender_id: share.sender_id,
+    sender_email: share.sender_email,
+    receiver_id: share.receiver_id,
+    receiver_email: share.receiver_email,
     status: "ACTIVE",
   });
 
   const syncPayload = JSON.stringify({ action: "PUT", version: newVersion, payload: updatedPayloadString });
 
-  // Write event to both owner and viewer，都使用 server-generated mutation_id
-  const ownerMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.owner_id, ownerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  // Write event to both sender and receiver，都使用 server-generated mutation_id
+  const senderMutationId = crypto.randomUUID();
+  await insertSyncEvent(share.sender_id, senderMutationId, event.entity_type, event.entity_id, syncPayload, DB);
 
-  const viewerMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.viewer_id, viewerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  const receiverMutationId = crypto.randomUUID();
+  await insertSyncEvent(share.receiver_id, receiverMutationId, event.entity_type, event.entity_id, syncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
 }
@@ -195,23 +195,23 @@ export async function deleteUserShare(event: PushCommand, context: ServiceContex
     return { mutation_id: event.mutation_id, status: 'SKIPPED' };
   }
 
-  // Get the share to verify user is owner or viewer
+  // Get the share to verify user is sender or receiver
   const share = await getUserShareById(event.entity_id, DB);
 
   if (!share) {
     return { mutation_id: event.mutation_id, status: 'SKIPPED' };
   }
 
-  // Verify user is owner or viewer
-  const isOwner = share.owner_id === userId && share.owner_email === userEmail;
-  const isViewer = share.viewer_id === userId && share.viewer_email === userEmail;
+  // Verify user is sender or receiver
+  const isSender = share.sender_id === userId && share.sender_email === userEmail;
+  const isReceiver = share.receiver_id === userId && share.receiver_email === userEmail;
 
-  if (!isOwner && !isViewer) {
+  if (!isSender && !isReceiver) {
     return {
       mutation_id: event.mutation_id,
       status: 'ERROR',
       error_code: 'FORBIDDEN',
-      error_message: 'User must be owner or viewer to delete share',
+      error_message: 'User must be sender or receiver to delete share',
     };
   }
 
@@ -226,12 +226,12 @@ export async function deleteUserShare(event: PushCommand, context: ServiceContex
 
   const syncPayload = JSON.stringify({ action: "DELETE", version: newVersion, payload: null });
 
-  // Write event to both owner and viewer，都使用 server-generated mutation_id
-  const ownerMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.owner_id, ownerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  // Write event to both sender and receiver，都使用 server-generated mutation_id
+  const senderMutationId = crypto.randomUUID();
+  await insertSyncEvent(share.sender_id, senderMutationId, event.entity_type, event.entity_id, syncPayload, DB);
 
-  const viewerMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.viewer_id, viewerMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  const receiverMutationId = crypto.randomUUID();
+  await insertSyncEvent(share.receiver_id, receiverMutationId, event.entity_type, event.entity_id, syncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
 }

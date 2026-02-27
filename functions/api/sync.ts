@@ -165,10 +165,10 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (context) =
 	// 階段二：處理 Pull (將伺服器上的新變更回傳給客戶端)
 	// ==========================================
 
-	// 取得應該同步資料給當前使用者（觀看者）的擁有者（分享者）
+	// 取得應該同步資料給當前使用者（接收者）的發送者（分享者）
 	const activeOwnerShares = await getActiveOwnersByViewerId(userId, DB);
-	const ownerIds = activeOwnerShares.map(s => s.owner_id);
-	const allUserIds = [userId, ...ownerIds];
+	const senderIds = activeOwnerShares.map(s => s.sender_id);
+	const allUserIds = [userId, ...senderIds];
 
 	// 計算下一次同步時，客戶端應該要帶上的新游標 (new_cursor)
 	const maxCursor = await getMaxSyncEventIdForUsers(allUserIds, DB);
@@ -177,8 +177,8 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (context) =
 	// 根據客戶端提供的 last_cursor，拉取自從上次同步之後，使用者「自己」的資料變更事件
 	const pullQueryResults = await getPullEvents(userId, body.last_cursor, processedMutationIds, DB);
 
-	// 同時拉取擁有者（分享者）的事件（僅 CAT 與 TXN）
-	const ownerPullResults = await getPullEventsForOwners(ownerIds, body.last_cursor, processedMutationIds, DB);
+	// 同時拉取發送者（分享者）的事件（僅 CAT 與 TXN）
+	const ownerPullResults = await getPullEventsForOwners(senderIds, body.last_cursor, processedMutationIds, DB);
 
 	// 將所有需要同步給客戶端的事件合併
 	const allPullQueryResults = [...pullQueryResults, ...ownerPullResults];

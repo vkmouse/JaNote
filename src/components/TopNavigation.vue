@@ -43,10 +43,10 @@ const currentAvatarInfo = computed(() => {
     const share = userShares.value[currentShareIndex.value]
     if (share) {
       return {
-        initial: share.owner_email.charAt(0).toUpperCase(),
-        email: share.owner_email,
+        initial: share.sender_email.charAt(0).toUpperCase(),
+        email: share.sender_email,
         isShared: true,
-        viewerInitial: share.viewer_email.charAt(0).toUpperCase()
+        receiverInitial: share.receiver_email.charAt(0).toUpperCase()
       }
     }
   }
@@ -97,7 +97,7 @@ const handleAvatarClick = () => {
     currentShareIndex.value = 0
     const share = userShares.value[0]
     if (share) {
-      emit('user-changed', { id: share.owner_id, email: share.owner_email })
+      emit('user-changed', { id: share.sender_id, email: share.sender_email })
     }
   } else {
     // 嘗試下一個共享帳號
@@ -106,7 +106,7 @@ const handleAvatarClick = () => {
       currentShareIndex.value = nextIndex
       const share = userShares.value[nextIndex]
       if (share) {
-        emit('user-changed', { id: share.owner_id, email: share.owner_email })
+        emit('user-changed', { id: share.sender_id, email: share.sender_email })
       }
     } else {
       // 沒有更多共享帳號，切回自己
@@ -140,7 +140,7 @@ const handleAvatarClick = () => {
           </div>
           <!-- 共享者頭貼（前景，遮住1/3） -->
           <div class="avatar avatar-sharer">
-            {{ currentAvatarInfo.initial }}
+            {{ currentAvatarInfo.receiverInitial }}
           </div>
         </div>
         <div v-else class="avatar" :class="{ 'has-shares': canSwitchAvatar }">
