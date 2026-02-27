@@ -1,0 +1,37 @@
+{
+  "name": "Vue + Cloudflare Workers (Node 25)",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24-bookworm",
+
+  "forwardPorts": [5173, 8888],
+
+  "portsAttributes": {
+    "5173": { "label": "Vite Dev Server" },
+    "8888": { "label": "Wrangler Pages Dev Server (with D1)" }
+  },
+
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "CHOKIDAR_USEPOLLING": "1",
+    "WRANGLER_USE_POLLING": "1"
+  },
+
+  "postCreateCommand": "npm ci && npm install -g wait-on",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true,
+        "typescript.tsdk": "node_modules/typescript/lib"
+      },
+      "extensions":[
+        "Vue.volar",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Cloudflare.cloudflare-workers-bindings-extension"
+      ]
+    }
+  },
+
+  "remoteUser": "node"
+}
