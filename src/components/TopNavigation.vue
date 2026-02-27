@@ -213,6 +213,11 @@ const handleAvatarDoubleClick = () => {
 
 .avatar-wrapper {
   flex-shrink: 0;
+  width: 60px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   user-select: none;
 }
 
@@ -235,6 +240,7 @@ const handleAvatarDoubleClick = () => {
   flex-shrink: 0;
   user-select: none;
   transition: opacity 0.2s;
+  border: 2px solid var(--text-primary);
 }
 
 .avatar.has-shares {
@@ -261,6 +267,8 @@ const handleAvatarDoubleClick = () => {
   color: var(--text-primary, #333);
   font-size: 16px;
   z-index: 1;
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
 }
 
 /* 本人頭貼（右邊，半透明） */
@@ -272,6 +280,8 @@ const handleAvatarDoubleClick = () => {
   height: 40px;
   opacity: 0.5;
   z-index: 0;
+  border-radius: 50%;
+  border: 2px solid var(--text-primary);
 }
 
 .center-content {
@@ -306,6 +316,11 @@ const handleAvatarDoubleClick = () => {
 
   .nav-btn {
     width: 36px;
+    height: 36px;
+  }
+
+  .avatar-wrapper {
+    width: 54px;
     height: 36px;
   }
 
