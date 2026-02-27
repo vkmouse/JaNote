@@ -7,6 +7,7 @@ export interface User {
 
 export interface Category {
   id: string
+  user_id: string
   name: string
   type: EntryType
   version: number
@@ -15,6 +16,7 @@ export interface Category {
 
 export interface Transaction {
   id: string
+  user_id: string
   category_id: string
   type: EntryType
   amount: number

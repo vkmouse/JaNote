@@ -38,6 +38,7 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
         if (!record) {
           return {
             id: event.entity_id,
+            user_id: '',
             name: 'Unknown',
             type: 'EXPENSE',
             version: event.version,
@@ -56,6 +57,7 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
     const catPayload = payload as CategoryPayload
     await categoryRepository.upsert({
       id: event.entity_id,
+      user_id: catPayload.user_id || '',
       name: catPayload.name || 'Untitled',
       type: catPayload.type || 'EXPENSE',
       version: event.version,
@@ -70,6 +72,7 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
         if (!record) {
           return {
             id: event.entity_id,
+            user_id: '',
             category_id: '',
             type: 'EXPENSE',
             amount: 0,
@@ -91,6 +94,7 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
     const txnPayload = payload as TransactionPayload
     await transactionRepository.upsert({
       id: event.entity_id,
+      user_id: txnPayload.user_id || '',
       category_id: txnPayload.category_id || '',
       type: txnPayload.type || 'EXPENSE',
       amount: Number(txnPayload.amount) || 0,

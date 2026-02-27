@@ -69,7 +69,7 @@ export async function initializeDefaultCategories(userId: string, DB: D1Database
     const payload = JSON.stringify({
       action: 'POST',
       version: 1,
-      payload: JSON.stringify({ id, name, type: 'EXPENSE' }),
+      payload: JSON.stringify({ id, user_id: userId, name, type: 'EXPENSE' }),
     });
     
     await insertSyncEvent(userId, crypto.randomUUID(), 'CAT', id, payload, DB);
@@ -82,7 +82,7 @@ export async function initializeDefaultCategories(userId: string, DB: D1Database
     const payload = JSON.stringify({
       action: 'POST',
       version: 1,
-      payload: JSON.stringify({ id, name, type: 'INCOME' }),
+      payload: JSON.stringify({ id, user_id: userId, name, type: 'INCOME' }),
     });
     
     await insertSyncEvent(userId, crypto.randomUUID(), 'CAT', id, payload, DB);

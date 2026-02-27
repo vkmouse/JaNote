@@ -53,6 +53,17 @@ export async function postCategory(event: PushCommand, context: ServiceContext):
   const { payloadString, payloadObject } = parsePayload(event.payload);
   const name = payloadObject?.name;
   const type = payloadObject?.type;
+  const payloadUserId = payloadObject?.user_id;
+
+  // Validate user_id matches context
+  if (payloadUserId && payloadUserId !== userId) {
+    return {
+      mutation_id: event.mutation_id,
+      status: 'ERROR',
+      error_code: 'USER_ID_MISMATCH',
+      error_message: 'Payload user_id does not match authenticated user',
+    };
+  }
 
   if (!isNonEmptyString(name)) {
     return {
@@ -75,7 +86,7 @@ export async function postCategory(event: PushCommand, context: ServiceContext):
   const newVersion = 1;
   await createCategory(event.entity_id, userId, name, type, newVersion, DB);
 
-  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: payloadString });
+  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: JSON.stringify({ id: event.entity_id, user_id: userId, name, type }) });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
@@ -104,6 +115,17 @@ export async function putCategory(event: PushCommand, context: ServiceContext): 
   const { payloadString, payloadObject } = parsePayload(event.payload);
   const name = payloadObject?.name;
   const type = payloadObject?.type;
+  const payloadUserId = payloadObject?.user_id;
+
+  // Validate user_id matches context
+  if (payloadUserId && payloadUserId !== userId) {
+    return {
+      mutation_id: event.mutation_id,
+      status: 'ERROR',
+      error_code: 'USER_ID_MISMATCH',
+      error_message: 'Payload user_id does not match authenticated user',
+    };
+  }
 
   if (!isNonEmptyString(name)) {
     return {
@@ -126,7 +148,7 @@ export async function putCategory(event: PushCommand, context: ServiceContext): 
   const newVersion = currentVersion + 1;
   await updateCategory(event.entity_id, userId, name, type, newVersion, DB);
 
-  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: payloadString });
+  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: JSON.stringify({ id: event.entity_id, user_id: userId, name, type }) });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };

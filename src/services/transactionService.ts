@@ -1,5 +1,6 @@
 import { transactionRepository } from '../repositories/transactionRepository'
 import { syncQueueRepository } from '../repositories/syncQueueRepository'
+import { userRepository } from '../repositories/userRepository'
 import type { Transaction } from '../types'
 
 /**
@@ -12,9 +13,13 @@ async function addTransaction({ category_id, type, amount, note, date }: {
   note: string
   date: number
 }): Promise<void> {
+  const user = await userRepository.get()
+  const user_id = user?.id || ''
+  
   const id = crypto.randomUUID()
   const transaction: Transaction = {
     id,
+    user_id,
     category_id,
     type,
     amount,
@@ -30,6 +35,7 @@ async function addTransaction({ category_id, type, amount, note, date }: {
     const mutationId = crypto.randomUUID()
     const payload = JSON.stringify({
       id,
+      user_id,
       category_id,
       type,
       amount,
@@ -64,6 +70,9 @@ async function updateTransaction({ id, category_id, type, amount, note, date }: 
   note: string
   date: number
 }): Promise<void> {
+  const user = await userRepository.get()
+  const user_id = user?.id || ''
+  
   const existingTransaction = await transactionRepository.getById(id)
   if (!existingTransaction) {
     throw new Error('Transaction not found')
@@ -74,6 +83,7 @@ async function updateTransaction({ id, category_id, type, amount, note, date }: 
 
   const updatedTransaction: Transaction = {
     ...existingTransaction,
+    user_id,
     category_id,
     type,
     amount,
@@ -88,6 +98,7 @@ async function updateTransaction({ id, category_id, type, amount, note, date }: 
     const mutationId = crypto.randomUUID()
     const payload = JSON.stringify({
       id,
+      user_id,
       category_id,
       type,
       amount,

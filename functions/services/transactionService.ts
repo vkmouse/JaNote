@@ -60,6 +60,17 @@ export async function postTransaction(event: PushCommand, context: ServiceContex
   const amount = payloadObject?.amount;
   const date = payloadObject?.date;
   const note = payloadObject?.note ?? null;
+  const payloadUserId = payloadObject?.user_id;
+
+  // Validate user_id matches context
+  if (payloadUserId && payloadUserId !== userId) {
+    return {
+      mutation_id: event.mutation_id,
+      status: 'ERROR',
+      error_code: 'USER_ID_MISMATCH',
+      error_message: 'Payload user_id does not match authenticated user',
+    };
+  }
 
   if (!isNonEmptyString(categoryId) || !isValidEntryType(type) || !isNumber(amount) || !isNumber(date)) {
     return {
@@ -73,7 +84,7 @@ export async function postTransaction(event: PushCommand, context: ServiceContex
   const newVersion = 1;
   await createTransaction(event.entity_id, userId, categoryId, type, amount, note, date, newVersion, DB);
 
-  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: payloadString });
+  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: JSON.stringify({ id: event.entity_id, user_id: userId, category_id: categoryId, type, amount, note, date }) });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
@@ -105,6 +116,17 @@ export async function putTransaction(event: PushCommand, context: ServiceContext
   const amount = payloadObject?.amount;
   const date = payloadObject?.date;
   const note = payloadObject?.note ?? null;
+  const payloadUserId = payloadObject?.user_id;
+
+  // Validate user_id matches context
+  if (payloadUserId && payloadUserId !== userId) {
+    return {
+      mutation_id: event.mutation_id,
+      status: 'ERROR',
+      error_code: 'USER_ID_MISMATCH',
+      error_message: 'Payload user_id does not match authenticated user',
+    };
+  }
 
   if (!isNonEmptyString(categoryId) || !isValidEntryType(type) || !isNumber(amount) || !isNumber(date)) {
     return {
@@ -118,7 +140,7 @@ export async function putTransaction(event: PushCommand, context: ServiceContext
   const newVersion = currentVersion + 1;
   await updateTransaction(event.entity_id, userId, categoryId, type, amount, note, date, newVersion, DB);
 
-  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: payloadString });
+  const syncPayload = JSON.stringify({ action: event.action, version: newVersion, payload: JSON.stringify({ id: event.entity_id, user_id: userId, category_id: categoryId, type, amount, note, date }) });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 
   return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
