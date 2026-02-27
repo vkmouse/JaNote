@@ -1,7 +1,7 @@
 <template>
   <section class="transactions-page">
     <!-- Top Navigation Bar -->
-    <TopNavigation mode="menu-title-avatar" title="收支明細" />
+    <TopNavigation mode="menu-title-avatar" title="收支明細" @user-changed="onUserChanged" />
 
     <MonthPicker
       v-model:open="showMonthPicker"
@@ -53,7 +53,7 @@
               <div 
                 class="transaction-item"
                 :style="{ transform: `translateX(${swipeState[transaction.id]?.offset || 0}px)` }"
-                @click="!swipeState[transaction.id]?.hasSwipped && editTransaction(transaction.id)"
+                @click="!swipeState[transaction.id]?.hasSwipped && !isViewingShared && editTransaction(transaction.id)"
               >
                 <div class="item-left">
                   <div class="category-icon" v-html="getCategoryIconSvg(transaction.category_id)">
@@ -85,7 +85,7 @@
     </div>
 
     <!-- Floating Add Button -->
-    <button class="fab" @click="goToNewTransaction">
+    <button v-if="!isViewingShared" class="fab" @click="goToNewTransaction">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -105,7 +105,13 @@ import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
 import { transactionService } from '../services/transactionService'
+import { userRepository } from '../repositories/userRepository'
 import { getCategoryIcon } from '../utils/categoryIcons'
+
+interface SelectedUser {
+  id: string
+  email: string
+}
 
 const router = useRouter()
 const transactions = ref<Transaction[]>([])
@@ -114,6 +120,8 @@ const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
 const showMonthPicker = ref(false)
 const syncApiBase = '/api'
+const currentUserId = ref<string>('')
+const selectedUser = ref<SelectedUser | null>(null)
 
 // Swipe-to-delete state
 const swipeState = ref<Record<string, { 
@@ -137,9 +145,20 @@ const currentMonthDisplay = computed(() => {
   return `${selectedYear.value} 年 ${selectedMonth.value} 月`
 })
 
+// The active user_id to filter by (self or shared owner)
+const activeUserId = computed(() => {
+  return selectedUser.value?.id || currentUserId.value
+})
+
+// Whether viewing a shared user's data (read-only mode)
+const isViewingShared = computed(() => {
+  return selectedUser.value !== null
+})
+
 const filteredTransactions = computed(() => {
   return transactions.value.filter(t => {
     if (t.is_deleted) return false
+    if (activeUserId.value && t.user_id !== activeUserId.value) return false
     const date = new Date(t.date)
     return date.getFullYear() === selectedYear.value && date.getMonth() + 1 === selectedMonth.value
   })
@@ -228,6 +247,10 @@ const getCategoryName = (categoryId: string): string => {
 const getCategoryIconSvg = (categoryId: string): string => {
   const category = categories.value.find(c => c.id === categoryId)
   return getCategoryIcon(category?.name || '其他')
+}
+
+const onUserChanged = (user: SelectedUser | null) => {
+  selectedUser.value = user
 }
 
 const goToNewTransaction = () => {
@@ -412,7 +435,11 @@ const deleteTransaction = async (id: string) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const user = await userRepository.get()
+  if (user) {
+    currentUserId.value = user.id
+  }
   loadTransactions()
   loadCategories()
 })

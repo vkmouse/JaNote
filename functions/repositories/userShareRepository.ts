@@ -25,6 +25,18 @@ export async function getActiveUserShare(
     .first<UserShare>();
 }
 
+export async function getActiveOwnersByViewerId(
+  viewerId: string,
+  DB: D1Database
+): Promise<UserShare[]> {
+  const results = await DB.prepare(
+    "SELECT * FROM user_shares WHERE viewer_id = ? AND status = 'ACTIVE' AND is_deleted = 0"
+  )
+    .bind(viewerId)
+    .all<UserShare>();
+  return results.results || [];
+}
+
 export async function createUserShare(
   id: string,
   ownerId: string,

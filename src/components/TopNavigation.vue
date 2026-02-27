@@ -13,10 +13,19 @@ interface Props {
   onBack?: () => void
 }
 
+interface SelectedUser {
+  id: string
+  email: string
+}
+
 const props = withDefaults(defineProps<Props>(), {
   mode: 'default',
   title: 'JaNote'
 })
+
+const emit = defineEmits<{
+  (e: 'user-changed', user: SelectedUser | null): void
+}>() 
 
 const router = useRouter()
 const userEmail = ref<string>('')
@@ -79,16 +88,32 @@ const handleBackClick = () => {
   }
 }
 
-const handleAvatarDoubleClick = () => {
+const handleAvatarClick = () => {
   if (!canSwitchAvatar.value) return
 
   if (!isShowingSharedAccount.value) {
     // 切換為共享帳號
     isShowingSharedAccount.value = true
     currentShareIndex.value = 0
+    const share = userShares.value[0]
+    if (share) {
+      emit('user-changed', { id: share.owner_id, email: share.owner_email })
+    }
   } else {
-    // 切換回自己的帳號
-    isShowingSharedAccount.value = false
+    // 嘗試下一個共享帳號
+    const nextIndex = currentShareIndex.value + 1
+    if (nextIndex < userShares.value.length) {
+      currentShareIndex.value = nextIndex
+      const share = userShares.value[nextIndex]
+      if (share) {
+        emit('user-changed', { id: share.owner_id, email: share.owner_email })
+      }
+    } else {
+      // 沒有更多共享帳號，切回自己
+      isShowingSharedAccount.value = false
+      currentShareIndex.value = 0
+      emit('user-changed', null)
+    }
   }
 }
 </script>
@@ -105,7 +130,7 @@ const handleAvatarDoubleClick = () => {
         v-if="userEmail"
         class="avatar-wrapper"
         :class="{ 'can-switch': canSwitchAvatar }"
-        @dblclick="handleAvatarDoubleClick"
+        @click="handleAvatarClick"
         :title="currentAvatarInfo.email"
       >
         <div v-if="currentAvatarInfo.isShared" class="avatar-shared">

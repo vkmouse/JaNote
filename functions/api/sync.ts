@@ -14,7 +14,8 @@ import type {
 } from '../types';
 import { getUserIdByEmail as getUserIdByEmailRepo } from '../repositories/userRepository';
 import { initializeDefaultCategories } from '../repositories/categoryRepository';
-import { getSyncEventByMutationId, getMaxSyncEventId, getPullEvents } from '../repositories/syncEventRepository';
+import { getSyncEventByMutationId, getMaxSyncEventId, getPullEvents, getPullEventsForOwners, getMaxSyncEventIdForUsers } from '../repositories/syncEventRepository';
+import { getActiveOwnersByViewerId } from '../repositories/userShareRepository';
 import { postCategory, putCategory, deleteCategory } from '../services/categoryService';
 import { postTransaction, putTransaction, deleteTransaction } from '../services/transactionService';
 import { postUserShare, putUserShare, deleteUserShare } from '../services/userShareService';
@@ -139,11 +140,21 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (context) =
 	}
 
 	const processedMutationIds = pushResults.map(r => r.mutation_id);
-	const maxCursor = await getMaxSyncEventId(userId, DB);
+
+	// Get active owners whose data should be synced to this viewer
+	const activeOwnerShares = await getActiveOwnersByViewerId(userId, DB);
+	const ownerIds = activeOwnerShares.map(s => s.owner_id);
+	const allUserIds = [userId, ...ownerIds];
+
+	const maxCursor = await getMaxSyncEventIdForUsers(allUserIds, DB);
 	const newCursor = maxCursor > 0 ? maxCursor : body.last_cursor;
 
 	const pullQueryResults = await getPullEvents(userId, body.last_cursor, processedMutationIds, DB);
-	const pullEvents: PullEvent[] = pullQueryResults.map((row: any) => {
+
+	// Also pull owner events (CAT + TXN only)
+	const ownerPullResults = await getPullEventsForOwners(ownerIds, body.last_cursor, processedMutationIds, DB);
+	const allPullQueryResults = [...pullQueryResults, ...ownerPullResults];
+	const pullEvents: PullEvent[] = allPullQueryResults.map((row: any) => {
 		let action: ActionType = "PUT";
 		let version = 0;
 		let payload: string | null = row.payload ?? null;
