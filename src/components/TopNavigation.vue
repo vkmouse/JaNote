@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, inject } from 'vue'
+import { ref, onMounted, inject, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import MenuIcon from '../assets/icons/icon-menu.svg?raw'
 import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
 import { userRepository } from '../repositories/userRepository'
+import { userShareRepository } from '../repositories/userShareRepository'
+import type { UserShare } from '../types'
 
 interface Props {
   mode?: 'default' | 'menu-title-avatar' | 'back-toggle'
@@ -19,9 +21,37 @@ const props = withDefaults(defineProps<Props>(), {
 const router = useRouter()
 const userEmail = ref<string>('')
 const userInitial = ref<string>('U')
+const userShares = ref<UserShare[]>([])
+const isShowingSharedAccount = ref(false)
+const currentShareIndex = ref(0)
 
 // 注入側邊欄打開方法
 const openSideDrawer = inject<() => void>('openSideDrawer')
+
+// 計算當前顯示的帳號信息
+const currentAvatarInfo = computed(() => {
+  if (isShowingSharedAccount.value) {
+    const share = userShares.value[currentShareIndex.value]
+    if (share) {
+      return {
+        initial: share.owner_email.charAt(0).toUpperCase(),
+        email: share.owner_email,
+        isShared: true,
+        viewerInitial: share.viewer_email.charAt(0).toUpperCase()
+      }
+    }
+  }
+  return {
+    initial: userInitial.value,
+    email: userEmail.value,
+    isShared: false
+  }
+})
+
+// 是否可以切換頭貼（有有效的共享帳號）
+const canSwitchAvatar = computed(() => {
+  return userShares.value.length > 0
+})
 
 onMounted(async () => {
   const user = await userRepository.get()
@@ -29,6 +59,10 @@ onMounted(async () => {
     userEmail.value = user.email
     userInitial.value = user.email.charAt(0).toUpperCase()
   }
+
+  // 獲取有效的共享帳號列表（ACTIVE 且未刪除）
+  const activeShares = await userShareRepository.getActiveShares()
+  userShares.value = activeShares
 })
 
 const handleMenuClick = () => {
@@ -44,6 +78,19 @@ const handleBackClick = () => {
     router.back()
   }
 }
+
+const handleAvatarDoubleClick = () => {
+  if (!canSwitchAvatar.value) return
+
+  if (!isShowingSharedAccount.value) {
+    // 切換為共享帳號
+    isShowingSharedAccount.value = true
+    currentShareIndex.value = 0
+  } else {
+    // 切換回自己的帳號
+    isShowingSharedAccount.value = false
+  }
+}
 </script>
 
 <template>
@@ -54,8 +101,26 @@ const handleBackClick = () => {
         <span v-html="MenuIcon" class="icon"></span>
       </button>
       <h1 class="page-title">{{ title }}</h1>
-      <div v-if="userEmail" class="avatar" :title="userEmail">
-        {{ userInitial }}
+      <div
+        v-if="userEmail"
+        class="avatar-wrapper"
+        :class="{ 'can-switch': canSwitchAvatar }"
+        @dblclick="handleAvatarDoubleClick"
+        :title="currentAvatarInfo.email"
+      >
+        <div v-if="currentAvatarInfo.isShared" class="avatar-shared">
+          <!-- 本人頭貼（背景，半透明） -->
+          <div class="avatar avatar-owner" :style="{ opacity: 0.5 }">
+            {{ userInitial }}
+          </div>
+          <!-- 共享者頭貼（前景，遮住1/3） -->
+          <div class="avatar avatar-sharer">
+            {{ currentAvatarInfo.initial }}
+          </div>
+        </div>
+        <div v-else class="avatar" :class="{ 'has-shares': canSwitchAvatar }">
+          {{ currentAvatarInfo.initial }}
+        </div>
       </div>
     </template>
 
@@ -146,6 +211,15 @@ const handleBackClick = () => {
   height: 100%;
 }
 
+.avatar-wrapper {
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.avatar-wrapper.can-switch {
+  cursor: pointer;
+}
+
 .avatar {
   display: flex;
   align-items: center;
@@ -160,6 +234,41 @@ const handleBackClick = () => {
   cursor: pointer;
   flex-shrink: 0;
   user-select: none;
+  transition: opacity 0.2s;
+}
+
+.avatar.has-shares {
+  cursor: pointer;
+}
+
+.avatar-shared {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+/* 本人頭貼（背景，半透明） */
+.avatar-owner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+/* 共享者頭貼（前景，遮住1/3） */
+.avatar-sharer {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  width: 27px;
+  height: 27px;
+  font-size: 11px;
+  z-index: 1;
+  background: var(--janote-expense, #ff6b6b);
 }
 
 .center-content {
@@ -201,6 +310,19 @@ const handleBackClick = () => {
     width: 36px;
     height: 36px;
     font-size: 14px;
+  }
+
+  .avatar-shared {
+    width: 36px;
+    height: 36px;
+  }
+
+  .avatar-sharer {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+    bottom: -6px;
+    right: -6px;
   }
 
   .nav-spacer {
