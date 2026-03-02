@@ -67,6 +67,7 @@ export async function postCategory(
     };
   }
 
+  // 實際執行資料庫更新
   const newVersion = 1;
   await createCategory(event.entity_id, userId, name, type, newVersion, DB);
 

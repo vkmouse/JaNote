@@ -12,22 +12,21 @@ import { getUserByEmail } from "../repositories/userRepository";
 import { insertSyncEvent } from "../repositories/syncEventRepository";
 
 /**
- * Handle POST action for user share
+ * 處理使用者共享的 POST 操作（建立共享邀請）
+ * 先完成所有驗證，只有成功才寫入 sync_event
  */
 export async function postUserShare(
   event: PushCommand,
   context: ServiceContext,
 ): Promise<PushResult> {
   const { userId, userEmail, DB } = context;
-  const { payloadString, payloadObject } = parsePayload(event.payload);
+  const { payloadObject } = parsePayload(event.payload);
+  const senderId = payloadObject?.sender_id;
+  const senderEmail = payloadObject?.sender_email;
+  const receiverEmail = payloadObject?.receiver_email;
 
-  // ===== 先完成所有驗證，只有成功才寫入 sync_event =====
-
-  // Validate sender_id and sender_email match middleware info
-  if (
-    payloadObject?.sender_id !== userId ||
-    payloadObject?.sender_email !== userEmail
-  ) {
+  // 驗證 sender_id 與 sender_email 與 middleware 的資訊相符
+  if (senderId !== userId || senderEmail !== userEmail) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
@@ -36,7 +35,7 @@ export async function postUserShare(
     };
   }
 
-  const receiverEmail = payloadObject?.receiver_email;
+  // 驗證 event.payload.receiver_email
   if (!isNonEmptyString(receiverEmail)) {
     return {
       mutation_id: event.mutation_id,
@@ -46,9 +45,8 @@ export async function postUserShare(
     };
   }
 
-  // Get receiver_id from users table by receiver_email
+  // 驗證 receiver_email 必須對應到使用者
   const receiverUser = await getUserByEmail(receiverEmail, DB);
-
   if (!receiverUser) {
     return {
       mutation_id: event.mutation_id,
@@ -58,10 +56,9 @@ export async function postUserShare(
     };
   }
 
+  // 驗證 receiver_id 不能與 sender_id 相同
   const receiverId = receiverUser.id;
-
-  // Prevent inviting self: sender and receiver must be different users
-  if (receiverId === userId) {
+  if (receiverId === senderId) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
@@ -70,9 +67,8 @@ export async function postUserShare(
     };
   }
 
-  // Check if share already exists (is_deleted = 0)
-  const existingShare = await getActiveUserShare(userId, receiverId, DB);
-
+  // 檢查是否已存在共享紀錄
+  const existingShare = await getActiveUserShare(senderId, receiverId, DB);
   if (existingShare) {
     return {
       mutation_id: event.mutation_id,
@@ -82,14 +78,12 @@ export async function postUserShare(
     };
   }
 
-  // ===== 驗證全部通過，插入新的分享記錄並寫入事實 =====
-
-  const shareId = event.entity_id;
+  // 實際執行資料庫更新
   const newVersion = 1;
   await createUserShare(
-    shareId,
-    userId,
-    userEmail,
+    event.entity_id,
+    senderId,
+    senderEmail,
     receiverId,
     receiverEmail,
     "PENDING",
@@ -97,11 +91,11 @@ export async function postUserShare(
     DB,
   );
 
-  // 處理成功，寫入 PUT 事件（事實）給 sender 和 receiver
+  // 處理成功，寫入 PUT 事件（事實）給發送者與接收者
   const putPayloadString = JSON.stringify({
-    id: shareId,
-    sender_id: userId,
-    sender_email: userEmail,
+    id: event.entity_id,
+    sender_id: senderId,
+    sender_email: senderEmail,
     receiver_id: receiverId,
     receiver_email: receiverEmail,
     status: "PENDING",
@@ -112,8 +106,8 @@ export async function postUserShare(
     payload: putPayloadString,
   });
 
-  // 給 sender 和 receiver 都使用 server-generated mutation_id
-  // 這樣雙方都能收到 pull_event（不會被 excludeMutationIds 排除）
+  // 給發送者與接收者都使用 server 產生的 mutation_id
+  // 如此雙方在 pull 時不會被 excludeMutationIds 排除
   const senderPutMutationId = crypto.randomUUID();
   await insertSyncEvent(
     userId,
@@ -138,7 +132,7 @@ export async function postUserShare(
 }
 
 /**
- * Handle PUT action for user share
+ * 處理使用者共享的 PUT 操作（接收者接受邀請）
  */
 export async function putUserShare(
   event: PushCommand,
@@ -157,7 +151,7 @@ export async function putUserShare(
     };
   }
 
-  // Get the share to verify user is receiver
+  // 取得共享紀錄以驗證目前使用者是否為接收者
   const share = await getUserShareById(event.entity_id, DB);
 
   if (!share) {
@@ -169,7 +163,7 @@ export async function putUserShare(
     };
   }
 
-  // Verify user is receiver
+  // 驗證目前使用者為接收者
   const isReceiver =
     share.receiver_id === userId && share.receiver_email === userEmail;
   if (!isReceiver) {
@@ -181,14 +175,14 @@ export async function putUserShare(
     };
   }
 
-  // Check base version
+  // 檢查 base version 是否已落後於資料庫版本
   if (event.base_version < currentVersion) {
     return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
   const { payloadString, payloadObject } = parsePayload(event.payload);
 
-  // Validate payload status is ACTIVE
+  // 驗證 payload 的 status 必須為 ACTIVE
   if (payloadObject?.status !== "ACTIVE") {
     return {
       mutation_id: event.mutation_id,
@@ -198,7 +192,7 @@ export async function putUserShare(
     };
   }
 
-  // Update status to ACTIVE
+  // 更新共享狀態為 ACTIVE
   const newVersion = currentVersion + 1;
   await updateUserShareStatus(event.entity_id, "ACTIVE", newVersion, DB);
 
@@ -217,7 +211,7 @@ export async function putUserShare(
     payload: updatedPayloadString,
   });
 
-  // Write event to both sender and receiver，都使用 server-generated mutation_id
+  // 寫入事件給發送者與接收者，皆使用 server 產生的 mutation_id
   const senderMutationId = crypto.randomUUID();
   await insertSyncEvent(
     share.sender_id,
@@ -242,7 +236,7 @@ export async function putUserShare(
 }
 
 /**
- * Handle DELETE action for user share
+ * 處理使用者共享的 DELETE 操作（刪除共享或取消邀請）
  */
 export async function deleteUserShare(
   event: PushCommand,
@@ -256,14 +250,14 @@ export async function deleteUserShare(
     return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
-  // Get the share to verify user is sender or receiver
+  // 取得共享紀錄以驗證目前使用者是否為發送者或接收者
   const share = await getUserShareById(event.entity_id, DB);
 
   if (!share) {
     return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
-  // Verify user is sender or receiver
+  // 驗證目前使用者為發送者或接收者之一
   const isSender =
     share.sender_id === userId && share.sender_email === userEmail;
   const isReceiver =
@@ -278,12 +272,12 @@ export async function deleteUserShare(
     };
   }
 
-  // Check base version
+  // 檢查 base version 是否已落後，若落後則跳過
   if (event.base_version < currentVersion) {
     return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
-  // Delete the share
+  // 執行刪除共享（標記為已刪除，並提高版本）
   const newVersion = currentVersion + 1;
   await deleteUserShareRepo(event.entity_id, newVersion, DB);
 
@@ -293,7 +287,7 @@ export async function deleteUserShare(
     payload: null,
   });
 
-  // Write event to both sender and receiver，都使用 server-generated mutation_id
+  // 寫入 DELETE 事件給發送者與接收者，皆使用 server 產生的 mutation_id
   const senderMutationId = crypto.randomUUID();
   await insertSyncEvent(
     share.sender_id,

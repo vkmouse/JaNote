@@ -80,6 +80,7 @@ export async function postTransaction(
     };
   }
 
+  // 實際執行資料庫更新
   const newVersion = 1;
   await createTransaction(
     event.entity_id,
