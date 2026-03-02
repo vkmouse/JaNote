@@ -1,25 +1,38 @@
-import type { PushCommand, PushResult, ServiceContext } from '../types';
-import { isNonEmptyString, parsePayload } from '../utils/validators';
-import { getUserShareVersion, getUserShareById, getActiveUserShare, createUserShare, updateUserShareStatus, deleteUserShare as deleteUserShareRepo } from '../repositories/userShareRepository';
-import { getUserByEmail } from '../repositories/userRepository';
-import { insertSyncEvent } from '../repositories/syncEventRepository';
+import type { PushCommand, PushResult, ServiceContext } from "../types";
+import { isNonEmptyString, parsePayload } from "../utils/validators";
+import {
+  getUserShareVersion,
+  getUserShareById,
+  getActiveUserShare,
+  createUserShare,
+  updateUserShareStatus,
+  deleteUserShare as deleteUserShareRepo,
+} from "../repositories/userShareRepository";
+import { getUserByEmail } from "../repositories/userRepository";
+import { insertSyncEvent } from "../repositories/syncEventRepository";
 
 /**
  * Handle POST action for user share
  */
-export async function postUserShare(event: PushCommand, context: ServiceContext): Promise<PushResult> {
+export async function postUserShare(
+  event: PushCommand,
+  context: ServiceContext,
+): Promise<PushResult> {
   const { userId, userEmail, DB } = context;
   const { payloadString, payloadObject } = parsePayload(event.payload);
 
   // ===== 先完成所有驗證，只有成功才寫入 sync_event =====
 
   // Validate sender_id and sender_email match middleware info
-  if (payloadObject?.sender_id !== userId || payloadObject?.sender_email !== userEmail) {
+  if (
+    payloadObject?.sender_id !== userId ||
+    payloadObject?.sender_email !== userEmail
+  ) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'SENDER_MISMATCH',
-      error_message: 'Sender id/email does not match authenticated user',
+      status: "ERROR",
+      error_code: "SENDER_MISMATCH",
+      error_message: "Sender id/email does not match authenticated user",
     };
   }
 
@@ -27,9 +40,9 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   if (!isNonEmptyString(receiverEmail)) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'INVALID_PAYLOAD',
-      error_message: 'Receiver email is required',
+      status: "ERROR",
+      error_code: "INVALID_PAYLOAD",
+      error_message: "Receiver email is required",
     };
   }
 
@@ -39,9 +52,9 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   if (!receiverUser) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'RECEIVER_NOT_FOUND',
-      error_message: 'Receiver user does not exist',
+      status: "ERROR",
+      error_code: "RECEIVER_NOT_FOUND",
+      error_message: "Receiver user does not exist",
     };
   }
 
@@ -51,9 +64,9 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   if (receiverId === userId) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'CANNOT_INVITE_SELF',
-      error_message: 'Sender and receiver must be different users',
+      status: "ERROR",
+      error_code: "CANNOT_INVITE_SELF",
+      error_message: "Sender and receiver must be different users",
     };
   }
 
@@ -63,9 +76,9 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   if (existingShare) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'ALREADY_EXISTS',
-      error_message: 'Share already exists between these users',
+      status: "ERROR",
+      error_code: "ALREADY_EXISTS",
+      error_message: "Share already exists between these users",
     };
   }
 
@@ -73,7 +86,16 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
 
   const shareId = event.entity_id;
   const newVersion = 1;
-  await createUserShare(shareId, userId, userEmail, receiverId, receiverEmail, "PENDING", newVersion, DB);
+  await createUserShare(
+    shareId,
+    userId,
+    userEmail,
+    receiverId,
+    receiverEmail,
+    "PENDING",
+    newVersion,
+    DB,
+  );
 
   // 處理成功，寫入 PUT 事件（事實）給 sender 和 receiver
   const putPayloadString = JSON.stringify({
@@ -93,18 +115,35 @@ export async function postUserShare(event: PushCommand, context: ServiceContext)
   // 給 sender 和 receiver 都使用 server-generated mutation_id
   // 這樣雙方都能收到 pull_event（不會被 excludeMutationIds 排除）
   const senderPutMutationId = crypto.randomUUID();
-  await insertSyncEvent(userId, senderPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
+  await insertSyncEvent(
+    userId,
+    senderPutMutationId,
+    event.entity_type,
+    event.entity_id,
+    putSyncPayload,
+    DB,
+  );
 
   const receiverPutMutationId = crypto.randomUUID();
-  await insertSyncEvent(receiverId, receiverPutMutationId, event.entity_type, event.entity_id, putSyncPayload, DB);
+  await insertSyncEvent(
+    receiverId,
+    receiverPutMutationId,
+    event.entity_type,
+    event.entity_id,
+    putSyncPayload,
+    DB,
+  );
 
-  return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
+  return { mutation_id: event.mutation_id, status: "OK", version: newVersion };
 }
 
 /**
  * Handle PUT action for user share
  */
-export async function putUserShare(event: PushCommand, context: ServiceContext): Promise<PushResult> {
+export async function putUserShare(
+  event: PushCommand,
+  context: ServiceContext,
+): Promise<PushResult> {
   const { userId, userEmail, DB } = context;
   const currentVersion = await getUserShareVersion(event.entity_id, DB);
   const shareExists = currentVersion > 0;
@@ -112,9 +151,9 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
   if (!shareExists) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'NOT_FOUND',
-      error_message: 'Share does not exist',
+      status: "ERROR",
+      error_code: "NOT_FOUND",
+      error_message: "Share does not exist",
     };
   }
 
@@ -124,26 +163,27 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
   if (!share) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'NOT_FOUND',
-      error_message: 'Share not found or deleted',
+      status: "ERROR",
+      error_code: "NOT_FOUND",
+      error_message: "Share not found or deleted",
     };
   }
 
   // Verify user is receiver
-  const isReceiver = share.receiver_id === userId && share.receiver_email === userEmail;
+  const isReceiver =
+    share.receiver_id === userId && share.receiver_email === userEmail;
   if (!isReceiver) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'FORBIDDEN',
-      error_message: 'Only receiver can accept invitation',
+      status: "ERROR",
+      error_code: "FORBIDDEN",
+      error_message: "Only receiver can accept invitation",
     };
   }
 
   // Check base version
   if (event.base_version < currentVersion) {
-    return { mutation_id: event.mutation_id, status: 'SKIPPED' };
+    return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
   const { payloadString, payloadObject } = parsePayload(event.payload);
@@ -152,9 +192,9 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
   if (payloadObject?.status !== "ACTIVE") {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'INVALID_PAYLOAD',
-      error_message: 'Status must be ACTIVE for PUT action',
+      status: "ERROR",
+      error_code: "INVALID_PAYLOAD",
+      error_message: "Status must be ACTIVE for PUT action",
     };
   }
 
@@ -171,67 +211,108 @@ export async function putUserShare(event: PushCommand, context: ServiceContext):
     status: "ACTIVE",
   });
 
-  const syncPayload = JSON.stringify({ action: "PUT", version: newVersion, payload: updatedPayloadString });
+  const syncPayload = JSON.stringify({
+    action: "PUT",
+    version: newVersion,
+    payload: updatedPayloadString,
+  });
 
   // Write event to both sender and receiver，都使用 server-generated mutation_id
   const senderMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.sender_id, senderMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  await insertSyncEvent(
+    share.sender_id,
+    senderMutationId,
+    event.entity_type,
+    event.entity_id,
+    syncPayload,
+    DB,
+  );
 
   const receiverMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.receiver_id, receiverMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  await insertSyncEvent(
+    share.receiver_id,
+    receiverMutationId,
+    event.entity_type,
+    event.entity_id,
+    syncPayload,
+    DB,
+  );
 
-  return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
+  return { mutation_id: event.mutation_id, status: "OK", version: newVersion };
 }
 
 /**
  * Handle DELETE action for user share
  */
-export async function deleteUserShare(event: PushCommand, context: ServiceContext): Promise<PushResult> {
+export async function deleteUserShare(
+  event: PushCommand,
+  context: ServiceContext,
+): Promise<PushResult> {
   const { userId, userEmail, DB } = context;
   const currentVersion = await getUserShareVersion(event.entity_id, DB);
   const shareExists = currentVersion > 0;
 
   if (!shareExists) {
-    return { mutation_id: event.mutation_id, status: 'SKIPPED' };
+    return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
   // Get the share to verify user is sender or receiver
   const share = await getUserShareById(event.entity_id, DB);
 
   if (!share) {
-    return { mutation_id: event.mutation_id, status: 'SKIPPED' };
+    return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
   // Verify user is sender or receiver
-  const isSender = share.sender_id === userId && share.sender_email === userEmail;
-  const isReceiver = share.receiver_id === userId && share.receiver_email === userEmail;
+  const isSender =
+    share.sender_id === userId && share.sender_email === userEmail;
+  const isReceiver =
+    share.receiver_id === userId && share.receiver_email === userEmail;
 
   if (!isSender && !isReceiver) {
     return {
       mutation_id: event.mutation_id,
-      status: 'ERROR',
-      error_code: 'FORBIDDEN',
-      error_message: 'User must be sender or receiver to delete share',
+      status: "ERROR",
+      error_code: "FORBIDDEN",
+      error_message: "User must be sender or receiver to delete share",
     };
   }
 
   // Check base version
   if (event.base_version < currentVersion) {
-    return { mutation_id: event.mutation_id, status: 'SKIPPED' };
+    return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
   // Delete the share
   const newVersion = currentVersion + 1;
   await deleteUserShareRepo(event.entity_id, newVersion, DB);
 
-  const syncPayload = JSON.stringify({ action: "DELETE", version: newVersion, payload: null });
+  const syncPayload = JSON.stringify({
+    action: "DELETE",
+    version: newVersion,
+    payload: null,
+  });
 
   // Write event to both sender and receiver，都使用 server-generated mutation_id
   const senderMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.sender_id, senderMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  await insertSyncEvent(
+    share.sender_id,
+    senderMutationId,
+    event.entity_type,
+    event.entity_id,
+    syncPayload,
+    DB,
+  );
 
   const receiverMutationId = crypto.randomUUID();
-  await insertSyncEvent(share.receiver_id, receiverMutationId, event.entity_type, event.entity_id, syncPayload, DB);
+  await insertSyncEvent(
+    share.receiver_id,
+    receiverMutationId,
+    event.entity_type,
+    event.entity_id,
+    syncPayload,
+    DB,
+  );
 
-  return { mutation_id: event.mutation_id, status: 'OK', version: newVersion };
+  return { mutation_id: event.mutation_id, status: "OK", version: newVersion };
 }
