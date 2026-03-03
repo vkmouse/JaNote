@@ -52,9 +52,26 @@ function getArcPath(
   outerEndDeg: number,
   innerStartDeg: number,
   innerEndDeg: number,
-  r1: number,
-  r2: number
+  r1: number, // 內半徑
+  r2: number  // 外半徑
 ): string {
+  // 當角度等於或極度接近 360 度時 (100% 的圓環)
+  // SVG 的 A 指令無法處理起終點相同的 360 度圓弧，因此需要分段繪製完整圓環
+  if (outerEndDeg - outerStartDeg >= 359.9) {
+    return[
+      // 繪製外圈 (順時針)
+      `M ${cx} ${cy - r2}`,
+      `A ${r2} ${r2} 0 1 1 ${cx} ${cy + r2}`,
+      `A ${r2} ${r2} 0 1 1 ${cx} ${cy - r2}`,
+      `Z`,
+      // 繪製內圈 (逆時針，這樣會形成鏤空的甜甜圈效果)
+      `M ${cx} ${cy - r1}`,
+      `A ${r1} ${r1} 0 1 0 ${cx} ${cy + r1}`,
+      `A ${r1} ${r1} 0 1 0 ${cx} ${cy - r1}`,
+      `Z`
+    ].join(' ')
+  }
+
   const os = toRad(outerStartDeg)
   const oe = toRad(outerEndDeg)
   const is = toRad(innerStartDeg)
@@ -71,7 +88,7 @@ function getArcPath(
 
   const large = outerEndDeg - outerStartDeg > 180 ? 1 : 0
 
-  return [
+  return[
     `M ${x1} ${y1}`,
     `A ${r2} ${r2} 0 ${large} 1 ${x2} ${y2}`,
     `L ${x3} ${y3}`,
@@ -84,17 +101,20 @@ function getArcPath(
 const outerGapDeg = computed(() => (gapPx / outerR) * (180 / Math.PI))
 const innerGapDeg = computed(() => (gapPx / innerR) * (180 / Math.PI))
 
-// 處理切片資料：補足極小切片，按比例縮減大切片
+// 處理切片資料：排除0%、補足極小切片，按比例縮減大切片
 const processedSlices = computed<{
   sliceLabel: string
   sliceValue: number
   slicePercentage: number
   sliceColor: string
 }[]>(() => {
+  // 1. 過濾掉數值為 0 的資料 (0% 就直接移除，不參與補足邏輯與圖表繪製)
+  const validSlices = props.slices.filter(slice => slice.sliceValue > 0)
+
   // 若所有數值皆為 0，回傳灰色的 100% 切片
-  const total = props.slices.reduce((sum, slice) => sum + slice.sliceValue, 0)
+  const total = validSlices.reduce((sum, slice) => sum + slice.sliceValue, 0)
   if (total === 0) {
-    return [
+    return[
       {
         sliceLabel: '无数据',
         sliceValue: 100,
@@ -105,13 +125,13 @@ const processedSlices = computed<{
   }
 
   // 計算初始百分比
-  const slicesWithPercentage = props.slices.map((slice) => ({
+  const slicesWithPercentage = validSlices.map((slice) => ({
     ...slice,
     slicePercentage: (slice.sliceValue / total) * 100,
   }))
 
-  // 識別小於門檻的切片
-  const smallSlices = slicesWithPercentage.filter(s => s.slicePercentage > 0 && s.slicePercentage < minThreshold)
+  // 識別小於門檻的切片與大於等於門檻的切片
+  const smallSlices = slicesWithPercentage.filter(s => s.slicePercentage < minThreshold)
   const largeSlices = slicesWithPercentage.filter(s => s.slicePercentage >= minThreshold)
 
   // 若沒有極小切片，直接返回
@@ -138,23 +158,11 @@ const processedSlices = computed<{
     slicePercentage: minThreshold,
   }))
 
-  // 合併並保留原始順序
-  const result: {
-    sliceLabel: string
-    sliceValue: number
-    slicePercentage: number
-    sliceColor: string
-  }[] = []
-
-  slicesWithPercentage.forEach((slice) => {
-    const adjusted = adjustedSmallSlices.find(s => s.sliceLabel === slice.sliceLabel) ||
-                     adjustedLargeSlices.find(s => s.sliceLabel === slice.sliceLabel)
-    if (adjusted) {
-      result.push(adjusted)
-    }
+  // 合併並保留原始順序 (針對有效資料)
+  return slicesWithPercentage.map((slice) => {
+    return adjustedSmallSlices.find(s => s.sliceLabel === slice.sliceLabel) ||
+           adjustedLargeSlices.find(s => s.sliceLabel === slice.sliceLabel)!
   })
-
-  return result
 })
 
 // 取得第 i 個切片的弧形路徑
@@ -174,11 +182,21 @@ function getSliceArcPath(index: number): string {
   const sliceAngleDeg = slices[index]!.slicePercentage * 3.6
   const endDeg = startDeg + sliceAngleDeg
 
+  // 如果只有一個切片 (即 100%)，則不套用間距差距
+  const isSingleSlice = slices.length === 1
+  const currentOuterGap = isSingleSlice ? 0 : outerGapDeg.value
+  const currentInnerGap = isSingleSlice ? 0 : innerGapDeg.value
+
   // 在每個切片兩端套用間隔
-  const outerStartDeg = startDeg + outerGapDeg.value
-  const outerEndDeg = endDeg - outerGapDeg.value
-  const innerStartDeg = startDeg + innerGapDeg.value
-  const innerEndDeg = endDeg - innerGapDeg.value
+  const outerStartDeg = startDeg + currentOuterGap
+  const outerEndDeg = endDeg - currentOuterGap
+  const innerStartDeg = startDeg + currentInnerGap
+  const innerEndDeg = endDeg - currentInnerGap
+  
+  // 防呆：防止間隙過大導致起點角度反超終點角度
+  if (outerStartDeg >= outerEndDeg) {
+    return ''
+  }
 
   return getArcPath(
     outerStartDeg,
@@ -192,6 +210,7 @@ function getSliceArcPath(index: number): string {
 </script>
 
 <style scoped>
+/* 原有的樣式保持不變 */
 .donut-chart-container {
   position: relative;
   display: flex;
