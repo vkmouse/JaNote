@@ -45,7 +45,7 @@ export async function postUserShare(
     };
   }
 
-  // 驗證 receiver_email 必須對應到使用者
+  // 驗證 event.payload.receiver_email 必須對應到使用者
   const receiverUser = await getUserByEmail(receiverEmail, DB);
   if (!receiverUser) {
     return {
@@ -67,7 +67,7 @@ export async function postUserShare(
     };
   }
 
-  // 檢查是否已存在共享紀錄
+  // 驗證已存在共享紀錄
   const existingShare = await getActiveUserShare(senderId, receiverId, DB);
   if (existingShare) {
     return {
@@ -91,7 +91,8 @@ export async function postUserShare(
     DB,
   );
 
-  // 處理成功，寫入 PUT 事件（事實）給發送者與接收者
+  // 寫入 sync_events PUT 事件（事實）給發送者與接收者
+  // 雙方都使用 server 產生的 mutation_id，以確保 pull 時都不會被 excludeMutationIds 排除
   const putPayloadString = JSON.stringify({
     id: event.entity_id,
     sender_id: senderId,
@@ -106,8 +107,6 @@ export async function postUserShare(
     payload: putPayloadString,
   });
 
-  // 給發送者與接收者都使用 server 產生的 mutation_id
-  // 如此雙方在 pull 時不會被 excludeMutationIds 排除
   const senderPutMutationId = crypto.randomUUID();
   await insertSyncEvent(
     userId,
@@ -139,10 +138,41 @@ export async function putUserShare(
   context: ServiceContext,
 ): Promise<PushResult> {
   const { userId, userEmail, DB } = context;
-  const currentVersion = await getUserShareVersion(event.entity_id, DB);
-  const shareExists = currentVersion > 0;
+  const { payloadObject } = parsePayload(event.payload);
+  const senderId = payloadObject?.sender_id;
+  const senderEmail = payloadObject?.sender_email;
+  const receiverId = payloadObject?.receiver_email;
+  const receiverEmail = payloadObject?.receiver_email;
+  const status = payloadObject?.status;
 
-  if (!shareExists) {
+  // 驗證 receive_id 與 receive_email 與 middleware 的資訊相符
+  if (receiverId !== userId || receiverEmail !== userEmail) {
+    return {
+      mutation_id: event.mutation_id,
+      status: "ERROR",
+      error_code: "RECEIVER_MISMATCH",
+      error_message: "Receiver id/email does not match authenticated user",
+    };
+  }
+
+  // 驗證 event.payload 的欄位
+  if (
+    !isNonEmptyString(senderId) ||
+    !isNonEmptyString(senderEmail) ||
+    status !== "ACTIVE"
+  ) {
+    return {
+      mutation_id: event.mutation_id,
+      status: "ERROR",
+      error_code: "INVALID_PAYLOAD",
+      error_message: "Status must be ACTIVE for PUT action",
+    };
+  }
+
+  const currentVersion = await getUserShareVersion(event.entity_id, DB);
+
+  // 驗證是否存在，version = 0 代表不存在
+  if (currentVersion === 0) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
@@ -151,9 +181,15 @@ export async function putUserShare(
     };
   }
 
-  // 取得共享紀錄以驗證目前使用者是否為接收者
+  // 驗證版本衝突，當 event.base_version 比 DB 還舊，代表該變更已被覆寫則跳過
+  if (event.base_version < currentVersion) {
+    return { mutation_id: event.mutation_id, status: "SKIPPED" };
+  }
+
+  // 取得共享紀錄以驗證資料庫的資料
   const share = await getUserShareById(event.entity_id, DB);
 
+  // 驗證共享紀錄存在
   if (!share) {
     return {
       mutation_id: event.mutation_id,
@@ -163,39 +199,27 @@ export async function putUserShare(
     };
   }
 
-  // 驗證目前使用者為接收者
-  const isReceiver =
-    share.receiver_id === userId && share.receiver_email === userEmail;
-  if (!isReceiver) {
-    return {
-      mutation_id: event.mutation_id,
-      status: "ERROR",
-      error_code: "FORBIDDEN",
-      error_message: "Only receiver can accept invitation",
-    };
-  }
-
-  // 檢查 base version 是否已落後於資料庫版本
-  if (event.base_version < currentVersion) {
-    return { mutation_id: event.mutation_id, status: "SKIPPED" };
-  }
-
-  const { payloadString, payloadObject } = parsePayload(event.payload);
-
-  // 驗證 payload 的 status 必須為 ACTIVE
-  if (payloadObject?.status !== "ACTIVE") {
+  // 驗證共享紀錄的 sender 與 payload 中的 sender 資訊相符
+  if (
+    share.sender_id !== senderId ||
+    share.sender_email !== senderEmail ||
+    share.receiver_id !== receiverId ||
+    share.receiver_email !== receiverEmail
+  ) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
       error_code: "INVALID_PAYLOAD",
-      error_message: "Status must be ACTIVE for PUT action",
+      error_message:
+        "Payload sender/receiver info does not match existing share record",
     };
   }
 
-  // 更新共享狀態為 ACTIVE
+  // 實際執行資料庫更新
   const newVersion = currentVersion + 1;
   await updateUserShareStatus(event.entity_id, "ACTIVE", newVersion, DB);
 
+  // 寫入 sync_events PUT 事件（事實）給發送者與接收者，皆使用 server 產生的 mutation_id
   const updatedPayloadString = JSON.stringify({
     id: event.entity_id,
     sender_id: share.sender_id,
@@ -211,7 +235,6 @@ export async function putUserShare(
     payload: updatedPayloadString,
   });
 
-  // 寫入事件給發送者與接收者，皆使用 server 產生的 mutation_id
   const senderMutationId = crypto.randomUUID();
   await insertSyncEvent(
     share.sender_id,
@@ -257,13 +280,11 @@ export async function deleteUserShare(
     return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
-  // 驗證目前使用者為發送者或接收者之一
-  const isSender =
-    share.sender_id === userId && share.sender_email === userEmail;
-  const isReceiver =
-    share.receiver_id === userId && share.receiver_email === userEmail;
-
-  if (!isSender && !isReceiver) {
+  // 驗證 sender 或 receiver 與 middleware 的資訊相符
+  if (
+    (share.sender_id !== userId || share.sender_email !== userEmail) &&
+    (share.receiver_id !== userId || share.receiver_email !== userEmail)
+  ) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
@@ -272,22 +293,22 @@ export async function deleteUserShare(
     };
   }
 
-  // 檢查 base version 是否已落後，若落後則跳過
+  // 驗證版本衝突，當 event.base_version 比 DB 還舊，代表該變更已被覆寫則跳過
   if (event.base_version < currentVersion) {
     return { mutation_id: event.mutation_id, status: "SKIPPED" };
   }
 
-  // 執行刪除共享（標記為已刪除，並提高版本）
+  // 實際執行資料庫更新
   const newVersion = currentVersion + 1;
   await deleteUserShareRepo(event.entity_id, newVersion, DB);
 
+  // 寫入 sync_events DELETE 事件給發送者與接收者，皆使用 server 產生的 mutation_id
   const syncPayload = JSON.stringify({
     action: "DELETE",
     version: newVersion,
     payload: null,
   });
 
-  // 寫入 DELETE 事件給發送者與接收者，皆使用 server 產生的 mutation_id
   const senderMutationId = crypto.randomUUID();
   await insertSyncEvent(
     share.sender_id,
