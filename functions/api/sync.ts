@@ -24,10 +24,13 @@ import {
   getSyncEventByMutationId,
   getMaxSyncEventId,
   getPullEvents,
-  getPullEventsForOwners,
+  getPullEventsForSharedUsers,
   getMaxSyncEventIdForUsers,
 } from "../repositories/syncEventRepository";
-import { getActiveOwnersByViewerId } from "../repositories/userShareRepository";
+import { 
+  getActiveSendersByReceiverId,
+  getActiveReceiversBySenderId 
+} from "../repositories/userShareRepository";
 import {
   postCategory,
   putCategory,
@@ -210,10 +213,18 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
   // 階段二：處理 Pull (將伺服器上的新變更回傳給客戶端)
   // ==========================================
 
-  // 取得應該同步資料給當前使用者（接收者）的發送者（分享者）
-  const activeOwnerShares = await getActiveOwnersByViewerId(userId, DB);
-  const senderIds = activeOwnerShares.map((s) => s.sender_id);
-  const allUserIds = [userId, ...senderIds];
+  // 取得雙向共享的使用者 ID
+  // 1. 當前使用者作為接收者（receiver），取得所有發送者（sender）
+  const activeSenderShares = await getActiveSendersByReceiverId(userId, DB);
+  const senderIds = activeSenderShares.map((s) => s.sender_id);
+  
+  // 2. 當前使用者作為發送者（sender），取得所有接收者（receiver）
+  const activeReceiverShares = await getActiveReceiversBySenderId(userId, DB);
+  const receiverIds = activeReceiverShares.map((s) => s.receiver_id);
+  
+  // 3. 合併所有需要同步的使用者 ID（去重）
+  const sharedUserIds = [...new Set([...senderIds, ...receiverIds])];
+  const allUserIds = [userId, ...sharedUserIds];
 
   // 計算下一次同步時，客戶端應該要帶上的新游標 (new_cursor)
   const maxCursor = await getMaxSyncEventIdForUsers(allUserIds, DB);
@@ -227,16 +238,17 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
     DB,
   );
 
-  // 同時拉取發送者（分享者）的事件（僅 CAT 與 TXN）
-  const ownerPullResults = await getPullEventsForOwners(
-    senderIds,
+  // 同時拉取共享使用者的事件（僅 CAT 與 TXN）
+  // 包括：發送者分享給我的 + 我分享給接收者的
+  const sharedPullResults = await getPullEventsForSharedUsers(
+    sharedUserIds,
     body.last_cursor,
     processedMutationIds,
     DB,
   );
 
   // 將所有需要同步給客戶端的事件合併
-  const allPullQueryResults = [...pullQueryResults, ...ownerPullResults];
+  const allPullQueryResults = [...pullQueryResults, ...sharedPullResults];
 
   // 將資料庫查出來的結果格式化成客戶端能看懂的 PullEvent 格式
   const pullEvents: PullEvent[] = allPullQueryResults.map((row: any) => {

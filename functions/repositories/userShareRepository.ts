@@ -33,7 +33,7 @@ export async function getActiveUserShare(
     .first<UserShare>();
 }
 
-export async function getActiveOwnersByViewerId(
+export async function getActiveSendersByReceiverId(
   receiverId: string,
   DB: D1Database,
 ): Promise<UserShare[]> {
@@ -41,6 +41,18 @@ export async function getActiveOwnersByViewerId(
     "SELECT * FROM user_shares WHERE receiver_id = ? AND status = 'ACTIVE' AND is_deleted = 0",
   )
     .bind(receiverId)
+    .all<UserShare>();
+  return results.results || [];
+}
+
+export async function getActiveReceiversBySenderId(
+  senderId: string,
+  DB: D1Database,
+): Promise<UserShare[]> {
+  const results = await DB.prepare(
+    "SELECT * FROM user_shares WHERE sender_id = ? AND status = 'ACTIVE' AND is_deleted = 0",
+  )
+    .bind(senderId)
     .all<UserShare>();
   return results.results || [];
 }

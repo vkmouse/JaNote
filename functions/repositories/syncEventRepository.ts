@@ -59,17 +59,17 @@ export async function getPullEvents(
   return results.results || [];
 }
 
-export async function getPullEventsForOwners(
-  ownerIds: string[],
+export async function getPullEventsForSharedUsers(
+  sharedUserIds: string[],
   lastCursor: number,
   excludeMutationIds: string[],
   DB: D1Database,
 ): Promise<any[]> {
-  if (ownerIds.length === 0) return [];
+  if (sharedUserIds.length === 0) return [];
 
-  const ownerPlaceholders = ownerIds.map(() => "?").join(", ");
-  let query = `SELECT id, mutation_id, entity_type, entity_id, payload FROM sync_events WHERE user_id IN (${ownerPlaceholders}) AND id > ? AND entity_type IN ('CAT', 'TXN')`;
-  const binds: unknown[] = [...ownerIds, lastCursor];
+  const userPlaceholders = sharedUserIds.map(() => "?").join(", ");
+  let query = `SELECT id, mutation_id, entity_type, entity_id, payload FROM sync_events WHERE user_id IN (${userPlaceholders}) AND id > ? AND entity_type IN ('CAT', 'TXN')`;
+  const binds: unknown[] = [...sharedUserIds, lastCursor];
 
   if (excludeMutationIds.length > 0) {
     const placeholders = excludeMutationIds.map(() => "?").join(", ");
