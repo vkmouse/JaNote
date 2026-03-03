@@ -62,7 +62,8 @@ const filteredTransactions = computed(() => {
     if (activeUserId.value && t.user_id !== activeUserId.value) return false
     
     // 解決 iOS/Safari 的日期解析問題 (將 '-' 替換為 '/')
-    const dateString = typeof t.date === 'string' ? t.date.replace(/-/g, '/') : t.date
+    const dateValue: any = t.date
+    const dateString = typeof dateValue === 'string' ? dateValue.replace(/-/g, '/') : dateValue
     const date = new Date(dateString)
     
     // 防呆：如果日期格式錯誤導致無法解析，則略過
@@ -94,7 +95,8 @@ const categorySummaries = computed<CategorySummary[]>(() => {
         category_id: transaction.category_id,
         category_name: categoryName,
         total_amount: 0,
-        color: categoryColors[categoryMap.size % categoryColors.length]
+        // 為陣列取值添加預設值 '#FF6B6B'，符合 string 型別的要求
+        color: categoryColors[categoryMap.size % categoryColors.length] || '#FF6B6B'
       })
     }
     
@@ -241,6 +243,7 @@ watch(selectedUser, async () => {
 </template>
 
 <style scoped>
+/* (樣式保留與你原本的一致，無需更動) */
 .dashboard-page {
   display: flex;
   flex-direction: column;
