@@ -68,9 +68,10 @@
               <button 
                 class="delete-btn" 
                 @click.stop="deleteTransaction(transaction.id)"
+                :disabled="isViewingShared"
                 :style="{ 
                   opacity: swipeState[transaction.id]?.showDelete ? 1 : 0,
-                  pointerEvents: swipeState[transaction.id]?.showDelete ? 'auto' : 'none'
+                  pointerEvents: swipeState[transaction.id]?.showDelete && !isViewingShared ? 'auto' : 'none'
                 }"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -258,6 +259,10 @@ const goToNewTransaction = () => {
 }
 
 const editTransaction = (id: string) => {
+  // 不能删除共享帳戶的交易
+  if (isViewingShared.value) {
+    return
+  }
   router.push(`/transaction/${id}/edit`)
 }
 
@@ -413,6 +418,11 @@ const handleMouseLeave = (id: string) => {
 }
 
 const deleteTransaction = async (id: string) => {
+  // 不能删除共享帳戶的交易
+  if (isViewingShared.value) {
+    return
+  }
+
   if (confirm('確定要刪除這筆交易嗎？')) {
     // Mark as deleted (soft delete)
     const transaction = transactions.value.find(t => t.id === id)

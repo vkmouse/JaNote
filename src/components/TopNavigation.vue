@@ -28,6 +28,7 @@ const emit = defineEmits<{
 }>() 
 
 const router = useRouter()
+const currentUserId = ref<string>('')
 const userEmail = ref<string>('')
 const userInitial = ref<string>('U')
 const userShares = ref<UserShare[]>([])
@@ -42,11 +43,19 @@ const currentAvatarInfo = computed(() => {
   if (isShowingSharedAccount.value) {
     const share = userShares.value[currentShareIndex.value]
     if (share) {
+      // 判斷本人是 sender 還是 receiver
+      const isCurrentUserSender = share.sender_id === currentUserId.value
+      
+      // 決定誰是共享對象（另一方）
+      const otherEmail = isCurrentUserSender ? share.receiver_email : share.sender_email
+      const otherInitial = otherEmail.charAt(0).toUpperCase()
+      
       return {
-        initial: share.sender_email.charAt(0).toUpperCase(),
-        email: share.sender_email,
+        initial: otherInitial,  // 共享對象的首字母
+        email: otherEmail,      // 共享對象的 email
         isShared: true,
-        receiverInitial: share.receiver_email.charAt(0).toUpperCase()
+        ownerInitial: userInitial.value,      // 本人首字母
+        ownerEmail: userEmail.value            // 本人 email
       }
     }
   }
@@ -64,6 +73,9 @@ const canSwitchAvatar = computed(() => {
 
 onMounted(async () => {
   const user = await userRepository.get()
+  if (user?.id) {
+    currentUserId.value = user.id
+  }
   if (user && user.email) {
     userEmail.value = user.email
     userInitial.value = user.email.charAt(0).toUpperCase()
@@ -97,7 +109,13 @@ const handleAvatarClick = () => {
     currentShareIndex.value = 0
     const share = userShares.value[0]
     if (share) {
-      emit('user-changed', { id: share.sender_id, email: share.sender_email })
+      // 根據本人角色，判斷共享對象
+      const isCurrentUserSender = share.sender_id === currentUserId.value
+      if (isCurrentUserSender) {
+        emit('user-changed', { id: share.receiver_id, email: share.receiver_email })
+      } else {
+        emit('user-changed', { id: share.sender_id, email: share.sender_email })
+      }
     }
   } else {
     // 嘗試下一個共享帳號
@@ -106,7 +124,13 @@ const handleAvatarClick = () => {
       currentShareIndex.value = nextIndex
       const share = userShares.value[nextIndex]
       if (share) {
-        emit('user-changed', { id: share.sender_id, email: share.sender_email })
+        // 根據本人角色，判斷共享對象
+        const isCurrentUserSender = share.sender_id === currentUserId.value
+        if (isCurrentUserSender) {
+          emit('user-changed', { id: share.receiver_id, email: share.receiver_email })
+        } else {
+          emit('user-changed', { id: share.sender_id, email: share.sender_email })
+        }
       }
     } else {
       // 沒有更多共享帳號，切回自己
@@ -136,11 +160,11 @@ const handleAvatarClick = () => {
         <div v-if="currentAvatarInfo.isShared" class="avatar-shared">
           <!-- 本人頭貼（背景，半透明） -->
           <div class="avatar avatar-owner" :style="{ opacity: 0.5 }">
-            {{ userInitial }}
+            {{ currentAvatarInfo.ownerInitial }}
           </div>
           <!-- 共享者頭貼（前景，遮住1/3） -->
           <div class="avatar avatar-sharer">
-            {{ currentAvatarInfo.receiverInitial }}
+            {{ currentAvatarInfo.initial }}
           </div>
         </div>
         <div v-else class="avatar" :class="{ 'has-shares': canSwitchAvatar }">
