@@ -7,7 +7,7 @@ const route = useRoute()
 
 const navItems = [
   { to: '/transactions', label: '收支', icon: DollarCircleIcon },
-  { to: '/dashboard', label: '總覽', icon: PieChartIcon },
+  { to: '/transactions/summary', label: '總覽', icon: PieChartIcon },
 ]
 
 const isActive = (path: string) => route.path === path

@@ -14,13 +14,24 @@
     />
 
     <div class="page-content page">
-    <StatsChart
-      :monthlyExpense="monthlyExpense"
-      :monthlyIncome="monthlyIncome"
-      :balance="balance"
-      :expensePercentage="expensePercentage"
-      :incomePercentage="incomePercentage"
-    />
+      <!-- Stats + Summary Button -->
+      <div class="stats-wrapper">
+        <StatsChart
+          :monthlyExpense="monthlyExpense"
+          :monthlyIncome="monthlyIncome"
+          :balance="balance"
+          :expensePercentage="expensePercentage"
+          :incomePercentage="incomePercentage"
+        />
+        <button
+          class="summary-btn"
+          @click="router.push('/transactions/summary')"
+          title="查看摘要"
+        >
+          <span v-html="PieChartIcon" class="icon"></span>
+          <span class="summary-label">摘要</span>
+        </button>
+      </div>
 
     <!-- Daily Transaction List -->
     <div class="transaction-list">
@@ -104,6 +115,7 @@ import { useRouter } from 'vue-router'
 import TopNavigation from '../components/TopNavigation.vue'
 import MonthPicker from '../components/MonthPicker.vue'
 import StatsChart from '../components/StatsChart.vue'
+import PieChartIcon from '../assets/icons/icon-pie-chart.svg?raw'
 import type { Transaction, Category } from '../types'
 import { transactionRepository } from '../repositories/transactionRepository'
 import { categoryRepository } from '../repositories/categoryRepository'
@@ -386,17 +398,12 @@ const handleMouseMove = (event: MouseEvent, id: string) => {
   // Get current offset
   const currentOffset = swipeState.value[id].offset
   
-  // Calculate new offset based on current state
-  // If we already have a negative offset (open), allow positive movements (closing)
-  // If we have no offset (closed), allow negative movements (opening)
   let newOffset = currentOffset + diff
-  
-  // Limit to -80px to 0px range
   newOffset = Math.min(0, Math.max(newOffset, -80))
   
   swipeState.value[id].offset = newOffset
   swipeState.value[id].showDelete = newOffset < -40
-  swipeState.value[id].startX = currentX // Update start position for continuous tracking
+  swipeState.value[id].startX = currentX
 }
 
 const handleMouseUp = (id: string) => {
@@ -481,7 +488,64 @@ onMounted(async () => {
 .page-content {
   flex: 1;
   background: var(--bg-page);
-  padding-bottom: 80px;
+  padding-bottom: 0px;
+}
+
+/* Stats wrapper — positions summary button relative to chart */
+.stats-wrapper {
+  position: relative;
+}
+
+/* Summary Button — anchored to bottom-right of StatsChart */
+.summary-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 8px 10px;
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.summary-btn:hover {
+  background: var(--bg-hover, #f5f5f5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.summary-btn:active {
+  transform: translateY(0px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.summary-btn .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.summary-btn .icon :deep(svg) {
+  width: 100%;
+  height: 100%;
+}
+
+.summary-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 /* Transaction List */
@@ -646,7 +710,7 @@ onMounted(async () => {
 /* Floating Action Button */
 .fab {
   position: fixed;
-  bottom: 82px; /* 72px bottom nav + 10px spacing */
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   width: 56px;
@@ -685,9 +749,15 @@ onMounted(async () => {
   }
   
   .fab {
-    bottom: 82px; /* 72px bottom nav + 10px spacing */
+    bottom: 24px;
     width: 52px;
     height: 52px;
+  }
+
+  .summary-btn {
+    bottom: 12px;
+    right: 12px;
+    padding: 7px 12px 7px 9px;
   }
 }
 </style>

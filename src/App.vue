@@ -39,7 +39,8 @@ const handleClose = () => {
     <main class="app-main">
       <router-view />
     </main>
-    <BottomNavigation />
+    <!-- 先暫時將底部導覽註解 -->
+    <!-- <BottomNavigation /> -->
     
     <!-- PWA 更新提示 Modal -->
     <UpdateModal 

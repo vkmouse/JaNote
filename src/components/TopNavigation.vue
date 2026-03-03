@@ -8,7 +8,7 @@ import { userShareRepository } from '../repositories/userShareRepository'
 import type { UserShare } from '../types'
 
 interface Props {
-  mode?: 'default' | 'menu-title-avatar' | 'menu-avatar' | 'back-toggle'
+  mode?: 'default' | 'menu-title-avatar' | 'menu-avatar' | 'back-toggle' | 'back-avatar'
   title?: string
   onBack?: () => void
 }
@@ -152,6 +152,9 @@ const handleAvatarClick = () => {
       <div class="center-content">
         <slot></slot>
       </div>
+      <div v-if="$slots.actions" class="nav-actions">
+        <slot name="actions"></slot>
+      </div>
       <div
         v-if="userEmail"
         class="avatar-wrapper"
@@ -213,6 +216,37 @@ const handleAvatarClick = () => {
         <slot></slot>
       </div>
       <div class="nav-spacer"></div>
+    </template>
+
+    <!-- Mode: back-avatar -->
+    <template v-else-if="mode === 'back-avatar'">
+      <button class="nav-btn" @click="handleBackClick" aria-label="返回">
+        <span v-html="ArrowLeftIcon" class="icon"></span>
+      </button>
+      <div class="center-content">
+        <slot></slot>
+      </div>
+      <div
+        v-if="userEmail"
+        class="avatar-wrapper"
+        :class="{ 'can-switch': canSwitchAvatar }"
+        @click="handleAvatarClick"
+        :title="currentAvatarInfo.email"
+      >
+        <div v-if="currentAvatarInfo.isShared" class="avatar-shared">
+          <!-- 本人頭貼（背景，半透明） -->
+          <div class="avatar avatar-owner" :style="{ opacity: 0.5 }">
+            {{ currentAvatarInfo.ownerInitial }}
+          </div>
+          <!-- 共享者頭貼（前景，遮住1/3） -->
+          <div class="avatar avatar-sharer">
+            {{ currentAvatarInfo.initial }}
+          </div>
+        </div>
+        <div v-else class="avatar" :class="{ 'has-shares': canSwitchAvatar }">
+          {{ currentAvatarInfo.initial }}
+        </div>
+      </div>
     </template>
 
     <!-- Default mode -->

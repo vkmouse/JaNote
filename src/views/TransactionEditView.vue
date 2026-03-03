@@ -224,7 +224,7 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
   .transaction-edit-page {
-    height: calc(100vh - 72px); /* Subtract bottom nav height on mobile */
+    height: 100vh;
   }
 }
 

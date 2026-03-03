@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import SyncIcon from '../assets/icons/icon-sync.svg?raw'
+import DollarCircleIcon from '../assets/icons/icon-dollar-circle.svg?raw'
 
 interface Props {
   isOpen?: boolean
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 const route = useRoute()
 
 const navItems = [
+  { to: '/transactions', label: '記帳管理', icon: DollarCircleIcon },
   { to: '/sync', label: '同步管理', icon: SyncIcon },
 ]
 

@@ -28,6 +28,8 @@ interface CategorySummary {
 }
 
 const router = useRouter()
+const userEmail = ref<string>('')
+const userInitial = ref<string>('U')
 const transactions = ref<Transaction[]>([])
 const categories = ref<Category[]>([])
 const viewMode = ref<ViewMode>('monthly')
@@ -182,8 +184,10 @@ onMounted(async () => {
   const user = await userRepository.get()
   if (user) {
     currentUserId.value = user.id
-  }
-  await loadCategories()
+  }  if (user && user.email) {
+    userEmail.value = user.email
+    userInitial.value = user.email.charAt(0).toUpperCase()
+  }  await loadCategories()
   await loadTransactions()
 })
 
@@ -194,8 +198,8 @@ watch(selectedUser, async () => {
 </script>
 
 <template>
-  <section class="dashboard-page">
-    <TopNavigation mode="menu-avatar" @user-changed="onUserChanged">
+  <section class="transaction-summary-page">
+    <TopNavigation mode="back-avatar" @user-changed="onUserChanged">
       <div class="month-display" @click="openPicker">
         <span>{{ currentMonthDisplay }}</span>
       </div>
@@ -328,7 +332,7 @@ watch(selectedUser, async () => {
 </template>
 
 <style scoped>
-.dashboard-page {
+.transaction-summary-page {
   display: flex;
   flex-direction: column;
 }
@@ -354,7 +358,7 @@ watch(selectedUser, async () => {
 .page-content {
   flex: 1;
   background: var(--bg-page);
-  padding-bottom: 80px;
+  padding-bottom: 0px;
 }
 
 /* ── 共用 toggle 尺寸規格 ── */
