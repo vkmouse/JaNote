@@ -141,7 +141,7 @@ export async function putUserShare(
   const { payloadObject } = parsePayload(event.payload);
   const senderId = payloadObject?.sender_id;
   const senderEmail = payloadObject?.sender_email;
-  const receiverId = payloadObject?.receiver_email;
+  const receiverId = payloadObject?.receiver_id;
   const receiverEmail = payloadObject?.receiver_email;
   const status = payloadObject?.status;
 
