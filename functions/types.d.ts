@@ -5,19 +5,25 @@ declare global {
   type PagesFunction<
     Env = unknown,
     Params extends string = any,
-    Data extends Record<string, unknown> = Record<string, unknown>
+    Data extends Record<string, unknown> = Record<string, unknown>,
   > = (
-    context: EventContext<Env, Params, Data>
+    context: EventContext<Env, Params, Data>,
   ) => Response | Promise<Response>;
 
-  interface EventContext<Env = unknown, Params extends string = any, Data extends Record<string, unknown> = Record<string, unknown>> {
+  interface EventContext<
+    Env = unknown,
+    Params extends string = any,
+    Data extends Record<string, unknown> = Record<string, unknown>,
+  > {
     request: Request;
     functionPath: string;
     waitUntil(promise: Promise<any>): void;
     passThroughOnException(): void;
     next(input?: Request | string, init?: RequestInit): Promise<Response>;
     env: Env;
-    params: Params extends `${any}:${infer ParamName}` ? { [K in ParamName]: string } : {};
+    params: Params extends `${any}:${infer ParamName}`
+      ? { [K in ParamName]: string }
+      : {};
     data: Data;
   }
 
@@ -44,7 +50,9 @@ declare global {
   interface D1Database {
     prepare(query: string): D1PreparedStatement;
     dump(): Promise<ArrayBuffer>;
-    batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+    batch<T = unknown>(
+      statements: D1PreparedStatement[],
+    ): Promise<D1Result<T>[]>;
     exec(query: string): Promise<D1Result>;
   }
 }

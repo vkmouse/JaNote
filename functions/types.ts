@@ -124,7 +124,7 @@ export interface PushCommand {
 
 export interface PushResult {
   mutation_id: string;
-  status: 'OK' | 'ERROR' | 'SKIPPED';
+  status: "OK" | "ERROR" | "SKIPPED";
   version?: number | null;
   error_code?: string | null;
   error_message?: string | null;
@@ -144,4 +144,7 @@ export interface PullEvent {
 // Utility Types
 // ============================================
 
-export type EntityHandler = (event: PushCommand, context: ServiceContext) => Promise<PushResult>;
+export type EntityHandler = (
+  event: PushCommand,
+  context: ServiceContext,
+) => Promise<PushResult>;
