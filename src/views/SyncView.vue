@@ -222,7 +222,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 <template>
   <section class="sync-page">
-    <TopNavigation mode="menu-title-avatar" title="同步管理" />
+    <TopNavigation mode="menu-avatar" />
     
     <div class="page-content">
       <header class="hero">

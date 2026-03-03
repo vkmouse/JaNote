@@ -1,7 +1,11 @@
 <template>
   <section class="transactions-page">
     <!-- Top Navigation Bar -->
-    <TopNavigation mode="menu-title-avatar" title="收支明細" @user-changed="onUserChanged" />
+    <TopNavigation mode="menu-avatar" @user-changed="onUserChanged">
+      <div class="month-display" @click="showMonthPicker = true">
+        <span>{{ currentMonthDisplay }}</span>
+      </div>
+    </TopNavigation>
 
     <MonthPicker
       v-model:open="showMonthPicker"
@@ -16,8 +20,6 @@
       :balance="balance"
       :expensePercentage="expensePercentage"
       :incomePercentage="incomePercentage"
-      :currentMonthDisplay="currentMonthDisplay"
-      @open-month-picker="showMonthPicker = true"
     />
 
     <!-- Daily Transaction List -->
@@ -143,7 +145,7 @@ interface DailyGroup {
 }
 
 const currentMonthDisplay = computed(() => {
-  return `${selectedYear.value} 年 ${selectedMonth.value} 月`
+  return `${selectedYear.value}\u5e74${selectedMonth.value}\u6708`
 })
 
 // The active user_id to filter by (self or shared owner)
@@ -459,6 +461,21 @@ onMounted(async () => {
 .transactions-page {
   display: flex;
   flex-direction: column;
+}
+
+.month-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.month-display:hover {
+  opacity: 0.7;
 }
 
 .page-content {

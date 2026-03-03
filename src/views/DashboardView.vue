@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import TopNavigation from '../components/TopNavigation.vue'
 import MonthPicker from '../components/MonthPicker.vue'
 import YearPicker from '../components/YearPicker.vue'
+import DateRangePicker from '../components/DateRangePicker.vue'
 import DonutChart from '../components/DonutChart.vue'
 import type { DonutSlice } from '../components/DonutChart.vue'
 import type { Transaction, Category, EntryType } from '../types'
@@ -12,7 +13,7 @@ import { categoryRepository } from '../repositories/categoryRepository'
 import { userRepository } from '../repositories/userRepository'
 import { getCategoryIcon } from '../utils/categoryIcons'
 
-type ViewMode = 'monthly' | 'yearly'
+type ViewMode = 'monthly' | 'yearly' | 'custom'
 
 interface SelectedUser {
   id: string
@@ -34,6 +35,9 @@ const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth() + 1)
 const showMonthPicker = ref(false)
 const showYearPicker = ref(false)
+const showDateRangePicker = ref(false)
+const customStartDate = ref(new Date().setHours(0, 0, 0, 0))
+const customEndDate = ref(new Date().setHours(23, 59, 59, 999))
 const currentUserId = ref<string>('')
 const selectedUser = ref<SelectedUser | null>(null)
 const transactionType = ref<EntryType>('EXPENSE')
@@ -46,17 +50,26 @@ const categoryColors = [
 
 const currentMonthDisplay = computed(() => {
   if (viewMode.value === 'monthly') {
-    return `${selectedYear.value}/${selectedMonth.value}`
+    return `${selectedYear.value}年${selectedMonth.value}月`
+  } else if (viewMode.value === 'yearly') {
+    return `${selectedYear.value}年`
   } else {
-    return `${selectedYear.value}`
+    // custom
+    const start = new Date(customStartDate.value)
+    const end = new Date(customEndDate.value)
+    const startStr = `${start.getFullYear()}/${String(start.getMonth() + 1).padStart(2, '0')}/${String(start.getDate()).padStart(2, '0')}`
+    const endStr = `${end.getFullYear()}/${String(end.getMonth() + 1).padStart(2, '0')}/${String(end.getDate()).padStart(2, '0')}`
+    return `${startStr}~${endStr}`
   }
 })
 
 const openPicker = () => {
   if (viewMode.value === 'monthly') {
     showMonthPicker.value = true
-  } else {
+  } else if (viewMode.value === 'yearly') {
     showYearPicker.value = true
+  } else {
+    showDateRangePicker.value = true
   }
 }
 
@@ -89,8 +102,13 @@ const filteredTransactions = computed(() => {
     if (viewMode.value === 'monthly') {
       return date.getFullYear() === Number(selectedYear.value) &&
              (date.getMonth() + 1) === Number(selectedMonth.value)
-    } else {
+    } else if (viewMode.value === 'yearly') {
       return date.getFullYear() === Number(selectedYear.value)
+    } else {
+      // custom date range
+      const startDate = new Date(customStartDate.value)
+      const endDate = new Date(customEndDate.value)
+      return date >= startDate && date <= endDate
     }
   })
 })
@@ -177,7 +195,11 @@ watch(selectedUser, async () => {
 
 <template>
   <section class="dashboard-page">
-    <TopNavigation mode="menu-title-avatar" title="帳務總覽" @user-changed="onUserChanged" />
+    <TopNavigation mode="menu-avatar" @user-changed="onUserChanged">
+      <div class="month-display" @click="openPicker">
+        <span>{{ currentMonthDisplay }}</span>
+      </div>
+    </TopNavigation>
 
     <MonthPicker
       v-model:open="showMonthPicker"
@@ -190,10 +212,15 @@ watch(selectedUser, async () => {
       v-model:year="selectedYear"
     />
 
+    <DateRangePicker
+      v-model:open="showDateRangePicker"
+      v-model:startDate="customStartDate"
+      v-model:endDate="customEndDate"
+    />
+
     <div class="page-content page">
-      <!-- 月份/年份顯示與視圖模式切換 -->
+      <!-- 右：支出/收入 toggle，靠右 -->
       <div class="header-section">
-        <!-- 左：月/年 toggle -->
         <div class="left-controls">
           <div class="view-mode-toggle">
             <button
@@ -208,24 +235,14 @@ watch(selectedUser, async () => {
             >
               年
             </button>
+            <button
+              :class="['mode-btn', { active: viewMode === 'custom' }]"
+              @click="viewMode = 'custom'"
+            >
+              自訂
+            </button>
           </div>
         </div>
-
-        <!-- 中：月份 picker，自動置中 -->
-        <div class="month-display" @click="openPicker">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <span>{{ currentMonthDisplay }}</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-
-        <!-- 右：支出/收入 toggle，靠右 -->
         <div class="right-controls">
           <div class="type-toggle">
             <button
@@ -316,6 +333,24 @@ watch(selectedUser, async () => {
   flex-direction: column;
 }
 
+.month-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.month-display:hover {
+  opacity: 0.7;
+}
+
 .page-content {
   flex: 1;
   background: var(--bg-page);
@@ -371,9 +406,9 @@ watch(selectedUser, async () => {
 
 /* ── 月份 / 年份切換列 ── */
 .header-section {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
 }
 
@@ -389,23 +424,6 @@ watch(selectedUser, async () => {
   justify-content: flex-end;
 }
 
-.month-display {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-  cursor: pointer;
-  user-select: none;
-  padding: 6px 10px;
-  border-radius: 10px;
-  transition: background 0.15s;
-}
-
-.month-display:hover {
-  background: #f0f0f0;
-}
 
 /* ── 分類列表 ── */
 .category-list {
@@ -563,18 +581,6 @@ watch(selectedUser, async () => {
 @media (max-width: 768px) {
   .header-section {
     padding: 10px 12px;
-  }
-
-  .month-display {
-    font-size: 14px;
-    padding: 5px 6px;
-  }
-
-  .mode-btn,
-  .toggle-btn {
-    padding: 3px 8px;
-    font-size: 11px;
-    min-width: 28px;
   }
 }
 </style>

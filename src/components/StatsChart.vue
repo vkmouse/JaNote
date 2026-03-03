@@ -7,13 +7,6 @@
         <div class="summary-amount">${{ monthlyExpense.toLocaleString() }}</div>
       </div>
       
-      <!-- 中：月份選擇器 -->
-      <div class="summary-item-center">
-        <button class="month-selector" @click="$emit('open-month-picker')">
-          <span class="month-display">{{ currentMonthDisplay }}</span>
-        </button>
-      </div>
-      
       <!-- 右：本月收入 -->
       <div class="summary-item summary-item-right">
         <div class="summary-label">月收入</div>
@@ -42,11 +35,6 @@ const props = defineProps<{
   balance: number
   expensePercentage: number
   incomePercentage: number
-  currentMonthDisplay: string
-}>()
-
-defineEmits<{
-  'open-month-picker': []
 }>()
 
 // 為 DonutChart 建構切片資料
@@ -67,7 +55,7 @@ const chartSlices = computed<DonutSlice[]>(() => [
 <style scoped>
 .summary-section {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   padding: 6px 20px 0;
   background: var(--bg-page);
 }
@@ -79,12 +67,6 @@ const chartSlices = computed<DonutSlice[]>(() => [
 
 .summary-item-left {
   align-items: flex-start;
-}
-
-.summary-item-center {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
 }
 
 .summary-item-right {
@@ -99,31 +81,12 @@ const chartSlices = computed<DonutSlice[]>(() => [
 }
 
 .summary-item:nth-child(1) .summary-label { border-color: var(--janote-expense); }
-.summary-item:nth-child(3) .summary-label { border-color: var(--janote-income); }
+.summary-item:nth-child(2) .summary-label { border-color: var(--janote-income); }
 
 .summary-amount {
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
-}
-
-/* 月份選擇器 */
-.month-selector {
-  background: none;
-  border: none;
-  display: flex;
-  align-items: center;
-  font-weight: 700;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.month-display {
-  color: var(--text-primary);
-}
-
-.month-selector:hover {
-  opacity: 0.7;
 }
 
 .chart-section {
