@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'user-changed', user: SelectedUser | null): void
-}>() 
+}>()
 
 const router = useRouter()
 const currentUserId = ref<string>('')
@@ -45,17 +45,17 @@ const currentAvatarInfo = computed(() => {
     if (share) {
       // 判斷本人是 sender 還是 receiver
       const isCurrentUserSender = share.sender_id === currentUserId.value
-      
+
       // 決定誰是共享對象（另一方）
       const otherEmail = isCurrentUserSender ? share.receiver_email : share.sender_email
       const otherInitial = otherEmail.charAt(0).toUpperCase()
-      
+
       return {
-        initial: otherInitial,  // 共享對象的首字母
-        email: otherEmail,      // 共享對象的 email
+        initial: otherInitial,   // 共享對象的首字母
+        email: otherEmail,       // 共享對象的 email
         isShared: true,
-        ownerInitial: userInitial.value,      // 本人首字母
-        ownerEmail: userEmail.value            // 本人 email
+        ownerInitial: userInitial.value,  // 本人首字母
+        ownerEmail: userEmail.value       // 本人 email
       }
     }
   }
@@ -69,6 +69,13 @@ const currentAvatarInfo = computed(() => {
 // 是否可以切換頭貼（有有效的共享帳號）
 const canSwitchAvatar = computed(() => {
   return userShares.value.length > 0
+})
+
+// 根據是否展示共享帳號，動態控制 avatar-wrapper 的寬度
+// - 一般模式：36px（只顯示單一頭貼）
+// - 共享模式：54px（顯示雙頭貼，需要更多空間）
+const avatarWrapperWidth = computed(() => {
+  return isShowingSharedAccount.value ? '54px' : '36px'
 })
 
 onMounted(async () => {
@@ -155,19 +162,21 @@ const handleAvatarClick = () => {
       <div v-if="$slots.actions" class="nav-actions">
         <slot name="actions"></slot>
       </div>
+      <!-- 使用 avatarWrapperWidth 動態控制寬度，確保 center-content 不被擠壓 -->
       <div
         v-if="userEmail"
         class="avatar-wrapper"
         :class="{ 'can-switch': canSwitchAvatar }"
+        :style="{ width: avatarWrapperWidth }"
         @click="handleAvatarClick"
         :title="currentAvatarInfo.email"
       >
         <div v-if="currentAvatarInfo.isShared" class="avatar-shared">
-          <!-- 本人頭貼（背景，半透明） -->
-          <div class="avatar avatar-owner" :style="{ opacity: 0.5 }">
+          <!-- 本人頭貼（右側，半透明背景） -->
+          <div class="avatar avatar-owner">
             {{ currentAvatarInfo.ownerInitial }}
           </div>
-          <!-- 共享者頭貼（前景，遮住1/3） -->
+          <!-- 共享對象頭貼（左側前景） -->
           <div class="avatar avatar-sharer">
             {{ currentAvatarInfo.initial }}
           </div>
@@ -184,19 +193,21 @@ const handleAvatarClick = () => {
         <span v-html="MenuIcon" class="icon"></span>
       </button>
       <h1 class="page-title">{{ title }}</h1>
+      <!-- 使用 avatarWrapperWidth 動態控制寬度，確保 page-title 不被擠壓 -->
       <div
         v-if="userEmail"
         class="avatar-wrapper"
         :class="{ 'can-switch': canSwitchAvatar }"
+        :style="{ width: avatarWrapperWidth }"
         @click="handleAvatarClick"
         :title="currentAvatarInfo.email"
       >
         <div v-if="currentAvatarInfo.isShared" class="avatar-shared">
-          <!-- 本人頭貼（背景，半透明） -->
-          <div class="avatar avatar-owner" :style="{ opacity: 0.5 }">
+          <!-- 本人頭貼（右側，半透明背景） -->
+          <div class="avatar avatar-owner">
             {{ currentAvatarInfo.ownerInitial }}
           </div>
-          <!-- 共享者頭貼（前景，遮住1/3） -->
+          <!-- 共享對象頭貼（左側前景） -->
           <div class="avatar avatar-sharer">
             {{ currentAvatarInfo.initial }}
           </div>
@@ -226,19 +237,21 @@ const handleAvatarClick = () => {
       <div class="center-content">
         <slot></slot>
       </div>
+      <!-- 使用 avatarWrapperWidth 動態控制寬度，確保 center-content 不被擠壓 -->
       <div
         v-if="userEmail"
         class="avatar-wrapper"
         :class="{ 'can-switch': canSwitchAvatar }"
+        :style="{ width: avatarWrapperWidth }"
         @click="handleAvatarClick"
         :title="currentAvatarInfo.email"
       >
         <div v-if="currentAvatarInfo.isShared" class="avatar-shared">
-          <!-- 本人頭貼（背景，半透明） -->
-          <div class="avatar avatar-owner" :style="{ opacity: 0.5 }">
+          <!-- 本人頭貼（右側，半透明背景） -->
+          <div class="avatar avatar-owner">
             {{ currentAvatarInfo.ownerInitial }}
           </div>
-          <!-- 共享者頭貼（前景，遮住1/3） -->
+          <!-- 共享對象頭貼（左側前景） -->
           <div class="avatar avatar-sharer">
             {{ currentAvatarInfo.initial }}
           </div>
@@ -324,13 +337,20 @@ const handleAvatarClick = () => {
 }
 
 .avatar-wrapper {
+  /*
+   * 預設寬度 36px（單一頭貼）
+   * 共享模式寬度 54px（雙頭貼）透過 inline style 動態切換
+   * 使用 transition 讓寬度變化有動畫效果，避免版面跳動
+   */
   flex-shrink: 0;
-  width: 60px;
-  height: 40px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   user-select: none;
+  transition: width 0.2s ease;
+  /* 預設寬度由 inline style 的 avatarWrapperWidth 控制，此處作為 fallback */
+  width: 36px;
 }
 
 .avatar-wrapper.can-switch {
@@ -341,12 +361,12 @@ const handleAvatarClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: var(--janote-income);
   color: white;
   border-radius: 50%;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
@@ -360,40 +380,56 @@ const handleAvatarClick = () => {
 }
 
 .avatar-shared {
+  /*
+   * 共享雙頭貼容器
+   * 寬度固定 54px = 36px（本人頭貼）+ 18px（共享者頭貼露出部分）
+   * 高度對齊單頭貼高度
+   */
   position: relative;
-  width: 60px;
-  height: 40px;
+  width: 54px;
+  height: 36px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
 }
 
-/* 共享者頭貼（左邊） */
+/* 共享對象頭貼（左側，前景） */
 .avatar-sharer {
   position: absolute;
   left: 0;
   top: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: var(--janote-expense, #ff6b6b);
   color: var(--text-primary, #333);
-  font-size: 16px;
+  font-size: 14px;
   z-index: 1;
   border-radius: 50%;
   border: 2px solid var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
 }
 
-/* 本人頭貼（右邊，半透明） */
+/* 本人頭貼（右側，半透明） */
 .avatar-owner {
   position: absolute;
   right: 0;
   top: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   opacity: 0.5;
   z-index: 0;
   border-radius: 50%;
   border: 2px solid var(--text-primary);
+  background: var(--janote-income);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .center-content {
@@ -401,10 +437,13 @@ const handleAvatarClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 防止內容溢出造成與 avatar-wrapper 重疊 */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .nav-spacer {
-  width: 40px;
+  width: 36px;
   flex-shrink: 0;
 }
 
@@ -423,37 +462,6 @@ const handleAvatarClick = () => {
 
   .page-title {
     font-size: 18px;
-  }
-
-  .avatar-wrapper {
-    width: 36px;
-    height: 36px;
-  }
-
-  .avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-
-  .avatar-shared {
-    width: 54px;
-    height: 36px;
-  }
-
-  .avatar-sharer {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-
-  .avatar-owner {
-    width: 36px;
-    height: 36px;
-  }
-
-  .nav-spacer {
-    width: 36px;
   }
 }
 </style>
