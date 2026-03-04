@@ -128,21 +128,46 @@
         </div>
       </div>
 
-      <!-- Floating Add Button -->
-      <button v-if="!isViewingShared" class="fab" @click="goToNewTransaction">
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
+      <!-- Floating Search Bar and Add Button Container -->
+      <div v-if="!isViewingShared" class="floating-actions-container">
+        <!-- Search Bar -->
+        <div class="search-bar">
+          <svg
+            class="search-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="搜尋"
+          />
+        </div>
+
+        <!-- Add Button -->
+        <button class="fab" @click="goToNewTransaction">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
     </div>
   </section>
 </template>
@@ -709,18 +734,61 @@ onMounted(async () => {
   background: #f0f0f0;
 }
 
-/* Floating Action Button */
-.fab {
+/* Floating Actions Container */
+.floating-actions-container {
   position: fixed;
   bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 50;
+}
+
+/* Search Bar */
+.search-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-light);
+  border: 2px solid var(--border-primary);
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--text-primary);
+  outline: none;
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: var(--text-disabled);
+}
+
+/* Floating Action Button */
+.fab {
+  position: relative;
   width: 56px;
   height: 56px;
   border-radius: 50%;
   background: var(--janote-action);
   border: 2px solid var(--border-primary);
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -728,16 +796,17 @@ onMounted(async () => {
   transition:
     transform 0.2s,
     box-shadow 0.2s;
-  z-index: 50;
+  flex-shrink: 0;
+  padding: 0;
 }
 
 .fab:hover {
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: none;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fab:active {
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 
 /* Responsive */
@@ -753,9 +822,29 @@ onMounted(async () => {
   }
 
   .fab {
-    bottom: 24px;
     width: 52px;
     height: 52px;
+  }
+
+  .floating-actions-container {
+    left: 12px;
+    right: 12px;
+    bottom: 20px;
+    gap: 10px;
+  }
+
+  .search-bar {
+    padding: 10px 14px;
+    border-radius: 20px;
+  }
+
+  .search-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .search-input {
+    font-size: 14px;
   }
 }
 </style>
