@@ -21,16 +21,10 @@ html, body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding-bottom: 72px; /* 底部導覽列高度 */
 }
 
 .app-main .page {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-/* 全螢幕頁面需要減去底部導覽列高度 */
-.app-main .page-fullheight {
-  height: calc(100vh - 72px);
 }
