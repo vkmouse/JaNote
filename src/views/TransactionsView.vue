@@ -563,7 +563,7 @@ onMounted(async () => {
 .page-content {
   flex: 1;
   background: var(--bg-page);
-  padding-bottom: 0px;
+  padding-bottom: 100px;
 }
 
 /* Stats wrapper — positions summary button relative to chart */
@@ -739,7 +739,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 100;
+  z-index: 1000;
 }
 
 /* Search Bar */
@@ -754,6 +754,7 @@ onMounted(async () => {
   border: 2px solid var(--border-primary);
   border-radius: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
 }
 
 .search-icon {
@@ -804,6 +805,10 @@ onMounted(async () => {
 
 .fab:active {
   transform: translateY(0);
+}
+
+.fab {
+  z-index: 1001;
 }
 
 /* Responsive */
