@@ -276,7 +276,6 @@ const handleAvatarClick = () => {
   justify-content: space-between;
   padding: 0 24px;
   z-index: 9;
-  gap: 16px;
 }
 
 .page-title {
@@ -292,9 +291,8 @@ const handleAvatarClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 8px;
+  width: 28px;
+  height: 28px;
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -421,20 +419,14 @@ const handleAvatarClick = () => {
   .top-nav {
     height: 56px;
     padding: 0 16px;
-    gap: 12px;
   }
 
   .page-title {
     font-size: 18px;
   }
 
-  .nav-btn {
-    width: 36px;
-    height: 36px;
-  }
-
   .avatar-wrapper {
-    width: 54px;
+    width: 36px;
     height: 36px;
   }
 
