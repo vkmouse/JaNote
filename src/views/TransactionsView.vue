@@ -750,7 +750,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 0 16px;
-  background: var(--bg-light);
+  background: white;
   border: 2px solid var(--border-primary);
   border-radius: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
