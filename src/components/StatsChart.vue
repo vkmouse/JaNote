@@ -1,14 +1,19 @@
 <template>
   <div>
+    <!-- 支出/收入標籤，寬度 fit-content，點擊跳轉摘要頁 -->
     <div class="summary-section">
-      <!-- 左：本月支出 -->
-      <div class="summary-item summary-item-left">
+      <div
+        class="summary-item summary-item-left"
+        @click="router.push('/transactions/summary')"
+      >
         <div class="summary-label">月支出</div>
         <div class="summary-amount">${{ monthlyExpense.toLocaleString() }}</div>
       </div>
-      
-      <!-- 右：本月收入 -->
-      <div class="summary-item summary-item-right">
+
+      <div
+        class="summary-item summary-item-right"
+        @click="router.push('/transactions/summary')"
+      >
         <div class="summary-label">月收入</div>
         <div class="summary-amount">${{ monthlyIncome.toLocaleString() }}</div>
       </div>
@@ -25,37 +30,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import DonutChart from './DonutChart.vue'
-import type { DonutSlice } from './DonutChart.vue'
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import DonutChart from "./DonutChart.vue";
+import type { DonutSlice } from "./DonutChart.vue";
 
 const props = defineProps<{
-  monthlyExpense: number
-  monthlyIncome: number
-  balance: number
-  expensePercentage: number
-  incomePercentage: number
-}>()
+  monthlyExpense: number;
+  monthlyIncome: number;
+  balance: number;
+  expensePercentage: number;
+  incomePercentage: number;
+}>();
 
-// 為 DonutChart 建構切片資料
+const router = useRouter();
+
 const chartSlices = computed<DonutSlice[]>(() => [
   {
-    sliceLabel: '月收入',
+    sliceLabel: "月收入",
     sliceValue: props.incomePercentage,
-    sliceColor: '#47B8E0',
+    sliceColor: "#47B8E0",
   },
   {
-    sliceLabel: '月支出',
+    sliceLabel: "月支出",
     sliceValue: props.expensePercentage,
-    sliceColor: '#FFC952',
+    sliceColor: "#FFC952",
   },
-])
+]);
 </script>
 
 <style scoped>
 .summary-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: space-between;
   padding: 6px 20px 0;
   background: var(--bg-page);
 }
@@ -63,6 +70,8 @@ const chartSlices = computed<DonutSlice[]>(() => [
 .summary-item {
   display: flex;
   flex-direction: column;
+  width: fit-content;
+  cursor: pointer;
 }
 
 .summary-item-left {
@@ -80,11 +89,15 @@ const chartSlices = computed<DonutSlice[]>(() => [
   border-bottom: 3px solid;
 }
 
-.summary-item:nth-child(1) .summary-label { border-color: var(--janote-expense); }
-.summary-item:nth-child(2) .summary-label { border-color: var(--janote-income); }
+.summary-item:nth-child(1) .summary-label {
+  border-color: var(--janote-expense);
+}
+.summary-item:nth-child(2) .summary-label {
+  border-color: var(--janote-income);
+}
 
 .summary-amount {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -92,9 +105,5 @@ const chartSlices = computed<DonutSlice[]>(() => [
 .chart-section {
   background: var(--bg-page);
   padding-bottom: 40px;
-}
-
-@media (max-width: 480px) {
-  .summary-amount { font-size: 18px; }
 }
 </style>
