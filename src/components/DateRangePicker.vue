@@ -14,7 +14,9 @@
         <div class="date-range-arrow">→</div>
         <div class="date-field" :class="{ active: selectionStep === 1 }">
           <label class="field-label">結束日期</label>
-          <div class="date-value">{{ localEndDate ? formatDate(localEndDate) : '—' }}</div>
+          <div class="date-value">
+            {{ localEndDate ? formatDate(localEndDate) : "—" }}
+          </div>
         </div>
       </div>
 
@@ -29,18 +31,23 @@
           </button>
         </div>
         <div class="calendar-weekdays">
-          <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
+          <div v-for="day in weekdays" :key="day" class="weekday">
+            {{ day }}
+          </div>
         </div>
         <div class="calendar-days">
           <div
             v-for="day in calendarDays"
             :key="`${day.year}-${day.month}-${day.day}`"
-            :class="['calendar-day', {
-              'other-month': !day.isCurrentMonth,
-              'selected-start': isStartDate(day),
-              'selected-end': isEndDate(day),
-              'in-range': isInRange(day),
-            }]"
+            :class="[
+              'calendar-day',
+              {
+                'other-month': !day.isCurrentMonth,
+                'selected-start': isStartDate(day),
+                'selected-end': isEndDate(day),
+                'in-range': isInRange(day),
+              },
+            ]"
             @click="selectDate(day)"
           >
             {{ day.day }}
@@ -54,190 +61,204 @@
           class="action-btn confirm-btn"
           :disabled="!localEndDate"
           @click="handleConfirm"
-        >確認</button>
+        >
+          確認
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
-import ArrowRightIcon from '../assets/icons/icon-arrow-right.svg?raw'
+import { ref, computed, watch } from "vue";
+import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
+import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
 
 interface CalendarDay {
-  day: number
-  month: number
-  year: number
-  isCurrentMonth: boolean
-  date: Date
+  day: number;
+  month: number;
+  year: number;
+  isCurrentMonth: boolean;
+  date: Date;
 }
 
 interface Props {
-  open: boolean
-  startDate: number
-  endDate: number
+  open: boolean;
+  startDate: number;
+  endDate: number;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
-  'update:open': [value: boolean]
-  'update:startDate': [value: number]
-  'update:endDate': [value: number]
-}>()
+  "update:open": [value: boolean];
+  "update:startDate": [value: number];
+  "update:endDate": [value: number];
+}>();
 
-const localStartDate = ref<Date>(new Date(props.startDate))
-const localEndDate = ref<Date | null>(new Date(props.endDate))
-const calendarViewDate = ref<Date>(new Date(props.startDate))
-const selectionStep = ref<0 | 1>(0) // 0 = picking start, 1 = picking end
+const localStartDate = ref<Date>(new Date(props.startDate));
+const localEndDate = ref<Date | null>(new Date(props.endDate));
+const calendarViewDate = ref<Date>(new Date(props.startDate));
+const selectionStep = ref<0 | 1>(0); // 0 = picking start, 1 = picking end
 
-const weekdays = ['一', '二', '三', '四', '五', '六', '日']
+const weekdays = ["一", "二", "三", "四", "五", "六", "日"];
 
-watch(() => props.open, (val) => {
-  if (val) {
-    localStartDate.value = new Date(props.startDate)
-    localEndDate.value = new Date(props.endDate)
-    calendarViewDate.value = new Date(props.startDate)
-    selectionStep.value = 0
-  }
-})
+watch(
+  () => props.open,
+  (val) => {
+    if (val) {
+      localStartDate.value = new Date(props.startDate);
+      localEndDate.value = new Date(props.endDate);
+      calendarViewDate.value = new Date(props.startDate);
+      selectionStep.value = 0;
+    }
+  },
+);
 
 const formatDate = (date: Date | null): string => {
-  if (!date) return '—'
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}/${month}/${day}`
-}
+  if (!date) return "—";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}/${month}/${day}`;
+};
 
 const calendarYearMonth = computed(() => {
-  const year = calendarViewDate.value.getFullYear()
-  const month = calendarViewDate.value.getMonth() + 1
-  return `${year} 年 ${month} 月`
-})
+  const year = calendarViewDate.value.getFullYear();
+  const month = calendarViewDate.value.getMonth() + 1;
+  return `${year} 年 ${month} 月`;
+});
 
 const generateCalendarDays = (viewDate: Date): CalendarDay[] => {
-  const year = viewDate.getFullYear()
-  const month = viewDate.getMonth()
-  const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
 
-  let firstDayOfWeek = firstDay.getDay()
-  firstDayOfWeek = firstDayOfWeek === 0 ? 7 : firstDayOfWeek
+  let firstDayOfWeek = firstDay.getDay();
+  firstDayOfWeek = firstDayOfWeek === 0 ? 7 : firstDayOfWeek;
 
-  const days: CalendarDay[] = []
+  const days: CalendarDay[] = [];
 
-  const prevMonthLastDay = new Date(year, month, 0).getDate()
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
   for (let i = firstDayOfWeek - 2; i >= 0; i--) {
-    const day = prevMonthLastDay - i
-    const prevMonth = month - 1
-    const prevYear = prevMonth < 0 ? year - 1 : year
-    const actualMonth = prevMonth < 0 ? 11 : prevMonth
+    const day = prevMonthLastDay - i;
+    const prevMonth = month - 1;
+    const prevYear = prevMonth < 0 ? year - 1 : year;
+    const actualMonth = prevMonth < 0 ? 11 : prevMonth;
     days.push({
       day,
       month: actualMonth,
       year: prevYear,
       isCurrentMonth: false,
-      date: new Date(prevYear, actualMonth, day)
-    })
+      date: new Date(prevYear, actualMonth, day),
+    });
   }
 
   for (let day = 1; day <= lastDay.getDate(); day++) {
-    days.push({ day, month, year, isCurrentMonth: true, date: new Date(year, month, day) })
+    days.push({
+      day,
+      month,
+      year,
+      isCurrentMonth: true,
+      date: new Date(year, month, day),
+    });
   }
 
-  const remainingDays = 42 - days.length
+  const remainingDays = 42 - days.length;
   for (let day = 1; day <= remainingDays; day++) {
-    const nextMonth = month + 1
-    const nextYear = nextMonth > 11 ? year + 1 : year
-    const actualMonth = nextMonth > 11 ? 0 : nextMonth
+    const nextMonth = month + 1;
+    const nextYear = nextMonth > 11 ? year + 1 : year;
+    const actualMonth = nextMonth > 11 ? 0 : nextMonth;
     days.push({
       day,
       month: actualMonth,
       year: nextYear,
       isCurrentMonth: false,
-      date: new Date(nextYear, actualMonth, day)
-    })
+      date: new Date(nextYear, actualMonth, day),
+    });
   }
 
-  return days
-}
+  return days;
+};
 
-const calendarDays = computed(() => generateCalendarDays(calendarViewDate.value))
+const calendarDays = computed(() =>
+  generateCalendarDays(calendarViewDate.value),
+);
 
 const previousMonth = () => {
-  const newDate = new Date(calendarViewDate.value)
-  newDate.setMonth(newDate.getMonth() - 1)
-  calendarViewDate.value = newDate
-}
+  const newDate = new Date(calendarViewDate.value);
+  newDate.setMonth(newDate.getMonth() - 1);
+  calendarViewDate.value = newDate;
+};
 
 const nextMonth = () => {
-  const newDate = new Date(calendarViewDate.value)
-  newDate.setMonth(newDate.getMonth() + 1)
-  calendarViewDate.value = newDate
-}
+  const newDate = new Date(calendarViewDate.value);
+  newDate.setMonth(newDate.getMonth() + 1);
+  calendarViewDate.value = newDate;
+};
 
 const selectDate = (day: CalendarDay) => {
-  const selected = new Date(day.year, day.month, day.day)
+  const selected = new Date(day.year, day.month, day.day);
 
   if (selectionStep.value === 0) {
-    localStartDate.value = selected
-    localEndDate.value = null
-    selectionStep.value = 1
+    localStartDate.value = selected;
+    localEndDate.value = null;
+    selectionStep.value = 1;
   } else {
     if (selected < localStartDate.value) {
-      localEndDate.value = new Date(localStartDate.value)
-      localStartDate.value = selected
+      localEndDate.value = new Date(localStartDate.value);
+      localStartDate.value = selected;
     } else {
-      localEndDate.value = selected
+      localEndDate.value = selected;
     }
-    selectionStep.value = 0
+    selectionStep.value = 0;
   }
-}
+};
 
-const dayToDate = (day: CalendarDay): Date => new Date(day.year, day.month, day.day)
+const dayToDate = (day: CalendarDay): Date =>
+  new Date(day.year, day.month, day.day);
 
 const isStartDate = (day: CalendarDay): boolean => {
-  const d = dayToDate(day)
-  return d.toDateString() === localStartDate.value.toDateString()
-}
+  const d = dayToDate(day);
+  return d.toDateString() === localStartDate.value.toDateString();
+};
 
 const isEndDate = (day: CalendarDay): boolean => {
-  if (!localEndDate.value) return false
-  const d = dayToDate(day)
-  return d.toDateString() === localEndDate.value.toDateString()
-}
+  if (!localEndDate.value) return false;
+  const d = dayToDate(day);
+  return d.toDateString() === localEndDate.value.toDateString();
+};
 
 const isInRange = (day: CalendarDay): boolean => {
-  if (!localEndDate.value) return false
-  const d = dayToDate(day)
+  if (!localEndDate.value) return false;
+  const d = dayToDate(day);
   const start = new Date(
     localStartDate.value.getFullYear(),
     localStartDate.value.getMonth(),
-    localStartDate.value.getDate()
-  )
+    localStartDate.value.getDate(),
+  );
   const end = new Date(
     localEndDate.value.getFullYear(),
     localEndDate.value.getMonth(),
-    localEndDate.value.getDate()
-  )
-  return d > start && d < end
-}
+    localEndDate.value.getDate(),
+  );
+  return d > start && d < end;
+};
 
 const handleClose = () => {
-  emit('update:open', false)
-}
+  emit("update:open", false);
+};
 
 const handleConfirm = () => {
-  if (!localEndDate.value) return
-  const start = new Date(localStartDate.value)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(localEndDate.value)
-  end.setHours(23, 59, 59, 999)
-  emit('update:startDate', start.getTime())
-  emit('update:endDate', end.getTime())
-  handleClose()
-}
+  if (!localEndDate.value) return;
+  const start = new Date(localStartDate.value);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(localEndDate.value);
+  end.setHours(23, 59, 59, 999);
+  emit("update:startDate", start.getTime());
+  emit("update:endDate", end.getTime());
+  handleClose();
+};
 </script>
 
 <style scoped>
@@ -355,21 +376,24 @@ const handleConfirm = () => {
 }
 
 .calendar-nav-btn {
-  background: #e9ecef;
+  background: transparent;
   border: none;
   border-radius: 8px;
   width: 36px;
   height: 36px;
   cursor: pointer;
-  transition: background 0.2s;
-  color: #000;
+  color: var(--text-primary, #333);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .calendar-nav-btn:hover {
-  background: #e0e0e0;
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.calendar-nav-btn:active {
+  background: var(--bg-active, #e0e0e0);
 }
 
 .arrow-icon {

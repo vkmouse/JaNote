@@ -27,52 +27,55 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
-import ArrowRightIcon from '../assets/icons/icon-arrow-right.svg?raw'
+import { ref, computed, watch } from "vue";
+import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
+import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
 
-const props = defineProps<{ open: boolean; year: number }>()
+const props = defineProps<{ open: boolean; year: number }>();
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
-  (e: 'update:year', value: number): void
-  (e: 'confirm'): void
-}>()
+  (e: "update:open", value: boolean): void;
+  (e: "update:year", value: number): void;
+  (e: "confirm"): void;
+}>();
 
-const startYear = ref(Math.floor(props.year / 10) * 10)
-const endYear = computed(() => startYear.value + 9)
+const startYear = ref(Math.floor(props.year / 10) * 10);
+const endYear = computed(() => startYear.value + 9);
 
 const years = computed(() => {
-  const result = []
+  const result = [];
   for (let i = 0; i < 10; i++) {
-    result.push(startYear.value + i)
+    result.push(startYear.value + i);
   }
-  return result
-})
+  return result;
+});
 
 const previousDecade = () => {
-  startYear.value -= 10
-}
+  startYear.value -= 10;
+};
 
 const nextDecade = () => {
-  startYear.value += 10
-}
+  startYear.value += 10;
+};
 
 const selectYear = (yearValue: number) => {
-  emit('update:year', yearValue)
-}
+  emit("update:year", yearValue);
+};
 
-const close = () => emit('update:open', false)
+const close = () => emit("update:open", false);
 const confirm = () => {
-  emit('confirm')
-  close()
-}
+  emit("confirm");
+  close();
+};
 
 // 當 open 變為 true 時，重置 startYear 以確保當前年份在顯示範圍內
-watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    startYear.value = Math.floor(props.year / 10) * 10
-  }
-})
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      startYear.value = Math.floor(props.year / 10) * 10;
+    }
+  },
+);
 </script>
 
 <style scoped>
@@ -115,10 +118,10 @@ watch(() => props.open, (isOpen) => {
 }
 
 .picker-controls button {
-  background: #f0f0f0;
+  background: transparent;
   border: none;
   border-radius: 8px;
-  color: var(--text-primary);
+  color: var(--text-primary, #333);
   width: 40px;
   height: 40px;
   cursor: pointer;
@@ -126,11 +129,14 @@ watch(() => props.open, (isOpen) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
 }
 
 .picker-controls button:hover {
-  background: #e0e0e0;
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.picker-controls button:active {
+  background: var(--bg-active, #e0e0e0);
 }
 
 .picker-controls button svg {

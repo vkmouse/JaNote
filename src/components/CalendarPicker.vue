@@ -12,7 +12,11 @@
     </button>
   </div>
 
-  <div v-if="showCalendar" class="calendar-overlay" @click="showCalendar = false">
+  <div
+    v-if="showCalendar"
+    class="calendar-overlay"
+    @click="showCalendar = false"
+  >
     <div class="calendar-modal" @click.stop>
       <div class="calendar-header">
         <button class="calendar-nav-btn" @click="previousMonth">
@@ -31,11 +35,14 @@
         <div
           v-for="day in calendarDays"
           :key="`${day.year}-${day.month}-${day.day}`"
-          :class="['calendar-day', {
-            'other-month': !day.isCurrentMonth,
-            'selected': isSelectedDate(day),
-            'today': isToday(day)
-          }]"
+          :class="[
+            'calendar-day',
+            {
+              'other-month': !day.isCurrentMonth,
+              selected: isSelectedDate(day),
+              today: isToday(day),
+            },
+          ]"
           @click="selectDate(day)"
         >
           {{ day.day }}
@@ -46,76 +53,76 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import CalendarIcon from '../assets/icons/icon-calendar.svg?raw'
-import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
-import ArrowRightIcon from '../assets/icons/icon-arrow-right.svg?raw'
+import { computed, ref, watch } from "vue";
+import CalendarIcon from "../assets/icons/icon-calendar.svg?raw";
+import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
+import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
 
 interface CalendarDay {
-  day: number
-  month: number
-  year: number
-  isCurrentMonth: boolean
-  date: Date
+  day: number;
+  month: number;
+  year: number;
+  isCurrentMonth: boolean;
+  date: Date;
 }
 
-const props = defineProps<{ modelValue: number }>()
-const emit = defineEmits<{ (e: 'update:modelValue', value: number): void }>()
+const props = defineProps<{ modelValue: number }>();
+const emit = defineEmits<{ (e: "update:modelValue", value: number): void }>();
 
-const showCalendar = ref(false)
-const calendarViewDate = ref(new Date(props.modelValue))
-const weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '週日']
+const showCalendar = ref(false);
+const calendarViewDate = ref(new Date(props.modelValue));
+const weekdays = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
 
 watch(
   () => props.modelValue,
   (value) => {
     if (!Number.isNaN(value)) {
-      calendarViewDate.value = new Date(value)
+      calendarViewDate.value = new Date(value);
     }
-  }
-)
+  },
+);
 
 const formattedDate = computed(() => {
-  const date = new Date(props.modelValue)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-  const weekDay = weekDays[date.getDay()]
-  return `${year}/${month}/${day} 星期${weekDay}`
-})
+  const date = new Date(props.modelValue);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+  const weekDay = weekDays[date.getDay()];
+  return `${year}/${month}/${day} 星期${weekDay}`;
+});
 
 const calendarYearMonth = computed(() => {
-  const year = calendarViewDate.value.getFullYear()
-  const month = calendarViewDate.value.getMonth() + 1
-  return `${year} 年 ${month} 月`
-})
+  const year = calendarViewDate.value.getFullYear();
+  const month = calendarViewDate.value.getMonth() + 1;
+  return `${year} 年 ${month} 月`;
+});
 
 const calendarDays = computed<CalendarDay[]>(() => {
-  const year = calendarViewDate.value.getFullYear()
-  const month = calendarViewDate.value.getMonth()
+  const year = calendarViewDate.value.getFullYear();
+  const month = calendarViewDate.value.getMonth();
 
-  const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
 
-  let firstDayOfWeek = firstDay.getDay()
-  firstDayOfWeek = firstDayOfWeek === 0 ? 7 : firstDayOfWeek
+  let firstDayOfWeek = firstDay.getDay();
+  firstDayOfWeek = firstDayOfWeek === 0 ? 7 : firstDayOfWeek;
 
-  const days: CalendarDay[] = []
+  const days: CalendarDay[] = [];
 
-  const prevMonthLastDay = new Date(year, month, 0).getDate()
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
   for (let i = firstDayOfWeek - 2; i >= 0; i--) {
-    const day = prevMonthLastDay - i
-    const prevMonth = month - 1
-    const prevYear = prevMonth < 0 ? year - 1 : year
-    const actualMonth = prevMonth < 0 ? 11 : prevMonth
+    const day = prevMonthLastDay - i;
+    const prevMonth = month - 1;
+    const prevYear = prevMonth < 0 ? year - 1 : year;
+    const actualMonth = prevMonth < 0 ? 11 : prevMonth;
     days.push({
       day,
       month: actualMonth,
       year: prevYear,
       isCurrentMonth: false,
-      date: new Date(prevYear, actualMonth, day)
-    })
+      date: new Date(prevYear, actualMonth, day),
+    });
   }
 
   for (let day = 1; day <= lastDay.getDate(); day++) {
@@ -124,85 +131,85 @@ const calendarDays = computed<CalendarDay[]>(() => {
       month,
       year,
       isCurrentMonth: true,
-      date: new Date(year, month, day)
-    })
+      date: new Date(year, month, day),
+    });
   }
 
-  const remainingDays = 42 - days.length
+  const remainingDays = 42 - days.length;
   for (let day = 1; day <= remainingDays; day++) {
-    const nextMonth = month + 1
-    const nextYear = nextMonth > 11 ? year + 1 : year
-    const actualMonth = nextMonth > 11 ? 0 : nextMonth
+    const nextMonth = month + 1;
+    const nextYear = nextMonth > 11 ? year + 1 : year;
+    const actualMonth = nextMonth > 11 ? 0 : nextMonth;
     days.push({
       day,
       month: actualMonth,
       year: nextYear,
       isCurrentMonth: false,
-      date: new Date(nextYear, actualMonth, day)
-    })
+      date: new Date(nextYear, actualMonth, day),
+    });
   }
 
-  return days
-})
+  return days;
+});
 
 const updateDate = (date: Date) => {
-  date.setHours(0, 0, 0, 0)
-  emit('update:modelValue', date.getTime())
-  calendarViewDate.value = new Date(date)
-}
+  date.setHours(0, 0, 0, 0);
+  emit("update:modelValue", date.getTime());
+  calendarViewDate.value = new Date(date);
+};
 
 const previousDate = () => {
-  const date = new Date(props.modelValue)
-  date.setDate(date.getDate() - 1)
-  updateDate(date)
-}
+  const date = new Date(props.modelValue);
+  date.setDate(date.getDate() - 1);
+  updateDate(date);
+};
 
 const nextDate = () => {
-  const date = new Date(props.modelValue)
-  date.setDate(date.getDate() + 1)
-  updateDate(date)
-}
+  const date = new Date(props.modelValue);
+  date.setDate(date.getDate() + 1);
+  updateDate(date);
+};
 
 const previousMonth = () => {
-  const newDate = new Date(calendarViewDate.value)
-  newDate.setMonth(newDate.getMonth() - 1)
-  calendarViewDate.value = newDate
-}
+  const newDate = new Date(calendarViewDate.value);
+  newDate.setMonth(newDate.getMonth() - 1);
+  calendarViewDate.value = newDate;
+};
 
 const nextMonth = () => {
-  const newDate = new Date(calendarViewDate.value)
-  newDate.setMonth(newDate.getMonth() + 1)
-  calendarViewDate.value = newDate
-}
+  const newDate = new Date(calendarViewDate.value);
+  newDate.setMonth(newDate.getMonth() + 1);
+  calendarViewDate.value = newDate;
+};
 
 const selectToday = () => {
-  updateDate(new Date())
-  showCalendar.value = false
-}
+  updateDate(new Date());
+  showCalendar.value = false;
+};
 
 const selectDate = (day: CalendarDay) => {
-  const selected = new Date(day.year, day.month, day.day)
-  updateDate(selected)
-  showCalendar.value = false
-}
+  const selected = new Date(day.year, day.month, day.day);
+  updateDate(selected);
+  showCalendar.value = false;
+};
 
 const isSelectedDate = (day: CalendarDay): boolean => {
-  const selected = new Date(props.modelValue)
+  const selected = new Date(props.modelValue);
   return (
     day.day === selected.getDate() &&
     day.month === selected.getMonth() &&
     day.year === selected.getFullYear()
-  )
-}
+  );
+};
 
 const isToday = (day: CalendarDay): boolean => {
-  const today = new Date()
+  const today = new Date();
   return (
     day.day === today.getDate() &&
     day.month === today.getMonth() &&
     day.year === today.getFullYear()
-  )
-}
+  );
+};
 </script>
 
 <style scoped>
@@ -218,22 +225,25 @@ const isToday = (day: CalendarDay): boolean => {
 }
 
 .date-control-btn {
-  background: #e9ecef;
+  background: transparent;
   border: 0;
   border-radius: 8px;
   width: 36px;
   height: 36px;
   cursor: pointer;
-  color: #000;
+  color: var(--text-primary, #333);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
   flex-shrink: 0;
 }
 
 .date-control-btn:hover {
-  background: #dee2e6;
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.date-control-btn:active {
+  background: var(--bg-active, #e0e0e0);
 }
 
 .date-info {
@@ -304,21 +314,25 @@ const isToday = (day: CalendarDay): boolean => {
 }
 
 .calendar-nav-btn {
-  background: #e9ecef;
+  background: transparent;
   border: none;
   border-radius: 8px;
   width: 36px;
   height: 36px;
   cursor: pointer;
-  transition: background 0.2s;
-  color: #000;
+  transition: background-color 0.2s;
+  color: var(--text-primary, #333);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .calendar-nav-btn:hover {
-  background: #e0e0e0;
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.calendar-nav-btn:active {
+  background: var(--bg-active, #e0e0e0);
 }
 
 .calendar-title {

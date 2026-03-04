@@ -27,22 +27,22 @@
 </template>
 
 <script setup lang="ts">
-import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
-import ArrowRightIcon from '../assets/icons/icon-arrow-right.svg?raw'
+import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
+import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
 
-const props = defineProps<{ open: boolean; year: number; month: number }>()
+const props = defineProps<{ open: boolean; year: number; month: number }>();
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
-  (e: 'update:year', value: number): void
-  (e: 'update:month', value: number): void
-  (e: 'confirm'): void
-}>()
+  (e: "update:open", value: boolean): void;
+  (e: "update:year", value: number): void;
+  (e: "update:month", value: number): void;
+  (e: "confirm"): void;
+}>();
 
-const close = () => emit('update:open', false)
+const close = () => emit("update:open", false);
 const confirm = () => {
-  emit('confirm')
-  close()
-}
+  emit("confirm");
+  close();
+};
 </script>
 
 <style scoped>
@@ -85,10 +85,10 @@ const confirm = () => {
 }
 
 .picker-controls button {
-  background: #f0f0f0;
+  background: transparent;
   border: none;
   border-radius: 8px;
-  color: var(--text-primary);
+  color: var(--text-primary, #333);
   width: 40px;
   height: 40px;
   cursor: pointer;
@@ -96,11 +96,14 @@ const confirm = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
 }
 
 .picker-controls button:hover {
-  background: #e0e0e0;
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.picker-controls button:active {
+  background: var(--bg-active, #e0e0e0);
 }
 
 .picker-controls button svg {
