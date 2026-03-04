@@ -739,16 +739,17 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 50;
+  z-index: 100;
 }
 
 /* Search Bar */
 .search-bar {
   flex: 1;
+  height: 52px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 0 16px;
   background: var(--bg-light);
   border: 2px solid var(--border-primary);
   border-radius: 24px;
@@ -779,8 +780,8 @@ onMounted(async () => {
 /* Floating Action Button */
 .fab {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--janote-action);
   border: 2px solid var(--border-primary);
@@ -815,32 +816,6 @@ onMounted(async () => {
     width: 40px;
     height: 40px;
     font-size: 20px;
-  }
-
-  .fab {
-    width: 52px;
-    height: 52px;
-  }
-
-  .floating-actions-container {
-    left: 12px;
-    right: 12px;
-    bottom: 20px;
-    gap: 10px;
-  }
-
-  .search-bar {
-    padding: 10px 14px;
-    border-radius: 20px;
-  }
-
-  .search-icon {
-    width: 18px;
-    height: 18px;
-  }
-
-  .search-input {
-    font-size: 14px;
   }
 }
 </style>
