@@ -86,12 +86,18 @@ const handleAvatarClick = () => {
   if (!userStore.isViewingShared) {
     // 本人 → 第一個共享
     currentShareIndex.value = 0;
-    userStore.setSelectedUser(_resolveShare(shares[0]));
+    const firstShare = shares[0];
+    if (firstShare) {
+      userStore.setSelectedUser(_resolveShare(firstShare));
+    }
   } else {
     const nextIndex = currentShareIndex.value + 1;
     if (nextIndex < shares.length) {
       currentShareIndex.value = nextIndex;
-      userStore.setSelectedUser(_resolveShare(shares[nextIndex]));
+      const nextShare = shares[nextIndex];
+      if (nextShare) {
+        userStore.setSelectedUser(_resolveShare(nextShare));
+      }
     } else {
       // 回到本人
       currentShareIndex.value = 0;
@@ -101,7 +107,9 @@ const handleAvatarClick = () => {
 };
 
 /** 從 UserShare 解析出「另一方」的 id/email */
-function _resolveShare(share: (typeof userStore.userShares)[number]) {
+function _resolveShare(
+  share: NonNullable<(typeof userStore.userShares)[number]>,
+) {
   const isOwnerSender = share.sender_id === userStore.currentUserId;
   return isOwnerSender
     ? { id: share.receiver_id, email: share.receiver_email }
@@ -155,7 +163,7 @@ function _resolveShare(share: (typeof userStore.userShares)[number]) {
       <h1 class="page-title">{{ title }}</h1>
       <!-- 使用 avatarWrapperWidth 動態控制寬度，確保 page-title 不被擠壓 -->
       <div
-        v-if="userEmail"
+        v-if="currentAvatarInfo.email"
         class="avatar-wrapper"
         :class="{ 'can-switch': canSwitchAvatar }"
         :style="{ width: avatarWrapperWidth }"
@@ -199,7 +207,7 @@ function _resolveShare(share: (typeof userStore.userShares)[number]) {
       </div>
       <!-- 使用 avatarWrapperWidth 動態控制寬度，確保 center-content 不被擠壓 -->
       <div
-        v-if="userEmail"
+        v-if="currentAvatarInfo.email"
         class="avatar-wrapper"
         :class="{ 'can-switch': canSwitchAvatar }"
         :style="{ width: avatarWrapperWidth }"
