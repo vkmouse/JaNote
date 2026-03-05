@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import SyncView from "../views/SyncView.vue";
 import TransactionSummaryView from "../views/TransactionSummaryView.vue";
 import TransactionView from "../views/TransactionView.vue";
+import TransactionSearchView from "../views/TransactionSearchView.vue";
 import TransactionEditView from "../views/TransactionEditView.vue";
 
 const router = createRouter({
@@ -18,6 +19,11 @@ const router = createRouter({
       path: "/transactions",
       name: "transactions",
       component: TransactionView,
+    },
+    {
+      path: "/transactions/search",
+      name: "transaction-search",
+      component: TransactionSearchView,
     },
     {
       path: "/transactions/new",

@@ -128,25 +128,24 @@
         </div>
       </div>
 
-      <!-- Floating Search Bar and Add Button Container -->
+      <!-- Floating Actions Container -->
       <div v-if="!isViewingShared" class="floating-actions-container">
-        <!-- Search Bar -->
-        <div class="search-bar">
+        <!-- Search Button -->
+        <button class="search-fab" @click="goToSearch" aria-label="搜尋">
           <svg
-            class="search-icon"
+            width="24"
+            height="24"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            xmlns="http://www.w3.org/2000/svg"
           >
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input type="text" class="search-input" placeholder="搜尋" />
-        </div>
+        </button>
 
         <!-- Add Button -->
         <button class="fab" @click="goToNewTransaction">
@@ -345,6 +344,10 @@ const onUserChanged = (user: SelectedUser | null) => {
 
 const goToNewTransaction = () => {
   router.push("/transactions/new");
+};
+
+const goToSearch = () => {
+  router.push("/transactions/search");
 };
 
 const editTransaction = (id: string) => {
@@ -738,44 +741,39 @@ onMounted(async () => {
   right: 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   z-index: 1000;
+  pointer-events: none;
 }
 
-/* Search Bar */
-.search-bar {
-  flex: 1;
+/* Search FAB */
+.search-fab {
+  width: 52px;
   height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px;
+  border-radius: 50%;
   background: white;
   border: 2px solid var(--border-primary);
-  border-radius: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1001;
-}
-
-.search-icon {
-  width: 20px;
-  height: 20px;
-  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   flex-shrink: 0;
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 16px;
+  padding: 0;
   color: var(--text-primary);
-  outline: none;
-  font-family: inherit;
+  pointer-events: auto;
 }
 
-.search-input::placeholder {
-  color: var(--text-disabled);
+.search-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.search-fab:active {
+  transform: translateY(0);
 }
 
 /* Floating Action Button */
@@ -796,6 +794,8 @@ onMounted(async () => {
     box-shadow 0.2s;
   flex-shrink: 0;
   padding: 0;
+  z-index: 1001;
+  pointer-events: auto;
 }
 
 .fab:hover {
@@ -805,10 +805,6 @@ onMounted(async () => {
 
 .fab:active {
   transform: translateY(0);
-}
-
-.fab {
-  z-index: 1001;
 }
 
 /* Responsive */
