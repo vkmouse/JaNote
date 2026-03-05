@@ -132,7 +132,7 @@ function _resolveShare(
       </div>
       <!-- 使用 avatarWrapperWidth 動態控制寬度，確保 center-content 不被擠壓 -->
       <div
-        v-if="userEmail"
+        v-if="currentAvatarInfo.email"
         class="avatar-wrapper"
         :class="{ 'can-switch': canSwitchAvatar }"
         :style="{ width: avatarWrapperWidth }"
