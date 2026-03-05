@@ -1,151 +1,111 @@
 <script setup lang="ts">
-import { ref, onMounted, inject, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import MenuIcon from '../assets/icons/icon-menu.svg?raw'
-import ArrowLeftIcon from '../assets/icons/icon-arrow-left.svg?raw'
-import { userRepository } from '../repositories/userRepository'
-import { userShareRepository } from '../repositories/userShareRepository'
-import type { UserShare } from '../types'
+import { ref, computed, inject } from "vue";
+import { useRouter } from "vue-router";
+import MenuIcon from "../assets/icons/icon-menu.svg?raw";
+import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
+import { useUserStore } from "../stores/userStore";
 
 interface Props {
-  mode?: 'default' | 'menu-title-avatar' | 'menu-avatar' | 'back-toggle' | 'back-avatar'
-  title?: string
-  onBack?: () => void
-}
-
-interface SelectedUser {
-  id: string
-  email: string
+  mode?:
+    | "default"
+    | "menu-title-avatar"
+    | "menu-avatar"
+    | "back-toggle"
+    | "back-avatar";
+  title?: string;
+  onBack?: () => void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'default',
-  title: 'JaNote'
-})
+  mode: "default",
+  title: "JaNote",
+});
 
-const emit = defineEmits<{
-  (e: 'user-changed', user: SelectedUser | null): void
-}>()
-
-const router = useRouter()
-const currentUserId = ref<string>('')
-const userEmail = ref<string>('')
-const userInitial = ref<string>('U')
-const userShares = ref<UserShare[]>([])
-const isShowingSharedAccount = ref(false)
-const currentShareIndex = ref(0)
+const router = useRouter();
+const userStore = useUserStore();
 
 // 注入側邊欄打開方法
-const openSideDrawer = inject<() => void>('openSideDrawer')
+const openSideDrawer = inject<() => void>("openSideDrawer");
 
-// 計算當前顯示的帳號信息
+// ── 本地 UI 狀態（純呈現，不屬於 store）──────────────────
+/** 目前輪替到第幾個共享帳號 */
+const currentShareIndex = ref(0);
+
+// ── 呈現層 Computed ────────────────────────────────────────
+const canSwitchAvatar = computed(() => userStore.userShares.length > 0);
+
+const avatarWrapperWidth = computed(() =>
+  userStore.isViewingShared ? "54px" : "36px",
+);
+
 const currentAvatarInfo = computed(() => {
-  if (isShowingSharedAccount.value) {
-    const share = userShares.value[currentShareIndex.value]
+  const ownerEmail = userStore.currentUserEmail;
+  const ownerInitial = ownerEmail ? ownerEmail.charAt(0).toUpperCase() : "U";
+
+  if (userStore.isViewingShared) {
+    const share = userStore.userShares[currentShareIndex.value];
     if (share) {
-      // 判斷本人是 sender 還是 receiver
-      const isCurrentUserSender = share.sender_id === currentUserId.value
-
-      // 決定誰是共享對象（另一方）
-      const otherEmail = isCurrentUserSender ? share.receiver_email : share.sender_email
-      const otherInitial = otherEmail.charAt(0).toUpperCase()
-
+      const isOwnerSender = share.sender_id === userStore.currentUserId;
+      const otherEmail = isOwnerSender
+        ? share.receiver_email
+        : share.sender_email;
       return {
-        initial: otherInitial,   // 共享對象的首字母
-        email: otherEmail,       // 共享對象的 email
+        initial: otherEmail.charAt(0).toUpperCase(),
+        email: otherEmail,
         isShared: true,
-        ownerInitial: userInitial.value,  // 本人首字母
-        ownerEmail: userEmail.value       // 本人 email
-      }
+        ownerInitial,
+        ownerEmail,
+      };
     }
   }
   return {
-    initial: userInitial.value,
-    email: userEmail.value,
-    isShared: false
-  }
-})
+    initial: ownerInitial,
+    email: ownerEmail,
+    isShared: false,
+    ownerInitial,
+    ownerEmail,
+  };
+});
 
-// 是否可以切換頭貼（有有效的共享帳號）
-const canSwitchAvatar = computed(() => {
-  return userShares.value.length > 0
-})
-
-// 根據是否展示共享帳號，動態控制 avatar-wrapper 的寬度
-// - 一般模式：36px（只顯示單一頭貼）
-// - 共享模式：54px（顯示雙頭貼，需要更多空間）
-const avatarWrapperWidth = computed(() => {
-  return isShowingSharedAccount.value ? '54px' : '36px'
-})
-
-onMounted(async () => {
-  const user = await userRepository.get()
-  if (user?.id) {
-    currentUserId.value = user.id
-  }
-  if (user && user.email) {
-    userEmail.value = user.email
-    userInitial.value = user.email.charAt(0).toUpperCase()
-  }
-
-  // 獲取有效的共享帳號列表（ACTIVE 且未刪除）
-  const activeShares = await userShareRepository.getActiveShares()
-  userShares.value = activeShares
-})
-
+// ── Handlers ───────────────────────────────────────────────
 const handleMenuClick = () => {
-  if (openSideDrawer) {
-    openSideDrawer()
-  }
-}
+  if (openSideDrawer) openSideDrawer();
+};
 
 const handleBackClick = () => {
-  if (props.onBack) {
-    props.onBack()
-  } else {
-    router.back()
-  }
-}
+  if (props.onBack) props.onBack();
+  else router.back();
+};
 
+/** 本人 → 共享1 → 共享2 … → 本人 循環切換 */
 const handleAvatarClick = () => {
-  if (!canSwitchAvatar.value) return
+  if (!canSwitchAvatar.value) return;
 
-  if (!isShowingSharedAccount.value) {
-    // 切換為共享帳號
-    isShowingSharedAccount.value = true
-    currentShareIndex.value = 0
-    const share = userShares.value[0]
-    if (share) {
-      // 根據本人角色，判斷共享對象
-      const isCurrentUserSender = share.sender_id === currentUserId.value
-      if (isCurrentUserSender) {
-        emit('user-changed', { id: share.receiver_id, email: share.receiver_email })
-      } else {
-        emit('user-changed', { id: share.sender_id, email: share.sender_email })
-      }
-    }
+  const shares = userStore.userShares;
+
+  if (!userStore.isViewingShared) {
+    // 本人 → 第一個共享
+    currentShareIndex.value = 0;
+    userStore.setSelectedUser(_resolveShare(shares[0]));
   } else {
-    // 嘗試下一個共享帳號
-    const nextIndex = currentShareIndex.value + 1
-    if (nextIndex < userShares.value.length) {
-      currentShareIndex.value = nextIndex
-      const share = userShares.value[nextIndex]
-      if (share) {
-        // 根據本人角色，判斷共享對象
-        const isCurrentUserSender = share.sender_id === currentUserId.value
-        if (isCurrentUserSender) {
-          emit('user-changed', { id: share.receiver_id, email: share.receiver_email })
-        } else {
-          emit('user-changed', { id: share.sender_id, email: share.sender_email })
-        }
-      }
+    const nextIndex = currentShareIndex.value + 1;
+    if (nextIndex < shares.length) {
+      currentShareIndex.value = nextIndex;
+      userStore.setSelectedUser(_resolveShare(shares[nextIndex]));
     } else {
-      // 沒有更多共享帳號，切回自己
-      isShowingSharedAccount.value = false
-      currentShareIndex.value = 0
-      emit('user-changed', null)
+      // 回到本人
+      currentShareIndex.value = 0;
+      userStore.setSelectedUser(null);
     }
   }
+};
+
+/** 從 UserShare 解析出「另一方」的 id/email */
+function _resolveShare(share: (typeof userStore.userShares)[number]) {
+  const isOwnerSender = share.sender_id === userStore.currentUserId;
+  return isOwnerSender
+    ? { id: share.receiver_id, email: share.receiver_email }
+    : { id: share.sender_id, email: share.sender_email };
 }
 </script>
 
@@ -265,7 +225,9 @@ const handleAvatarClick = () => {
     <!-- Default mode -->
     <template v-else>
       <slot>
-        <h1 class="page-title"><slot name="title">{{ title }}</slot></h1>
+        <h1 class="page-title">
+          <slot name="title">{{ title }}</slot>
+        </h1>
       </slot>
       <div v-if="$slots.actions" class="nav-actions">
         <slot name="actions"></slot>

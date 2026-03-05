@@ -1,205 +1,213 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import TopNavigation from '../components/TopNavigation.vue'
-import MonthPicker from '../components/MonthPicker.vue'
-import YearPicker from '../components/YearPicker.vue'
-import DateRangePicker from '../components/DateRangePicker.vue'
-import DonutChart from '../components/DonutChart.vue'
-import type { DonutSlice } from '../components/DonutChart.vue'
-import type { Transaction, Category, EntryType } from '../types'
-import { transactionRepository } from '../repositories/transactionRepository'
-import { categoryRepository } from '../repositories/categoryRepository'
-import { userRepository } from '../repositories/userRepository'
-import { getCategoryIcon } from '../utils/categoryIcons'
+import { ref, computed, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import TopNavigation from "../components/TopNavigation.vue";
+import MonthPicker from "../components/MonthPicker.vue";
+import YearPicker from "../components/YearPicker.vue";
+import DateRangePicker from "../components/DateRangePicker.vue";
+import DonutChart from "../components/DonutChart.vue";
+import type { DonutSlice } from "../components/DonutChart.vue";
+import type { Transaction, Category, EntryType } from "../types";
+import { transactionRepository } from "../repositories/transactionRepository";
+import { categoryRepository } from "../repositories/categoryRepository";
+import { getCategoryIcon } from "../utils/categoryIcons";
+import { useUserStore } from "../stores/userStore";
 
-type ViewMode = 'monthly' | 'yearly' | 'custom'
-
-interface SelectedUser {
-  id: string
-  email: string
-}
+type ViewMode = "monthly" | "yearly" | "custom";
 
 interface CategorySummary {
-  category_id: string
-  category_name: string
-  total_amount: number
-  color: string
+  category_id: string;
+  category_name: string;
+  total_amount: number;
+  color: string;
 }
 
-const router = useRouter()
-const userEmail = ref<string>('')
-const userInitial = ref<string>('U')
-const transactions = ref<Transaction[]>([])
-const categories = ref<Category[]>([])
-const viewMode = ref<ViewMode>('monthly')
-const selectedYear = ref(new Date().getFullYear())
-const selectedMonth = ref(new Date().getMonth() + 1)
-const showMonthPicker = ref(false)
-const showYearPicker = ref(false)
-const showDateRangePicker = ref(false)
-const customStartDate = ref(new Date().setHours(0, 0, 0, 0))
-const customEndDate = ref(new Date().setHours(23, 59, 59, 999))
-const currentUserId = ref<string>('')
-const selectedUser = ref<SelectedUser | null>(null)
-const transactionType = ref<EntryType>('EXPENSE')
+const router = useRouter();
+const userStore = useUserStore();
+const transactions = ref<Transaction[]>([]);
+const categories = ref<Category[]>([]);
+const viewMode = ref<ViewMode>("monthly");
+const selectedYear = ref(new Date().getFullYear());
+const selectedMonth = ref(new Date().getMonth() + 1);
+const showMonthPicker = ref(false);
+const showYearPicker = ref(false);
+const showDateRangePicker = ref(false);
+const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
+const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
+const transactionType = ref<EntryType>("EXPENSE");
 
 const categoryColors = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-  '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B88B', '#AED6F1',
-  '#F1948A', '#82E0AA', '#FAD7A0', '#D7BDE2', '#A3E4D7'
-]
+  "#FF6B6B",
+  "#4ECDC4",
+  "#45B7D1",
+  "#FFA07A",
+  "#98D8C8",
+  "#F7DC6F",
+  "#BB8FCE",
+  "#85C1E2",
+  "#F8B88B",
+  "#AED6F1",
+  "#F1948A",
+  "#82E0AA",
+  "#FAD7A0",
+  "#D7BDE2",
+  "#A3E4D7",
+];
 
 const currentMonthDisplay = computed(() => {
-  if (viewMode.value === 'monthly') {
-    return `${selectedYear.value}年${selectedMonth.value}月`
-  } else if (viewMode.value === 'yearly') {
-    return `${selectedYear.value}年`
+  if (viewMode.value === "monthly") {
+    return `${selectedYear.value}年${selectedMonth.value}月`;
+  } else if (viewMode.value === "yearly") {
+    return `${selectedYear.value}年`;
   } else {
     // custom
-    const start = new Date(customStartDate.value)
-    const end = new Date(customEndDate.value)
-    const startStr = `${start.getFullYear()}/${String(start.getMonth() + 1).padStart(2, '0')}/${String(start.getDate()).padStart(2, '0')}`
-    const endStr = `${end.getFullYear()}/${String(end.getMonth() + 1).padStart(2, '0')}/${String(end.getDate()).padStart(2, '0')}`
-    return `${startStr}~${endStr}`
+    const start = new Date(customStartDate.value);
+    const end = new Date(customEndDate.value);
+    const startStr = `${start.getFullYear()}/${String(start.getMonth() + 1).padStart(2, "0")}/${String(start.getDate()).padStart(2, "0")}`;
+    const endStr = `${end.getFullYear()}/${String(end.getMonth() + 1).padStart(2, "0")}/${String(end.getDate()).padStart(2, "0")}`;
+    return `${startStr}~${endStr}`;
   }
-})
+});
 
 const openPicker = () => {
-  if (viewMode.value === 'monthly') {
-    showMonthPicker.value = true
-  } else if (viewMode.value === 'yearly') {
-    showYearPicker.value = true
+  if (viewMode.value === "monthly") {
+    showMonthPicker.value = true;
+  } else if (viewMode.value === "yearly") {
+    showYearPicker.value = true;
   } else {
-    showDateRangePicker.value = true
+    showDateRangePicker.value = true;
   }
-}
+};
 
-const activeUserId = computed(() => {
-  return selectedUser.value?.id || currentUserId.value
-})
-
-const isViewingShared = computed(() => {
-  return selectedUser.value !== null
-})
+// 從 Pinia Store 取得使用者狀態
+const activeUserId = computed(() => userStore.activeUserId);
+const isViewingShared = computed(() => userStore.isViewingShared);
 
 const filteredCategories = computed(() => {
-  return categories.value.filter(c => {
-    if (c.is_deleted) return false
-    return c.user_id === activeUserId.value
-  })
-})
+  return categories.value.filter((c) => {
+    if (c.is_deleted) return false;
+    return c.user_id === activeUserId.value;
+  });
+});
 
 const filteredTransactions = computed(() => {
-  return transactions.value.filter(t => {
-    if (t.is_deleted) return false
-    if (activeUserId.value && t.user_id !== activeUserId.value) return false
+  return transactions.value.filter((t) => {
+    if (t.is_deleted) return false;
+    if (activeUserId.value && t.user_id !== activeUserId.value) return false;
 
-    const dateValue: any = t.date
-    const dateString = typeof dateValue === 'string' ? dateValue.replace(/-/g, '/') : dateValue
-    const date = new Date(dateString)
+    const dateValue: any = t.date;
+    const dateString =
+      typeof dateValue === "string" ? dateValue.replace(/-/g, "/") : dateValue;
+    const date = new Date(dateString);
 
-    if (isNaN(date.getTime())) return false
+    if (isNaN(date.getTime())) return false;
 
-    if (viewMode.value === 'monthly') {
-      return date.getFullYear() === Number(selectedYear.value) &&
-             (date.getMonth() + 1) === Number(selectedMonth.value)
-    } else if (viewMode.value === 'yearly') {
-      return date.getFullYear() === Number(selectedYear.value)
+    if (viewMode.value === "monthly") {
+      return (
+        date.getFullYear() === Number(selectedYear.value) &&
+        date.getMonth() + 1 === Number(selectedMonth.value)
+      );
+    } else if (viewMode.value === "yearly") {
+      return date.getFullYear() === Number(selectedYear.value);
     } else {
       // custom date range
-      const startDate = new Date(customStartDate.value)
-      const endDate = new Date(customEndDate.value)
-      return date >= startDate && date <= endDate
+      const startDate = new Date(customStartDate.value);
+      const endDate = new Date(customEndDate.value);
+      return date >= startDate && date <= endDate;
     }
-  })
-})
+  });
+});
 
 const typeFilteredTransactions = computed(() => {
-  return filteredTransactions.value.filter(t => t.type === transactionType.value)
-})
+  return filteredTransactions.value.filter(
+    (t) => t.type === transactionType.value,
+  );
+});
 
 const categorySummaries = computed<CategorySummary[]>(() => {
-  const categoryMap = new Map<string, CategorySummary>()
+  const categoryMap = new Map<string, CategorySummary>();
 
   typeFilteredTransactions.value.forEach((transaction) => {
-    const category = filteredCategories.value.find(c => c.id === transaction.category_id)
-    const categoryName = category?.name || '未知分類'
+    const category = filteredCategories.value.find(
+      (c) => c.id === transaction.category_id,
+    );
+    const categoryName = category?.name || "未知分類";
 
     if (!categoryMap.has(transaction.category_id)) {
       categoryMap.set(transaction.category_id, {
         category_id: transaction.category_id,
         category_name: categoryName,
         total_amount: 0,
-        color: categoryColors[categoryMap.size % categoryColors.length] || '#FF6B6B'
-      })
+        color:
+          categoryColors[categoryMap.size % categoryColors.length] || "#FF6B6B",
+      });
     }
 
-    const summary = categoryMap.get(transaction.category_id)!
-    summary.total_amount += transaction.amount
-  })
+    const summary = categoryMap.get(transaction.category_id)!;
+    summary.total_amount += transaction.amount;
+  });
 
-  return Array.from(categoryMap.values()).sort((a, b) => b.total_amount - a.total_amount)
-})
+  return Array.from(categoryMap.values()).sort(
+    (a, b) => b.total_amount - a.total_amount,
+  );
+});
 
 const totalAmount = computed(() => {
-  return categorySummaries.value.reduce((sum, cat) => sum + cat.total_amount, 0)
-})
+  return categorySummaries.value.reduce(
+    (sum, cat) => sum + cat.total_amount,
+    0,
+  );
+});
 
 const donutSlices = computed<DonutSlice[]>(() => {
-  return categorySummaries.value.map(summary => ({
+  return categorySummaries.value.map((summary) => ({
     sliceLabel: summary.category_name,
     sliceValue: summary.total_amount,
-    sliceColor: summary.color
-  }))
-})
+    sliceColor: summary.color,
+  }));
+});
 
 const centerLabel = computed(() => {
-  return transactionType.value === 'EXPENSE' ? '總支出' : '總收入'
-})
+  return transactionType.value === "EXPENSE" ? "總支出" : "總收入";
+});
 
 const centerBalance = computed(() => {
-  return `$${totalAmount.value.toLocaleString()}`
-})
+  return `$${totalAmount.value.toLocaleString()}`;
+});
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = filteredCategories.value.find(c => c.id === categoryId)
-  return getCategoryIcon(category?.name || '其他')
-}
-
-const onUserChanged = (user: SelectedUser | null) => {
-  selectedUser.value = user
-}
+  const category = filteredCategories.value.find((c) => c.id === categoryId);
+  return getCategoryIcon(category?.name || "其他");
+};
 
 const loadTransactions = async () => {
-  const allTransactions = await transactionRepository.getAll()
-  transactions.value = allTransactions
-}
+  const allTransactions = await transactionRepository.getAll();
+  transactions.value = allTransactions;
+};
 
 const loadCategories = async () => {
-  categories.value = await categoryRepository.getAll()
-}
+  categories.value = await categoryRepository.getAll();
+};
 
 onMounted(async () => {
-  const user = await userRepository.get()
-  if (user) {
-    currentUserId.value = user.id
-  }  if (user && user.email) {
-    userEmail.value = user.email
-    userInitial.value = user.email.charAt(0).toUpperCase()
-  }  await loadCategories()
-  await loadTransactions()
-})
+  await userStore.loadUser();
+  await loadCategories();
+  await loadTransactions();
+});
 
-watch(selectedUser, async () => {
-  await loadCategories()
-  await loadTransactions()
-})
+// 切換使用者時重新載入資料
+watch(
+  () => userStore.activeUserId,
+  async () => {
+    await loadCategories();
+    await loadTransactions();
+  },
+);
 </script>
 
 <template>
   <section class="transaction-summary-page">
-    <TopNavigation mode="back-avatar" @user-changed="onUserChanged">
+    <TopNavigation mode="back-avatar">
       <div class="month-display" @click="openPicker">
         <span>{{ currentMonthDisplay }}</span>
       </div>
@@ -211,10 +219,7 @@ watch(selectedUser, async () => {
       v-model:month="selectedMonth"
     />
 
-    <YearPicker
-      v-model:open="showYearPicker"
-      v-model:year="selectedYear"
-    />
+    <YearPicker v-model:open="showYearPicker" v-model:year="selectedYear" />
 
     <DateRangePicker
       v-model:open="showDateRangePicker"
@@ -250,13 +255,25 @@ watch(selectedUser, async () => {
         <div class="right-controls">
           <div class="type-toggle">
             <button
-              :class="['toggle-btn', { active: transactionType === 'EXPENSE', 'expense-active': transactionType === 'EXPENSE' }]"
+              :class="[
+                'toggle-btn',
+                {
+                  active: transactionType === 'EXPENSE',
+                  'expense-active': transactionType === 'EXPENSE',
+                },
+              ]"
               @click="transactionType = 'EXPENSE'"
             >
               支出
             </button>
             <button
-              :class="['toggle-btn', { active: transactionType === 'INCOME', 'income-active': transactionType === 'INCOME' }]"
+              :class="[
+                'toggle-btn',
+                {
+                  active: transactionType === 'INCOME',
+                  'income-active': transactionType === 'INCOME',
+                },
+              ]"
               @click="transactionType = 'INCOME'"
             >
               收入
@@ -275,7 +292,14 @@ watch(selectedUser, async () => {
       <!-- 分類摘要列表 -->
       <div class="category-list">
         <div v-if="categorySummaries.length === 0" class="empty-state">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -301,7 +325,10 @@ watch(selectedUser, async () => {
                   class="color-indicator"
                   :style="{ backgroundColor: summary.color }"
                 ></div>
-                <div class="category-icon" v-html="getCategoryIconSvg(summary.category_id)"></div>
+                <div
+                  class="category-icon"
+                  v-html="getCategoryIconSvg(summary.category_id)"
+                ></div>
                 <div class="category-info">
                   <span class="category-name">{{ summary.category_name }}</span>
                   <!-- 百分比進度條 -->
@@ -309,20 +336,28 @@ watch(selectedUser, async () => {
                     <div
                       class="progress-bar-fill"
                       :style="{
-                        width: totalAmount > 0 ? (summary.total_amount / totalAmount * 100) + '%' : '0%',
-                        backgroundColor: summary.color
+                        width:
+                          totalAmount > 0
+                            ? (summary.total_amount / totalAmount) * 100 + '%'
+                            : '0%',
+                        backgroundColor: summary.color,
                       }"
                     ></div>
                   </div>
                 </div>
               </div>
               <div class="item-right">
-                <span class="item-amount">${{ summary.total_amount.toLocaleString() }}</span>
+                <span class="item-amount"
+                  >${{ summary.total_amount.toLocaleString() }}</span
+                >
                 <span class="item-percentage" v-if="totalAmount > 0">
-                  {{ (summary.total_amount / totalAmount * 100).toFixed(1) }}%
+                  {{ ((summary.total_amount / totalAmount) * 100).toFixed(1) }}%
                 </span>
               </div>
-              <div v-if="index < categorySummaries.length - 1" class="item-divider"></div>
+              <div
+                v-if="index < categorySummaries.length - 1"
+                class="item-divider"
+              ></div>
             </div>
           </div>
         </div>
@@ -348,7 +383,9 @@ watch(selectedUser, async () => {
   user-select: none;
   padding: 6px 10px;
   border-radius: 10px;
-  transition: background 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
 }
 
 .month-display:hover {
@@ -427,7 +464,6 @@ watch(selectedUser, async () => {
   align-items: center;
   justify-content: flex-end;
 }
-
 
 /* ── 分類列表 ── */
 .category-list {

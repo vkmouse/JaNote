@@ -1,7 +1,7 @@
 <template>
   <section class="search-page">
     <!-- Top Navigation Bar -->
-    <TopNavigation mode="back-avatar" @user-changed="onUserChanged" />
+    <TopNavigation mode="back-avatar" />
 
     <div class="page-content page">
       <!-- Search Results -->
@@ -125,13 +125,8 @@ import TopNavigation from "../components/TopNavigation.vue";
 import type { Transaction, Category } from "../types";
 import { transactionRepository } from "../repositories/transactionRepository";
 import { categoryRepository } from "../repositories/categoryRepository";
-import { userRepository } from "../repositories/userRepository";
 import { getCategoryIcon } from "../utils/categoryIcons";
-
-interface SelectedUser {
-  id: string;
-  email: string;
-}
+import { useUserStore } from "../stores/userStore";
 
 interface DailyGroup {
   date: string;
@@ -141,24 +136,15 @@ interface DailyGroup {
 }
 
 const router = useRouter();
+const userStore = useUserStore();
 const transactions = ref<Transaction[]>([]);
 const categories = ref<Category[]>([]);
 const searchQuery = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
-const currentUserId = ref<string>("");
-const selectedUser = ref<SelectedUser | null>(null);
 
-const activeUserId = computed(() => {
-  return selectedUser.value?.id || currentUserId.value;
-});
-
-const isViewingShared = computed(() => {
-  return selectedUser.value !== null;
-});
-
-const onUserChanged = (user: SelectedUser | null) => {
-  selectedUser.value = user;
-};
+// 從 Pinia Store 取得使用者狀態
+const activeUserId = computed(() => userStore.activeUserId);
+const isViewingShared = computed(() => userStore.isViewingShared);
 
 const onCloseClick = () => {
   if (searchQuery.value) {
@@ -265,10 +251,7 @@ const highlightNote = (
 };
 
 onMounted(async () => {
-  const user = await userRepository.get();
-  if (user) {
-    currentUserId.value = user.id;
-  }
+  await userStore.loadUser();
 
   const [allTransactions, allCategories] = await Promise.all([
     transactionRepository.getAll(),

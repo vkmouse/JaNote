@@ -1,7 +1,7 @@
 <template>
   <section class="transactions-page">
     <!-- Top Navigation Bar -->
-    <TopNavigation mode="menu-avatar" @user-changed="onUserChanged">
+    <TopNavigation mode="menu-avatar">
       <div class="month-display" @click="showMonthPicker = true">
         <span>{{ currentMonthDisplay }}</span>
       </div>
@@ -177,23 +177,16 @@ import type { Transaction, Category } from "../types";
 import { transactionRepository } from "../repositories/transactionRepository";
 import { categoryRepository } from "../repositories/categoryRepository";
 import { transactionService } from "../services/transactionService";
-import { userRepository } from "../repositories/userRepository";
 import { getCategoryIcon } from "../utils/categoryIcons";
-
-interface SelectedUser {
-  id: string;
-  email: string;
-}
+import { useUserStore } from "../stores/userStore";
 
 const router = useRouter();
+const userStore = useUserStore();
 const transactions = ref<Transaction[]>([]);
 const categories = ref<Category[]>([]);
 const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth() + 1);
 const showMonthPicker = ref(false);
-const syncApiBase = "/api";
-const currentUserId = ref<string>("");
-const selectedUser = ref<SelectedUser | null>(null);
 
 // Swipe-to-delete state
 const swipeState = ref<
@@ -222,15 +215,9 @@ const currentMonthDisplay = computed(() => {
   return `${selectedYear.value}\u5e74${selectedMonth.value}\u6708`;
 });
 
-// The active user_id to filter by (self or shared owner)
-const activeUserId = computed(() => {
-  return selectedUser.value?.id || currentUserId.value;
-});
-
-// Whether viewing a shared user's data (read-only mode)
-const isViewingShared = computed(() => {
-  return selectedUser.value !== null;
-});
+// 從 Pinia Store 取得使用者狀態
+const activeUserId = computed(() => userStore.activeUserId);
+const isViewingShared = computed(() => userStore.isViewingShared);
 
 const filteredTransactions = computed(() => {
   return transactions.value.filter((t) => {
@@ -336,10 +323,6 @@ const getCategoryName = (categoryId: string): string => {
 const getCategoryIconSvg = (categoryId: string): string => {
   const category = categories.value.find((c) => c.id === categoryId);
   return getCategoryIcon(category?.name || "其他");
-};
-
-const onUserChanged = (user: SelectedUser | null) => {
-  selectedUser.value = user;
 };
 
 const goToNewTransaction = () => {
@@ -533,10 +516,7 @@ const deleteTransaction = async (id: string) => {
 };
 
 onMounted(async () => {
-  const user = await userRepository.get();
-  if (user) {
-    currentUserId.value = user.id;
-  }
+  await userStore.loadUser();
   loadTransactions();
   loadCategories();
 });
