@@ -666,7 +666,6 @@ function saveBudget(): void {
 function deleteBudget(): void {
   if (!editingBudget.value) return;
   budgets.value = budgets.value.filter((b) => b.id !== editingBudget.value!.id);
-  saveBudgets();
   closeModal();
 }
 
