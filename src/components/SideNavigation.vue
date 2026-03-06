@@ -1,47 +1,47 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
-import SyncIcon from '../assets/icons/icon-sync.svg?raw'
-import DollarCircleIcon from '../assets/icons/icon-dollar-circle.svg?raw'
-import TravelBudgetIcon from '../assets/icons/icon-travel-budget.svg?raw'
+import { useRoute } from "vue-router";
+import SyncIcon from "../assets/icons/icon-sync.svg?raw";
+import DollarCircleIcon from "../assets/icons/icon-dollar-circle.svg?raw";
+import TravelBudgetIcon from "../assets/icons/icon-travel-budget.svg?raw";
 
 interface Props {
-  isOpen?: boolean
+  isOpen?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isOpen: false
-})
+  isOpen: false,
+});
 
 const emit = defineEmits<{
-  close: []
-}>()
+  close: [];
+}>();
 
-const route = useRoute()
+const route = useRoute();
 
 const navItems = [
-  { to: '/transactions', label: '記帳管理', icon: DollarCircleIcon },
-  { to: '/budget', label: '預算管理', icon: TravelBudgetIcon },
-  { to: '/sync', label: '同步管理', icon: SyncIcon },
-]
+  { to: "/transactions", label: "記帳管理", icon: DollarCircleIcon },
+  { to: "/budget", label: "預算管理", icon: TravelBudgetIcon },
+  { to: "/sync", label: "同步管理", icon: SyncIcon },
+];
 
-const isActive = (path: string) => route.path === path
+const isActive = (path: string) => route.path === path;
 
 const handleClose = () => {
-  emit('close')
-}
+  emit("close");
+};
 
 const handleNavClick = () => {
   // 點擊導航項目後關閉側邊欄
-  emit('close')
-}
+  emit("close");
+};
 </script>
 
 <template>
   <!-- 遮罩層 -->
   <Transition name="fade">
-    <div 
-      v-if="isOpen" 
-      class="drawer-overlay" 
+    <div
+      v-if="isOpen"
+      class="drawer-overlay"
       @click="handleClose"
       aria-hidden="true"
     ></div>
@@ -53,13 +53,20 @@ const handleNavClick = () => {
       <div class="drawer-header">
         <div class="nav-brand">JaNote</div>
         <button class="close-btn" @click="handleClose" aria-label="關閉選單">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
-      
+
       <div class="nav-links">
         <router-link
           v-for="item in navItems"
@@ -159,7 +166,9 @@ const handleNavClick = () => {
   border-radius: 8px;
   background: var(--bg-page);
   color: var(--text-primary);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
   text-decoration: none;
 }
 
