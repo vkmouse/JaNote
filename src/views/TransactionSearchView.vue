@@ -141,7 +141,6 @@ const searchQuery = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
 
 // 從 Pinia Store 取得使用者狀態
-const activeUserId = computed(() => userStore.activeUserId);
 const isViewingShared = computed(() => userStore.isViewingShared);
 
 const onCloseClick = () => {
@@ -158,7 +157,7 @@ const editTransaction = (id: string) => {
 };
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = transactionStore.categories.find((c) => c.id === categoryId);
+  const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
   return getCategoryIcon(category?.name || "其他");
 };
 
@@ -167,9 +166,7 @@ const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return [];
 
-  return transactionStore.transactions.filter((t) => {
-    if (t.is_deleted) return false;
-    if (activeUserId.value && t.user_id !== activeUserId.value) return false;
+  return transactionStore.visibleTransactions.filter((t) => {
     return (t.note || "").toLowerCase().includes(query);
   });
 });

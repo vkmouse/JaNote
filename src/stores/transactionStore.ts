@@ -1,15 +1,31 @@
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 import { transactionRepository } from "../db/repositories/transactionRepository";
 import { categoryRepository } from "../db/repositories/categoryRepository";
 import { syncQueueRepository } from "../db/repositories/syncQueueRepository";
 import { userRepository } from "../db/repositories/userRepository";
+import { useUserStore } from "./userStore";
 import type { Transaction, Category } from "../types";
 
 export const useTransactionStore = defineStore("transaction", () => {
+  const userStore = useUserStore();
+
   // ── State ──────────────────────────────────────────────────
   const transactions = ref<Transaction[]>([]);
   const categories = ref<Category[]>([]);
+
+  // ── Computed ───────────────────────────────────────────────
+  const visibleTransactions = computed(() =>
+    transactions.value.filter(
+      (t) => !t.is_deleted && t.user_id === userStore.activeUserId,
+    ),
+  );
+
+  const visibleCategories = computed(() =>
+    categories.value.filter(
+      (c) => !c.is_deleted && c.user_id === userStore.activeUserId,
+    ),
+  );
 
   // ── Actions ────────────────────────────────────────────────
   async function loadTransactions(): Promise<void> {
@@ -193,6 +209,8 @@ export const useTransactionStore = defineStore("transaction", () => {
     // state
     transactions,
     categories,
+    visibleTransactions,
+    visibleCategories,
     // actions
     loadTransactions,
     loadCategories,

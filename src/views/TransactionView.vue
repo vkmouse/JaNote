@@ -213,13 +213,10 @@ const currentMonthDisplay = computed(() => {
 });
 
 // 從 Pinia Store 取得使用者狀態
-const activeUserId = computed(() => userStore.activeUserId);
 const isViewingShared = computed(() => userStore.isViewingShared);
 
 const filteredTransactions = computed(() => {
-  return transactionStore.transactions.filter((t) => {
-    if (t.is_deleted) return false;
-    if (activeUserId.value && t.user_id !== activeUserId.value) return false;
+  return transactionStore.visibleTransactions.filter((t) => {
     const date = new Date(t.date);
     return (
       date.getFullYear() === selectedYear.value &&
@@ -313,7 +310,7 @@ const loadCategories = async () => {
 
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = transactionStore.categories.find((c) => c.id === categoryId);
+  const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
   return getCategoryIcon(category?.name || "其他");
 };
 

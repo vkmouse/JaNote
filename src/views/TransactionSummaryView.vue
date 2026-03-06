@@ -78,21 +78,10 @@ const openPicker = () => {
 };
 
 // 從 Pinia Store 取得使用者狀態
-const activeUserId = computed(() => userStore.activeUserId);
 const isViewingShared = computed(() => userStore.isViewingShared);
 
-const filteredCategories = computed(() => {
-  return transactionStore.categories.filter((c) => {
-    if (c.is_deleted) return false;
-    return c.user_id === activeUserId.value;
-  });
-});
-
 const filteredTransactions = computed(() => {
-  return transactionStore.transactions.filter((t) => {
-    if (t.is_deleted) return false;
-    if (activeUserId.value && t.user_id !== activeUserId.value) return false;
-
+  return transactionStore.visibleTransactions.filter((t) => {
     const dateValue: any = t.date;
     const dateString =
       typeof dateValue === "string" ? dateValue.replace(/-/g, "/") : dateValue;
@@ -126,7 +115,7 @@ const categorySummaries = computed<CategorySummary[]>(() => {
   const categoryMap = new Map<string, CategorySummary>();
 
   typeFilteredTransactions.value.forEach((transaction) => {
-    const category = filteredCategories.value.find(
+    const category = transactionStore.visibleCategories.find(
       (c) => c.id === transaction.category_id,
     );
     const categoryName = category?.name || "未知分類";
@@ -174,7 +163,7 @@ const centerBalance = computed(() => {
 });
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = filteredCategories.value.find((c) => c.id === categoryId);
+  const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
   return getCategoryIcon(category?.name || "其他");
 };
 

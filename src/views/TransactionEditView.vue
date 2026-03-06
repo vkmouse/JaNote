@@ -88,7 +88,7 @@ const currentDate = ref<number>(Date.now())
 
 // Computed properties
 const filteredCategories = computed(() => {
-  return transactionStore.categories.filter(cat => cat.type === transactionType.value && !cat.is_deleted)
+  return transactionStore.visibleCategories.filter(cat => cat.type === transactionType.value)
 })
 
 const formattedAmount = computed(() => {
@@ -131,7 +131,7 @@ const loadTransaction = async (id: string) => {
     currentDate.value = transaction.date
     
     // Set category name
-    const category = transactionStore.categories.find(c => c.id === transaction.category_id)
+    const category = transactionStore.visibleCategories.find(c => c.id === transaction.category_id)
     if (category) {
       selectedCategoryName.value = category.name
       // If the loaded transaction's note is empty or equals the category name,
