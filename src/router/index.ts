@@ -4,6 +4,7 @@ import TransactionSummaryView from "../views/TransactionSummaryView.vue";
 import TransactionView from "../views/TransactionView.vue";
 import TransactionSearchView from "../views/TransactionSearchView.vue";
 import TransactionEditView from "../views/TransactionEditView.vue";
+import BudgetView from "../views/BudgetView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -34,6 +35,11 @@ const router = createRouter({
       path: "/transaction/:id/edit",
       name: "transaction-edit",
       component: TransactionEditView,
+    },
+    {
+      path: "/budget",
+      name: "budget",
+      component: BudgetView,
     },
   ],
 });
