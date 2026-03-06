@@ -1,72 +1,43 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import TopNavigation from "../components/TopNavigation.vue";
-import { syncQueueRepository } from "../repositories/syncQueueRepository";
-import { syncMetaRepository } from "../repositories/syncMetaRepository";
-import { categoryRepository } from "../repositories/categoryRepository";
-import { userShareRepository } from "../repositories/userShareRepository";
-import { syncService } from "../services/syncService";
-import { transactionService } from "../services/transactionService";
-import { userShareService } from "../services/userShareService";
 import { useUserStore } from "../stores/userStore";
+import { useSyncStore } from "../stores/syncStore";
+import { useUserShareStore } from "../stores/userShareStore";
+import { useTransactionStore } from "../stores/transactionStore";
 import type { UserShare } from "../types";
 
 const userStore = useUserStore();
+const syncStore = useSyncStore();
+const userShareStore = useUserShareStore();
+const transactionStore = useTransactionStore();
+
 const apiBase = ref("/api");
-const lastCursor = ref(0);
-const activeQueueCount = ref(0);
-const syncStatus = ref<"idle" | "syncing" | "success" | "error">("idle");
-const lastSyncAt = ref("");
 const isResetting = ref(false);
 
-// 共享邀請相關
+// 共享邀請相關 UI 狀態
 const inviteEmail = ref("");
-const sentPendingInvites = ref<UserShare[]>([]); // 發出 PENDING 邀請
-const receivedPendingInvites = ref<UserShare[]>([]); // 收到 PENDING 邀請
-const activeShares = ref<UserShare[]>([]); // ACTIVE 的共享
 const isInviting = ref(false);
 const operatingShareId = ref<string | null>(null);
 
-const isSyncing = computed(() => syncStatus.value === "syncing");
+const isSyncing = computed(() => syncStore.syncStatus === "syncing");
 
 onMounted(() => {
   refreshLocalState();
 });
 
 async function refreshLocalState() {
-  lastCursor.value = await syncMetaRepository.getLastCursor();
-  const queueItems = await syncQueueRepository.getAllOrdered();
-  activeQueueCount.value = queueItems.length;
+  await syncStore.refreshSyncState();
   await userStore.loadUser();
-
-  // 載入所有共享
-  const allShares = await userShareRepository.getAll();
-  const validShares = allShares.filter((share) => share.is_deleted === 0);
-
-  // 分類共享
-  sentPendingInvites.value = validShares.filter(
-    (share) =>
-      share.status === "PENDING" && share.sender_id === userStore.currentUserId,
-  );
-  receivedPendingInvites.value = validShares.filter(
-    (share) =>
-      share.status === "PENDING" &&
-      share.receiver_id === userStore.currentUserId,
-  );
-  activeShares.value = validShares.filter((share) => share.status === "ACTIVE");
+  await userShareStore.loadShares(userStore.currentUserId);
 }
 
 async function syncNow() {
-  syncStatus.value = "syncing";
-
   try {
-    const responseData = await syncService.performSync(apiBase.value);
+    await syncStore.performSync(apiBase.value);
     await userStore.loadUser();
-    await refreshLocalState();
-    lastSyncAt.value = new Date().toLocaleString();
-    syncStatus.value = "success";
+    await userShareStore.loadShares(userStore.currentUserId);
   } catch (error) {
-    syncStatus.value = "error";
     console.error("同步失敗:", error);
   }
 }
@@ -77,19 +48,11 @@ async function clearAllData() {
   }
 
   try {
-    await categoryRepository.deleteAll();
-    await transactionService.deleteAllTransactions();
-    await userShareService.deleteAllShares();
-    await syncQueueRepository.clear();
-    await syncMetaRepository.clear();
+    await transactionStore.deleteAllCategories();
+    await transactionStore.deleteAllTransactions();
+    await userShareStore.deleteAllShares();
+    await syncStore.clearSyncData();
     await userStore.clearUser();
-
-    lastCursor.value = 0;
-    lastSyncAt.value = "";
-    activeQueueCount.value = 0;
-    sentPendingInvites.value = [];
-    receivedPendingInvites.value = [];
-    activeShares.value = [];
 
     alert("已清空所有本地資料");
   } catch (error) {
@@ -148,7 +111,7 @@ async function sendInvite() {
   }
 
   // 檢查是否已經邀請過
-  const existingInvite = sentPendingInvites.value.find(
+  const existingInvite = userShareStore.sentPendingInvites.find(
     (invite) => invite.receiver_email === email,
   );
   if (existingInvite) {
@@ -165,10 +128,8 @@ async function sendInvite() {
       return;
     }
 
-    await userShareService.sendInvite(user.id, user.email, email);
-
-    // 更新 UI
-    await refreshLocalState();
+    await userShareStore.sendInvite(user.id, user.email, email);
+    await userShareStore.loadShares(userStore.currentUserId);
     inviteEmail.value = "";
 
     alert("邀請已發送，請執行同步");
@@ -186,9 +147,8 @@ async function acceptInvitation(share: UserShare) {
   operatingShareId.value = share.id;
 
   try {
-    await userShareService.acceptInvitation(share);
-
-    await refreshLocalState();
+    await userShareStore.acceptInvitation(share);
+    await userShareStore.loadShares(userStore.currentUserId);
     alert("已接受邀請，請執行同步");
   } catch (error) {
     alert("接受邀請失敗");
@@ -208,9 +168,8 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   operatingShareId.value = share.id;
 
   try {
-    await userShareService.rejectOrCancelShare(share);
-
-    await refreshLocalState();
+    await userShareStore.rejectOrCancelShare(share);
+    await userShareStore.loadShares(userStore.currentUserId);
     alert(`已${actionName}，請執行同步`);
   } catch (error) {
     alert(`${actionName}失敗`);
@@ -234,14 +193,14 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
         </div>
         <div class="status-card">
           <div class="status-row">
-            <span class="status-dot" :class="syncStatus"></span>
+            <span class="status-dot" :class="syncStore.syncStatus"></span>
             <span class="status-text">
               {{
-                syncStatus === "syncing"
+                syncStore.syncStatus === "syncing"
                   ? "同步中"
-                  : syncStatus === "success"
+                  : syncStore.syncStatus === "success"
                     ? "就緒"
-                    : syncStatus === "error"
+                    : syncStore.syncStatus === "error"
                       ? "同步失敗"
                       : "待命"
               }}
@@ -256,15 +215,15 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
             </div>
             <div>
               <span>Cursor</span>
-              <strong>{{ lastCursor }}</strong>
+              <strong>{{ syncStore.lastCursor }}</strong>
             </div>
             <div>
               <span>Queue</span>
-              <strong>{{ activeQueueCount }}</strong>
+              <strong>{{ syncStore.activeQueueCount }}</strong>
             </div>
             <div>
               <span>Last Sync</span>
-              <strong class="sync-time">{{ lastSyncAt || "-" }}</strong>
+              <strong class="sync-time">{{ syncStore.lastSyncAt || "-" }}</strong>
             </div>
           </div>
         </div>
@@ -311,11 +270,11 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
         </div>
 
         <!-- 收到的邀請 -->
-        <div v-if="receivedPendingInvites.length > 0" class="invites-list">
-          <h3>收到的邀請 ({{ receivedPendingInvites.length }})</h3>
+        <div v-if="userShareStore.receivedPendingInvites.length > 0" class="invites-list">
+          <h3>收到的邀請 ({{ userShareStore.receivedPendingInvites.length }})</h3>
           <div class="invite-items">
             <div
-              v-for="share in receivedPendingInvites"
+              v-for="share in userShareStore.receivedPendingInvites"
               :key="share.id"
               class="invite-item received"
             >
@@ -347,11 +306,11 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
         </div>
 
         <!-- 發出的邀請 (作為 owner) -->
-        <div v-if="sentPendingInvites.length > 0" class="invites-list">
-          <h3>發出的邀請 ({{ sentPendingInvites.length }})</h3>
+        <div v-if="userShareStore.sentPendingInvites.length > 0" class="invites-list">
+          <h3>發出的邀請 ({{ userShareStore.sentPendingInvites.length }})</h3>
           <div class="invite-items">
             <div
-              v-for="share in sentPendingInvites"
+              v-for="share in userShareStore.sentPendingInvites"
               :key="share.id"
               class="invite-item sent"
             >
@@ -376,11 +335,11 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
         </div>
 
         <!-- 活躍的共享 -->
-        <div v-if="activeShares.length > 0" class="invites-list">
-          <h3>活躍的共享 ({{ activeShares.length }})</h3>
+        <div v-if="userShareStore.activeShares.length > 0" class="invites-list">
+          <h3>活躍的共享 ({{ userShareStore.activeShares.length }})</h3>
           <div class="invite-items">
             <div
-              v-for="share in activeShares"
+              v-for="share in userShareStore.activeShares"
               :key="share.id"
               class="invite-item active"
             >
@@ -416,9 +375,9 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
         <div
           v-if="
-            sentPendingInvites.length === 0 &&
-            receivedPendingInvites.length === 0 &&
-            activeShares.length === 0
+            userShareStore.sentPendingInvites.length === 0 &&
+            userShareStore.receivedPendingInvites.length === 0 &&
+            userShareStore.activeShares.length === 0
           "
           class="empty-state"
         >

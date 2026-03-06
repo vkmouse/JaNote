@@ -1,0 +1,376 @@
+import { ref } from "vue";
+import { defineStore } from "pinia";
+import { syncQueueRepository } from "../db/repositories/syncQueueRepository";
+import { syncMetaRepository } from "../db/repositories/syncMetaRepository";
+import { categoryRepository } from "../db/repositories/categoryRepository";
+import { transactionRepository } from "../db/repositories/transactionRepository";
+import { userShareRepository } from "../db/repositories/userShareRepository";
+import { userRepository } from "../db/repositories/userRepository";
+import type {
+  SyncQueueItem,
+  PushCommand,
+  PushResult,
+  PullEvent,
+  SyncResponse,
+  CategoryPayload,
+  TransactionPayload,
+  UserSharePayload,
+} from "../types";
+
+// ── Private business logic helpers ────────────────────────────────────────────
+
+function parsePayload(
+  payload: string | null,
+): CategoryPayload | TransactionPayload | UserSharePayload | null {
+  if (!payload) return null;
+  if (typeof payload === "string") {
+    try {
+      return JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  }
+  return payload;
+}
+
+async function applyPullEvent(event: PullEvent): Promise<void> {
+  const payload = parsePayload(event.payload);
+
+  if (event.entity_type === "CAT") {
+    if (event.action === "DELETE") {
+      await categoryRepository.update(event.entity_id, (record) => {
+        if (!record) {
+          return {
+            id: event.entity_id,
+            user_id: "",
+            name: "Unknown",
+            type: "EXPENSE",
+            version: event.version,
+            is_deleted: 1,
+          };
+        }
+        return { ...record, version: event.version, is_deleted: 1 };
+      });
+      return;
+    }
+    if (!payload || typeof payload !== "object") return;
+    const catPayload = payload as CategoryPayload;
+    await categoryRepository.upsert({
+      id: event.entity_id,
+      user_id: catPayload.user_id || "",
+      name: catPayload.name || "Untitled",
+      type: catPayload.type || "EXPENSE",
+      version: event.version,
+      is_deleted: 0,
+    });
+    return;
+  }
+
+  if (event.entity_type === "TXN") {
+    if (event.action === "DELETE") {
+      await transactionRepository.update(event.entity_id, (record) => {
+        if (!record) {
+          return {
+            id: event.entity_id,
+            user_id: "",
+            category_id: "",
+            type: "EXPENSE",
+            amount: 0,
+            note: "",
+            date: Date.now(),
+            version: event.version,
+            is_deleted: 1,
+          };
+        }
+        return { ...record, version: event.version, is_deleted: 1 };
+      });
+      return;
+    }
+    if (!payload || typeof payload !== "object") return;
+    const txnPayload = payload as TransactionPayload;
+    await transactionRepository.upsert({
+      id: event.entity_id,
+      user_id: txnPayload.user_id || "",
+      category_id: txnPayload.category_id || "",
+      type: txnPayload.type || "EXPENSE",
+      amount: Number(txnPayload.amount) || 0,
+      note: txnPayload.note || "",
+      date: txnPayload.date || Date.now(),
+      version: event.version,
+      is_deleted: 0,
+    });
+    return;
+  }
+
+  if (event.entity_type === "SHR") {
+    if (event.action === "DELETE") {
+      await userShareRepository.update(event.entity_id, (record) => {
+        if (!record) return null;
+        return { ...record, version: event.version, is_deleted: 1 };
+      });
+      return;
+    }
+    if (!payload || typeof payload !== "object") return;
+    const shrPayload = payload as UserSharePayload;
+    await userShareRepository.upsert({
+      id: event.entity_id,
+      sender_id: shrPayload.sender_id || "",
+      sender_email: shrPayload.sender_email || "",
+      receiver_id: shrPayload.receiver_id || "",
+      receiver_email: shrPayload.receiver_email || "",
+      status: shrPayload.status || "PENDING",
+      version: event.version,
+      is_deleted: 0,
+    });
+    return;
+  }
+}
+
+async function bumpLocalVersion(
+  entityType: "CAT" | "TXN" | "SHR",
+  entityId: string,
+  version: number,
+  action: "PUT" | "DELETE" | "POST",
+): Promise<void> {
+  if (entityType === "CAT") {
+    await categoryRepository.update(entityId, (record) => {
+      if (!record) return null;
+      return {
+        ...record,
+        version,
+        is_deleted: action === "DELETE" ? 1 : record.is_deleted,
+      };
+    });
+    return;
+  }
+  if (entityType === "TXN") {
+    await transactionRepository.update(entityId, (record) => {
+      if (!record) return null;
+      return {
+        ...record,
+        version,
+        is_deleted: action === "DELETE" ? 1 : record.is_deleted,
+      };
+    });
+    return;
+  }
+  if (entityType === "SHR") {
+    await userShareRepository.update(entityId, (record) => {
+      if (!record) return null;
+      return {
+        ...record,
+        version,
+        is_deleted: action === "DELETE" ? 1 : record.is_deleted,
+      };
+    });
+    return;
+  }
+}
+
+async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
+  if (!entry.snapshot_before) {
+    if (entry.action === "POST") {
+      if (entry.entity_type === "TXN") {
+        await transactionRepository.update(entry.entity_id, (record) => {
+          if (!record) return null;
+          return { ...record, is_deleted: 1 };
+        });
+      } else if (entry.entity_type === "SHR") {
+        await userShareRepository.update(entry.entity_id, (record) => {
+          if (!record) return null;
+          return { ...record, is_deleted: 1 };
+        });
+      }
+    }
+    return;
+  }
+  try {
+    const snapshot = JSON.parse(entry.snapshot_before);
+    if (entry.entity_type === "CAT") {
+      await categoryRepository.upsert(snapshot);
+    } else if (entry.entity_type === "TXN") {
+      await transactionRepository.upsert(snapshot);
+    } else if (entry.entity_type === "SHR") {
+      await userShareRepository.upsert(snapshot);
+    }
+  } catch (error) {
+    console.error(
+      "還原實體失敗 (Failed to rollback entity)",
+      entry.entity_id,
+      error,
+    );
+  }
+}
+
+async function handleError(
+  errorResult: PushResult,
+  entry: SyncQueueItem,
+  mutationMap: Map<string, SyncQueueItem>,
+  allResults: PushResult[],
+  pullEntityIds: Set<string>,
+): Promise<void> {
+  const laterResults = allResults.filter((r) => {
+    const e = mutationMap.get(r.mutation_id);
+    return e?.entity_id === entry.entity_id && e.created_at > entry.created_at;
+  });
+  const lastResult =
+    laterResults.length > 0 ? laterResults[laterResults.length - 1] : undefined;
+
+  if (lastResult?.status === "OK" || lastResult?.status === "SKIPPED") {
+    await syncQueueRepository.removeByEntityId(entry.entity_id);
+    return;
+  }
+  if (pullEntityIds.has(entry.entity_id)) {
+    await syncQueueRepository.removeByEntityId(entry.entity_id);
+    return;
+  }
+  await rollbackEntity(entry);
+  await syncQueueRepository.removeByEntityId(entry.entity_id);
+  console.warn("Operation failed and rolled back:", {
+    entity_id: entry.entity_id,
+    entity_type: entry.entity_type,
+    action: entry.action,
+    error_code: errorResult.error_code,
+    error_message: errorResult.error_message,
+  });
+}
+
+/** 同步核心邏輯 */
+async function runSync(apiBase: string): Promise<SyncResponse> {
+  const lastCursor = await syncMetaRepository.getLastCursor();
+  const queue = await syncQueueRepository.getAllOrdered();
+  const localUser = await userRepository.get();
+
+  const pushCommands: PushCommand[] = queue.map((item) => ({
+    mutation_id: item.mutation_id,
+    entity_type: item.entity_type,
+    entity_id: item.entity_id,
+    action: item.action,
+    base_version: item.base_version,
+    payload: parsePayload(item.payload),
+  }));
+
+  const mutationMap = new Map<string, SyncQueueItem>(
+    queue.map((item) => [item.mutation_id, item]),
+  );
+
+  const response = await fetch(`${apiBase}/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      last_cursor: lastCursor,
+      push_commands: pushCommands,
+      user: localUser,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Sync failed with status ${response.status}`);
+  }
+
+  const responseData: SyncResponse = await response.json();
+  const pushResultsList: PushResult[] = responseData.push_results || [];
+  const pullEvents = responseData.pull_events || [];
+  const pullEntityIds = new Set(pullEvents.map((event) => event.entity_id));
+
+  // 步驟 1：先套用伺服器傳來的新資料
+  for (const event of pullEvents) {
+    await applyPullEvent(event);
+  }
+
+  // 步驟 2：處理推播結果
+  for (const result of pushResultsList) {
+    const entry = mutationMap.get(result.mutation_id);
+    if (!entry) continue;
+
+    if (result.status === "OK") {
+      if (result.version == null) continue;
+      if (!pullEntityIds.has(entry.entity_id)) {
+        const action = entry.action as "PUT" | "DELETE" | "POST";
+        await bumpLocalVersion(
+          entry.entity_type,
+          entry.entity_id,
+          result.version,
+          action,
+        );
+      }
+      await syncQueueRepository.removeByMutationIds([result.mutation_id]);
+    } else if (result.status === "SKIPPED") {
+      await syncQueueRepository.removeByMutationIds([result.mutation_id]);
+    } else if (result.status === "ERROR") {
+      await handleError(
+        result,
+        entry,
+        mutationMap,
+        pushResultsList,
+        pullEntityIds,
+      );
+    }
+  }
+
+  // 步驟 3：清理被 Pull 覆蓋的佇列項目
+  for (const entityId of pullEntityIds) {
+    await syncQueueRepository.removeByEntityId(entityId);
+  }
+
+  await syncMetaRepository.setLastCursor(responseData.new_cursor || lastCursor);
+
+  if (responseData.user) {
+    await userRepository.set(responseData.user);
+  }
+
+  return responseData;
+}
+
+// ── Pinia Store ────────────────────────────────────────────────────────────────
+
+export const useSyncStore = defineStore("sync", () => {
+  // ── State ──────────────────────────────────────────────────
+  const syncStatus = ref<"idle" | "syncing" | "success" | "error">("idle");
+  const lastCursor = ref(0);
+  const activeQueueCount = ref(0);
+  const lastSyncAt = ref("");
+
+  // ── Actions ────────────────────────────────────────────────
+  /** 重新讀取同步 cursor 與佇列數量 */
+  async function refreshSyncState(): Promise<void> {
+    lastCursor.value = await syncMetaRepository.getLastCursor();
+    const queueItems = await syncQueueRepository.getAllOrdered();
+    activeQueueCount.value = queueItems.length;
+  }
+
+  /** 執行完整同步流程 */
+  async function performSync(apiBase: string): Promise<SyncResponse> {
+    syncStatus.value = "syncing";
+    try {
+      const result = await runSync(apiBase);
+      await refreshSyncState();
+      lastSyncAt.value = new Date().toLocaleString();
+      syncStatus.value = "success";
+      return result;
+    } catch (error) {
+      syncStatus.value = "error";
+      throw error;
+    }
+  }
+
+  /** 清除本機同步資料（佇列 + meta） */
+  async function clearSyncData(): Promise<void> {
+    await syncQueueRepository.clear();
+    await syncMetaRepository.clear();
+    lastCursor.value = 0;
+    activeQueueCount.value = 0;
+  }
+
+  return {
+    // state
+    syncStatus,
+    lastCursor,
+    activeQueueCount,
+    lastSyncAt,
+    // actions
+    refreshSyncState,
+    performSync,
+    clearSyncData,
+  };
+});

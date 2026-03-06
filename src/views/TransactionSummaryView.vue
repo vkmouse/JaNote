@@ -7,11 +7,10 @@ import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
 import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
-import type { Transaction, Category, EntryType } from "../types";
-import { transactionRepository } from "../repositories/transactionRepository";
-import { categoryRepository } from "../repositories/categoryRepository";
+import type { EntryType } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
+import { useTransactionStore } from "../stores/transactionStore";
 
 type ViewMode = "monthly" | "yearly" | "custom";
 
@@ -24,8 +23,7 @@ interface CategorySummary {
 
 const router = useRouter();
 const userStore = useUserStore();
-const transactions = ref<Transaction[]>([]);
-const categories = ref<Category[]>([]);
+const transactionStore = useTransactionStore();
 const viewMode = ref<ViewMode>("monthly");
 const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth() + 1);
@@ -84,14 +82,14 @@ const activeUserId = computed(() => userStore.activeUserId);
 const isViewingShared = computed(() => userStore.isViewingShared);
 
 const filteredCategories = computed(() => {
-  return categories.value.filter((c) => {
+  return transactionStore.categories.filter((c) => {
     if (c.is_deleted) return false;
     return c.user_id === activeUserId.value;
   });
 });
 
 const filteredTransactions = computed(() => {
-  return transactions.value.filter((t) => {
+  return transactionStore.transactions.filter((t) => {
     if (t.is_deleted) return false;
     if (activeUserId.value && t.user_id !== activeUserId.value) return false;
 
@@ -181,12 +179,11 @@ const getCategoryIconSvg = (categoryId: string): string => {
 };
 
 const loadTransactions = async () => {
-  const allTransactions = await transactionRepository.getAll();
-  transactions.value = allTransactions;
+  await transactionStore.loadTransactions();
 };
 
 const loadCategories = async () => {
-  categories.value = await categoryRepository.getAll();
+  await transactionStore.loadCategories();
 };
 
 onMounted(async () => {

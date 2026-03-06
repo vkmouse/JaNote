@@ -173,17 +173,14 @@ import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import StatsChart from "../components/StatsChart.vue";
-import type { Transaction, Category } from "../types";
-import { transactionRepository } from "../repositories/transactionRepository";
-import { categoryRepository } from "../repositories/categoryRepository";
-import { transactionService } from "../services/transactionService";
+import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
+import { useTransactionStore } from "../stores/transactionStore";
 
 const router = useRouter();
 const userStore = useUserStore();
-const transactions = ref<Transaction[]>([]);
-const categories = ref<Category[]>([]);
+const transactionStore = useTransactionStore();
 const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth() + 1);
 const showMonthPicker = ref(false);
@@ -220,7 +217,7 @@ const activeUserId = computed(() => userStore.activeUserId);
 const isViewingShared = computed(() => userStore.isViewingShared);
 
 const filteredTransactions = computed(() => {
-  return transactions.value.filter((t) => {
+  return transactionStore.transactions.filter((t) => {
     if (t.is_deleted) return false;
     if (activeUserId.value && t.user_id !== activeUserId.value) return false;
     const date = new Date(t.date);
@@ -307,21 +304,16 @@ const groupedTransactions = computed<DailyGroup[]>(() => {
 });
 
 const loadTransactions = async () => {
-  const allTransactions = await transactionRepository.getAll();
-  transactions.value = allTransactions;
+  await transactionStore.loadTransactions();
 };
 
 const loadCategories = async () => {
-  categories.value = await categoryRepository.getAll();
+  await transactionStore.loadCategories();
 };
 
-const getCategoryName = (categoryId: string): string => {
-  const category = categories.value.find((c) => c.id === categoryId);
-  return category?.name || "未知分類";
-};
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = categories.value.find((c) => c.id === categoryId);
+  const category = transactionStore.categories.find((c) => c.id === categoryId);
   return getCategoryIcon(category?.name || "其他");
 };
 
@@ -495,12 +487,9 @@ const deleteTransaction = async (id: string) => {
 
   if (confirm("確定要刪除這筆交易嗎？")) {
     // Mark as deleted (soft delete)
-    const transaction = transactions.value.find((t) => t.id === id);
+    const transaction = transactionStore.transactions.find((t) => t.id === id);
     if (transaction) {
-      await transactionService.deleteTransaction(id);
-
-      // Reload transactions
-      await loadTransactions();
+      await transactionStore.deleteTransaction(id);
 
       // Reset swipe state
       delete swipeState.value[id];

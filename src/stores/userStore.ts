@@ -1,7 +1,7 @@
 import { ref, computed } from "vue";
 import { defineStore } from "pinia";
-import { userRepository } from "../repositories/userRepository";
-import { userShareRepository } from "../repositories/userShareRepository";
+import { userRepository } from "../db/repositories/userRepository";
+import { userShareRepository } from "../db/repositories/userShareRepository";
 import type { User, UserShare } from "../types";
 
 export interface SelectedUser {
@@ -42,14 +42,10 @@ export const useUserStore = defineStore("user", () => {
     if (user) {
       currentUser.value = user;
     }
-    const shares = await userShareRepository.getActiveShares();
-    userShares.value = shares;
-  }
-
-  /** 重新整理共享清單（同步後可呼叫） */
-  async function refreshShares() {
-    const shares = await userShareRepository.getActiveShares();
-    userShares.value = shares;
+    const shares = await userShareRepository.getAll();
+    userShares.value = shares.filter(
+      (s) => s.status === "ACTIVE" && s.is_deleted === 0,
+    );
   }
 
   /** 設定目前瀏覽的使用者（null = 切回本人） */
@@ -59,7 +55,6 @@ export const useUserStore = defineStore("user", () => {
 
   /** 清除使用者（登出/重置時呼叫） */
   async function clearUser() {
-    const { userRepository } = await import("../repositories/userRepository");
     await userRepository.clear();
     currentUser.value = null;
     selectedUser.value = null;
@@ -78,7 +73,6 @@ export const useUserStore = defineStore("user", () => {
     isViewingShared,
     // actions
     loadUser,
-    refreshShares,
     setSelectedUser,
     clearUser,
   };

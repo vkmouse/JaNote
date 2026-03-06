@@ -68,13 +68,12 @@ import TopNavigation from '../components/TopNavigation.vue'
 import CalendarPicker from '../components/CalendarPicker.vue'
 import CalculatorPad from '../components/CalculatorPad.vue'
 import type { Category, EntryType, Transaction } from '../types'
-import { categoryRepository } from '../repositories/categoryRepository'
-import { transactionRepository } from '../repositories/transactionRepository'
-import { transactionService } from '../services/transactionService'
 import { getCategoryIcon } from '../utils/categoryIcons'
+import { useTransactionStore } from '../stores/transactionStore'
 
 const router = useRouter()
 const route = useRoute()
+const transactionStore = useTransactionStore()
 
 // State
 const editingTransactionId = ref<string | null>(null)
@@ -86,11 +85,10 @@ const amount = ref<string>('')
 const notes = ref<string>('')
 const previousAutoNote = ref<string | null>(null)
 const currentDate = ref<number>(Date.now())
-const allCategories = ref<Category[]>([])
 
 // Computed properties
 const filteredCategories = computed(() => {
-  return allCategories.value.filter(cat => cat.type === transactionType.value && !cat.is_deleted)
+  return transactionStore.categories.filter(cat => cat.type === transactionType.value && !cat.is_deleted)
 })
 
 const formattedAmount = computed(() => {
@@ -118,12 +116,11 @@ const selectedCategoryIcon = computed(() => {
 
 // Methods
 const loadCategories = async () => {
-  const categories = await categoryRepository.getAll()
-  allCategories.value = categories
+  await transactionStore.loadCategories()
 }
 
 const loadTransaction = async (id: string) => {
-  const transaction = await transactionRepository.getById(id)
+  const transaction = await transactionStore.getTransactionById(id)
   if (transaction) {
     editingTransactionId.value = id
     editingTransaction.value = transaction
@@ -134,7 +131,7 @@ const loadTransaction = async (id: string) => {
     currentDate.value = transaction.date
     
     // Set category name
-    const category = allCategories.value.find(c => c.id === transaction.category_id)
+    const category = transactionStore.categories.find(c => c.id === transaction.category_id)
     if (category) {
       selectedCategoryName.value = category.name
       // If the loaded transaction's note is empty or equals the category name,
@@ -180,7 +177,7 @@ const saveTransaction = async () => {
   const isEditing = !!editingTransactionId.value
   
   if (isEditing) {
-    await transactionService.updateTransaction({
+    await transactionStore.updateTransaction({
       id: editingTransactionId.value!,
       category_id: selectedCategoryId.value,
       type: transactionType.value,
@@ -189,7 +186,7 @@ const saveTransaction = async () => {
       date: currentDate.value
     })
   } else {
-    await transactionService.addTransaction({
+    await transactionStore.addTransaction({
       category_id: selectedCategoryId.value,
       type: transactionType.value,
       amount: parseFloat(amount.value),

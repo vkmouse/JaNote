@@ -122,11 +122,10 @@
 import { ref, computed, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
-import type { Transaction, Category } from "../types";
-import { transactionRepository } from "../repositories/transactionRepository";
-import { categoryRepository } from "../repositories/categoryRepository";
+import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
+import { useTransactionStore } from "../stores/transactionStore";
 
 interface DailyGroup {
   date: string;
@@ -137,8 +136,7 @@ interface DailyGroup {
 
 const router = useRouter();
 const userStore = useUserStore();
-const transactions = ref<Transaction[]>([]);
-const categories = ref<Category[]>([]);
+const transactionStore = useTransactionStore();
 const searchQuery = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
 
@@ -160,16 +158,16 @@ const editTransaction = (id: string) => {
 };
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = categories.value.find((c) => c.id === categoryId);
+  const category = transactionStore.categories.find((c) => c.id === categoryId);
   return getCategoryIcon(category?.name || "其他");
 };
 
 // Fuzzy search results filtered by user
-const searchResults = computed<Transaction[]>(() => {
+const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return [];
 
-  return transactions.value.filter((t) => {
+  return transactionStore.transactions.filter((t) => {
     if (t.is_deleted) return false;
     if (activeUserId.value && t.user_id !== activeUserId.value) return false;
     return (t.note || "").toLowerCase().includes(query);
@@ -253,12 +251,10 @@ const highlightNote = (
 onMounted(async () => {
   await userStore.loadUser();
 
-  const [allTransactions, allCategories] = await Promise.all([
-    transactionRepository.getAll(),
-    categoryRepository.getAll(),
+  await Promise.all([
+    transactionStore.loadTransactions(),
+    transactionStore.loadCategories(),
   ]);
-  transactions.value = allTransactions;
-  categories.value = allCategories;
 
   // Auto-focus the search input
   await nextTick();
