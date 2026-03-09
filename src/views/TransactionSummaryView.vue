@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
+import NavBack from "../components/NavBack.vue";
+import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
@@ -193,10 +195,14 @@ watch(
 
 <template>
   <section class="transaction-summary-page">
-    <TopNavigation mode="back-avatar">
-      <div class="month-display" @click="openPicker">
-        <span>{{ currentMonthDisplay }}</span>
-      </div>
+    <TopNavigation>
+      <template #left><NavBack /></template>
+      <template #center>
+        <div class="month-display" @click="openPicker">
+          <span>{{ currentMonthDisplay }}</span>
+        </div>
+      </template>
+      <template #right><NavAvatar /></template>
     </TopNavigation>
 
     <MonthPicker

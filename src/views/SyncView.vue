@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import TopNavigation from "../components/TopNavigation.vue";
+import NavMenu from "../components/NavMenu.vue";
+import NavAvatar from "../components/NavAvatar.vue";
 import { useUserStore } from "../stores/userStore";
 import { useSyncStore } from "../stores/syncStore";
 import { useUserShareStore } from "../stores/userShareStore";
@@ -182,7 +184,10 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 <template>
   <section class="sync-page">
-    <TopNavigation mode="menu-avatar" />
+    <TopNavigation>
+      <template #left><NavMenu /></template>
+      <template #right><NavAvatar /></template>
+    </TopNavigation>
 
     <div class="page-content">
       <header class="hero">
@@ -531,8 +536,8 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   display: block;
 }
 
-.sync-page input,
-.sync-page select {
+.page-content input,
+.page-content select {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
@@ -748,7 +753,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   font-style: italic;
 }
 
-.sync-page button {
+.page-content button {
   font-family: inherit;
   border: none;
   border-radius: 12px;
@@ -839,7 +844,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
     gap: 10px;
   }
 
-  .sync-page button {
+  .page-content button {
     width: 100%;
     padding: 14px 20px;
   }

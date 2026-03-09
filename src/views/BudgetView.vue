@@ -1,11 +1,15 @@
 <template>
   <section class="budget-page">
     <!-- Top Navigation -->
-    <TopNavigation mode="menu-avatar">
-      <div class="month-display" @click="openPicker">
-        <span>{{ currentMonthDisplay }}</span>
-        <span class="month-chevron" v-html="ArrowDownIcon"></span>
-      </div>
+    <TopNavigation>
+      <template #left><NavMenu /></template>
+      <template #center>
+        <div class="month-display" @click="openPicker">
+          <span>{{ currentMonthDisplay }}</span>
+          <span class="month-chevron" v-html="ArrowDownIcon"></span>
+        </div>
+      </template>
+      <template #right><NavAvatar /></template>
     </TopNavigation>
 
     <MonthPicker
@@ -423,6 +427,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import TopNavigation from "../components/TopNavigation.vue";
+import NavMenu from "../components/NavMenu.vue";
+import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";

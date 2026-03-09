@@ -1,21 +1,24 @@
 <template>
   <div class="transaction-edit-page">
     <!-- Header -->
-    <TopNavigation mode="back-toggle" :onBack="goBack">
-      <div class="type-toggle">
-        <button 
-          :class="['toggle-btn', { active: transactionType === 'EXPENSE', 'expense-active': transactionType === 'EXPENSE' }]"
-          @click="transactionType = 'EXPENSE'"
-        >
-          支出
-        </button>
-        <button 
-          :class="['toggle-btn', { active: transactionType === 'INCOME', 'income-active': transactionType === 'INCOME' }]"
-          @click="transactionType = 'INCOME'"
-        >
-          收入
-        </button>
-      </div>
+    <TopNavigation>
+      <template #left><NavBack :onBack="goBack" /></template>
+      <template #center>
+        <div class="type-toggle">
+          <button
+            :class="['toggle-btn', { active: transactionType === 'EXPENSE', 'expense-active': transactionType === 'EXPENSE' }]"
+            @click="transactionType = 'EXPENSE'"
+          >
+            支出
+          </button>
+          <button
+            :class="['toggle-btn', { active: transactionType === 'INCOME', 'income-active': transactionType === 'INCOME' }]"
+            @click="transactionType = 'INCOME'"
+          >
+            收入
+          </button>
+        </div>
+      </template>
     </TopNavigation>
 
     <!-- Main Content -->
@@ -65,6 +68,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TopNavigation from '../components/TopNavigation.vue'
+import NavBack from '../components/NavBack.vue'
 import CalendarPicker from '../components/CalendarPicker.vue'
 import CalculatorPad from '../components/CalculatorPad.vue'
 import type { Category, EntryType, Transaction } from '../types'

@@ -1,10 +1,14 @@
 <template>
   <section class="transactions-page">
     <!-- Top Navigation Bar -->
-    <TopNavigation mode="menu-avatar">
-      <div class="month-display" @click="showMonthPicker = true">
-        <span>{{ currentMonthDisplay }}</span>
-      </div>
+    <TopNavigation>
+      <template #left><NavMenu /></template>
+      <template #center>
+        <div class="month-display" @click="showMonthPicker = true">
+          <span>{{ currentMonthDisplay }}</span>
+        </div>
+      </template>
+      <template #right><NavAvatar /></template>
     </TopNavigation>
 
     <MonthPicker
@@ -171,6 +175,8 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
+import NavMenu from "../components/NavMenu.vue";
+import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import StatsChart from "../components/StatsChart.vue";
 import type { Transaction } from "../types";

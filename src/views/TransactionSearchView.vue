@@ -1,7 +1,10 @@
 <template>
   <section class="search-page">
     <!-- Top Navigation Bar -->
-    <TopNavigation mode="back-avatar" />
+    <TopNavigation>
+      <template #left><NavBack /></template>
+      <template #right><NavAvatar /></template>
+    </TopNavigation>
 
     <div class="page-content page">
       <!-- Search Results -->
@@ -122,6 +125,8 @@
 import { ref, computed, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
+import NavBack from "../components/NavBack.vue";
+import NavAvatar from "../components/NavAvatar.vue";
 import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
