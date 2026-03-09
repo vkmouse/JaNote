@@ -132,40 +132,50 @@
         </div>
       </div>
 
-      <!-- Floating Actions Container -->
-      <div v-if="!isViewingShared" class="floating-actions-container">
-        <!-- Search Button -->
-        <button class="search-fab" @click="goToSearch" aria-label="搜尋">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </button>
+      <!-- Bottom Navigation -->
+      <div v-if="!isViewingShared" class="bottom-nav">
 
-        <!-- Add Button -->
-        <button class="fab" @click="goToNewTransaction">
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            stroke-width="2.5"
-            stroke-linecap="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
+        <!-- Center Capsule: Search + Summary + Budget -->
+        <div class="capsule-group">
+          <button class="capsule-btn" @click="goToSearch" aria-label="搜尋">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
+
+          <div class="capsule-divider"></div>
+
+          <button class="capsule-btn" @click="goToSummary" aria-label="總覽">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </button>
+
+          <div class="capsule-divider"></div>
+
+          <button class="capsule-btn" @click="goToBudget" aria-label="預算">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+              <line x1="12" y1="12" x2="12" y2="16" />
+              <line x1="10" y1="14" x2="14" y2="14" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Right Capsule: Add -->
+        <div class="capsule-group">
+          <button class="capsule-btn add-btn" @click="goToNewTransaction" aria-label="新增交易">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+
       </div>
     </div>
   </section>
@@ -218,7 +228,6 @@ const currentMonthDisplay = computed(() => {
   return `${selectedYear.value}\u5e74${selectedMonth.value}\u6708`;
 });
 
-// 從 Pinia Store 取得使用者狀態
 const isViewingShared = computed(() => userStore.isViewingShared);
 
 const filteredTransactions = computed(() => {
@@ -314,7 +323,6 @@ const loadCategories = async () => {
   await transactionStore.loadCategories();
 };
 
-
 const getCategoryIconSvg = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
   return getCategoryIcon(category?.name || "其他");
@@ -328,11 +336,16 @@ const goToSearch = () => {
   router.push("/transactions/search");
 };
 
+const goToSummary = () => {
+  router.push("/transactions/summary");
+};
+
+const goToBudget = () => {
+  router.push("/budget");
+};
+
 const editTransaction = (id: string) => {
-  // 不能删除共享帳戶的交易
-  if (isViewingShared.value) {
-    return;
-  }
+  if (isViewingShared.value) return;
   router.push(`/transaction/${id}/edit`);
 };
 
@@ -341,7 +354,6 @@ const handleTouchStart = (event: TouchEvent, id: string) => {
   const touch = event.touches[0];
   if (!touch) return;
 
-  // Close other open swipes
   Object.keys(swipeState.value).forEach((key) => {
     if (key !== id && swipeState.value[key]) {
       swipeState.value[key].offset = 0;
@@ -372,18 +384,15 @@ const handleTouchMove = (event: TouchEvent, id: string) => {
   const startY = swipeState.value[id].startY;
   const diff = currentX - startX;
 
-  // 判斷滑動方向（尚未確定時）
   if (swipeState.value[id].isHorizontal === null) {
     const dx = Math.abs(currentX - startX);
     const dy = Math.abs(currentY - startY);
-    if (dx < 3 && dy < 3) return; // 還沒移動足夠距離，等待
+    if (dx < 3 && dy < 3) return;
     swipeState.value[id].isHorizontal = dx >= dy;
   }
 
-  // 若為垂直滑動，放行讓頁面正常滾動
   if (!swipeState.value[id].isHorizontal) return;
 
-  // 確定是水平滑動，動態設定 touch-action 以阻止頁面滾動
   (event.currentTarget as HTMLElement).style.touchAction = "none";
 
   if (Math.abs(diff) > 5) {
@@ -400,14 +409,12 @@ const handleTouchMove = (event: TouchEvent, id: string) => {
 };
 
 const handleTouchEnd = (event: TouchEvent, id: string) => {
-  // 還原 touch-action 設定
   (event.currentTarget as HTMLElement).style.touchAction = "pan-y";
 
   if (!swipeState.value[id]) return;
 
   swipeState.value[id].isDragging = false;
 
-  // Snap to position
   if (swipeState.value[id].offset < -40) {
     swipeState.value[id].offset = -80;
     swipeState.value[id].showDelete = true;
@@ -419,7 +426,6 @@ const handleTouchEnd = (event: TouchEvent, id: string) => {
 
 // Mouse handlers for desktop
 const handleMouseDown = (event: MouseEvent, id: string) => {
-  // Close other open swipes
   Object.keys(swipeState.value).forEach((key) => {
     if (key !== id && swipeState.value[key]) {
       swipeState.value[key].offset = 0;
@@ -446,14 +452,11 @@ const handleMouseMove = (event: MouseEvent, id: string) => {
   const startX = swipeState.value[id].startX;
   const diff = currentX - startX;
 
-  // Mark as swiped if movement exceeds 5px
   if (Math.abs(diff) > 5) {
     swipeState.value[id].hasSwipped = true;
   }
 
-  // Get current offset
   const currentOffset = swipeState.value[id].offset;
-
   let newOffset = currentOffset + diff;
   newOffset = Math.min(0, Math.max(newOffset, -80));
 
@@ -467,7 +470,6 @@ const handleMouseUp = (id: string) => {
 
   swipeState.value[id].isDragging = false;
 
-  // Snap to position
   if (swipeState.value[id].offset < -40) {
     swipeState.value[id].offset = -80;
     swipeState.value[id].showDelete = true;
@@ -483,22 +485,15 @@ const handleMouseLeave = (id: string) => {
 };
 
 const deleteTransaction = async (id: string) => {
-  // 不能删除共享帳戶的交易
-  if (isViewingShared.value) {
-    return;
-  }
+  if (isViewingShared.value) return;
 
   if (confirm("確定要刪除這筆交易嗎？")) {
-    // Mark as deleted (soft delete)
     const transaction = transactionStore.transactions.find((t) => t.id === id);
     if (transaction) {
       await transactionStore.deleteTransaction(id);
-
-      // Reset swipe state
       delete swipeState.value[id];
     }
   } else {
-    // Reset swipe state if cancelled
     if (swipeState.value[id]) {
       swipeState.value[id].offset = 0;
       swipeState.value[id].showDelete = false;
@@ -541,7 +536,6 @@ onMounted(async () => {
   padding-bottom: 100px;
 }
 
-/* Stats wrapper — positions summary button relative to chart */
 .stats-wrapper {
   position: relative;
 }
@@ -573,7 +567,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* Date Header */
 .date-header {
   display: flex;
   align-items: center;
@@ -602,7 +595,6 @@ onMounted(async () => {
   color: var(--janote-income);
 }
 
-/* Transaction Items */
 .transaction-items {
   background: var(--bg-page);
 }
@@ -690,9 +682,6 @@ onMounted(async () => {
   font-weight: 700;
   flex-shrink: 0;
   margin-left: 16px;
-}
-
-.item-amount {
   color: var(--text-primary);
 }
 
@@ -705,78 +694,84 @@ onMounted(async () => {
   background: #f0f0f0;
 }
 
-/* Floating Actions Container */
-.floating-actions-container {
+/* ─── Bottom Navigation ─── */
+.bottom-nav {
   position: fixed;
-  bottom: 24px;
-  left: 16px;
-  right: 16px;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px 16px;
   z-index: 1000;
   pointer-events: none;
 }
 
-/* Search FAB */
-.search-fab {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: white;
+/* Each capsule group — matches the app's card language exactly */
+.capsule-group {
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+
+  background: var(--bg-page);
   border: 2px solid var(--border-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+
+  /* Subtle lift shadow — same depth feel as modal/card */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.capsule-divider {
+  width: 2px;
+  height: 20px;
+  background: var(--border-primary);
+  margin: 0 2px;
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+
+/* Base button */
+.capsule-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  flex-shrink: 0;
-  padding: 0;
   color: var(--text-primary);
-  pointer-events: auto;
-}
-
-.search-fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.search-fab:active {
-  transform: translateY(0);
-}
-
-/* Floating Action Button */
-.fab {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--janote-action);
-  border: 2px solid var(--border-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.12s ease;
   padding: 0;
-  z-index: 1001;
-  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.capsule-btn:hover {
+  background: #f0f0f0;
 }
 
-.fab:active {
-  transform: translateY(0);
+.capsule-btn:active {
+  transform: scale(0.91);
+  background: #e8e8e8;
+}
+
+/* Add button — filled, matches FAB style used across the app */
+.capsule-btn.add-btn {
+  background: var(--janote-action, #1a1a1a);
+  color: #fff;
+}
+
+.capsule-btn.add-btn:hover {
+  opacity: 0.88;
+  background: var(--janote-action, #1a1a1a);
+}
+
+.capsule-btn.add-btn:active {
+  transform: scale(0.91);
+  opacity: 0.75;
 }
 
 /* Responsive */
@@ -789,6 +784,11 @@ onMounted(async () => {
     width: 40px;
     height: 40px;
     font-size: 20px;
+  }
+
+  .capsule-btn {
+    width: 46px;
+    height: 46px;
   }
 }
 </style>
