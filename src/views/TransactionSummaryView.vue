@@ -13,6 +13,8 @@ import type { EntryType } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import BottomNavigation from "../components/BottomNavigation.vue";
+import CapsuleGroup from "../components/CapsuleGroup.vue";
 
 type ViewMode = "monthly" | "yearly" | "custom";
 
@@ -163,6 +165,10 @@ const centerLabel = computed(() => {
 const centerBalance = computed(() => {
   return `$${totalAmount.value.toLocaleString()}`;
 });
+
+const goToSearch = () => router.push("/transactions/search");
+const goToNewTransaction = () => router.push("/transactions/new");
+const goToBudget = () => router.push("/budget");
 
 const getCategoryIconSvg = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
@@ -355,6 +361,38 @@ watch(
         </div>
       </div>
     </div>
+
+    <BottomNavigation>
+      <template #center>
+        <CapsuleGroup>
+          <button class="capsule-btn" @click="goToSearch" aria-label="搜尋">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
+          <div class="capsule-divider"></div>
+          <button class="capsule-btn" @click="goToBudget" aria-label="預算">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+              <line x1="12" y1="12" x2="12" y2="16" />
+              <line x1="10" y1="14" x2="14" y2="14" />
+            </svg>
+          </button>
+        </CapsuleGroup>
+      </template>
+      <template #right>
+        <CapsuleGroup>
+          <button class="capsule-btn add-btn" @click="goToNewTransaction" aria-label="新增交易">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </CapsuleGroup>
+      </template>
+    </BottomNavigation>
   </section>
 </template>
 
@@ -387,7 +425,7 @@ watch(
 .page-content {
   flex: 1;
   background: var(--bg-page);
-  padding-bottom: 0px;
+  padding-bottom: 100px;
 }
 
 /* ── 共用 toggle 尺寸規格 ── */

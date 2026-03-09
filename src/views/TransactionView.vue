@@ -131,53 +131,38 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Bottom Navigation -->
-      <div v-if="!isViewingShared" class="bottom-nav">
-
-        <!-- Center Capsule: Search + Summary + Budget -->
-        <div class="capsule-group">
+    <BottomNavigation v-if="!isViewingShared">
+      <template #left>
+        <CapsuleGroup>
           <button class="capsule-btn" @click="goToSearch" aria-label="搜尋">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <div class="icon" v-html="iconSearch"></div>
+            <span>搜尋</span>
           </button>
-
           <div class="capsule-divider"></div>
-
           <button class="capsule-btn" @click="goToSummary" aria-label="總覽">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
+            <div class="icon" v-html="iconPieChart"></div>
+            <span>總覽</span>
           </button>
-
           <div class="capsule-divider"></div>
-
           <button class="capsule-btn" @click="goToBudget" aria-label="預算">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-              <line x1="12" y1="12" x2="12" y2="16" />
-              <line x1="10" y1="14" x2="14" y2="14" />
-            </svg>
+            <div class="icon" v-html="iconTravelBudget"></div>
+            <span>預算</span>
           </button>
-        </div>
-
-        <!-- Right Capsule: Add -->
-        <div class="capsule-group">
+        </CapsuleGroup>
+      </template>
+      <template #right>
+        <CapsuleGroup>
           <button class="capsule-btn add-btn" @click="goToNewTransaction" aria-label="新增交易">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
-        </div>
-
-      </div>
-    </div>
+        </CapsuleGroup>
+      </template>
+    </BottomNavigation>
   </section>
 </template>
 
@@ -193,6 +178,11 @@ import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import BottomNavigation from "../components/BottomNavigation.vue";
+import CapsuleGroup from "../components/CapsuleGroup.vue";
+import iconSearch from "../assets/icons/icon-search.svg?raw";
+import iconPieChart from "../assets/icons/icon-pie-chart.svg?raw";
+import iconTravelBudget from "../assets/icons/icon-travel-budget.svg?raw";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -694,86 +684,6 @@ onMounted(async () => {
   background: #f0f0f0;
 }
 
-/* ─── Bottom Navigation ─── */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px 16px;
-  z-index: 1000;
-  pointer-events: none;
-}
-
-/* Each capsule group — matches the app's card language exactly */
-.capsule-group {
-  display: flex;
-  align-items: center;
-  pointer-events: auto;
-
-  background: var(--bg-page);
-  border: 2px solid var(--border-primary);
-  border-radius: 999px;
-
-  /* Subtle lift shadow — same depth feel as modal/card */
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.capsule-divider {
-  width: 2px;
-  height: 20px;
-  background: var(--border-primary);
-  margin: 0 2px;
-  flex-shrink: 0;
-  border-radius: 1px;
-}
-
-/* Base button */
-.capsule-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-primary);
-  transition: background 0.15s ease, transform 0.12s ease;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.capsule-btn:hover {
-  background: #f0f0f0;
-}
-
-.capsule-btn:active {
-  transform: scale(0.91);
-  background: #e8e8e8;
-}
-
-/* Add button — filled, matches FAB style used across the app */
-.capsule-btn.add-btn {
-  background: var(--janote-action, #1a1a1a);
-  color: #fff;
-}
-
-.capsule-btn.add-btn:hover {
-  opacity: 0.88;
-  background: var(--janote-action, #1a1a1a);
-}
-
-.capsule-btn.add-btn:active {
-  transform: scale(0.91);
-  opacity: 0.75;
-}
-
 /* Responsive */
 @media (max-width: 480px) {
   .daily-group {
@@ -785,10 +695,24 @@ onMounted(async () => {
     height: 40px;
     font-size: 20px;
   }
+}
 
-  .capsule-btn {
-    width: 46px;
-    height: 46px;
-  }
+.capsule-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon :deep(svg) {
+  width: 20px;
+  height: 20px;
 }
 </style>
