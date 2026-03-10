@@ -1,8 +1,50 @@
 <template>
   <section class="search-page">
-    <!-- Top Navigation Bar -->
     <TopNavigation>
       <template #left><NavBack /></template>
+      <template #center>
+        <div class="search-bar">
+          <svg
+            class="search-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            ref="inputRef"
+            v-model="searchQuery"
+            type="text"
+            class="search-input"
+            placeholder="搜尋交易備註"
+            autocomplete="off"
+          />
+          <button
+            v-if="searchQuery"
+            class="clear-btn"
+            @click="clearSearch"
+            aria-label="清除搜尋"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </template>
       <template #right><NavAvatar /></template>
     </TopNavigation>
 
@@ -77,48 +119,6 @@
       </div>
     </div>
 
-    <!-- Bottom: Search Input + X Button -->
-    <div class="floating-actions-container">
-      <div class="search-bar">
-        <svg
-          class="search-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          ref="inputRef"
-          v-model="searchQuery"
-          type="text"
-          class="search-input"
-          placeholder="搜尋交易備註"
-          autocomplete="off"
-        />
-      </div>
-
-      <!-- X Button: clear input or go back -->
-      <button class="close-fab" @click="onCloseClick" aria-label="清除或返回">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-
     <BottomTabBar />
   </section>
 </template>
@@ -129,11 +129,11 @@ import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import NavAvatar from "../components/NavAvatar.vue";
+import BottomTabBar from "../components/BottomTabBar.vue";
 import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
-import BottomTabBar from "../components/BottomTabBar.vue";
 
 interface DailyGroup {
   date: string;
@@ -148,16 +148,11 @@ const transactionStore = useTransactionStore();
 const searchQuery = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
 
-// 從 Pinia Store 取得使用者狀態
 const isViewingShared = computed(() => userStore.isViewingShared);
 
-const onCloseClick = () => {
-  if (searchQuery.value) {
-    searchQuery.value = "";
-    nextTick(() => inputRef.value?.focus());
-  } else {
-    router.back();
-  }
+const clearSearch = () => {
+  searchQuery.value = "";
+  nextTick(() => inputRef.value?.focus());
 };
 
 const editTransaction = (id: string) => {
@@ -165,11 +160,12 @@ const editTransaction = (id: string) => {
 };
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
+  const category = transactionStore.visibleCategories.find(
+    (c) => c.id === categoryId
+  );
   return getCategoryIcon(category?.name || "其他");
 };
 
-// Fuzzy search results filtered by user
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return [];
@@ -179,7 +175,6 @@ const searchResults = computed(() => {
   });
 });
 
-// Group results by date, sorted by date descending
 const groupedResults = computed<DailyGroup[]>(() => {
   const groups = new Map<string, DailyGroup>();
 
@@ -225,9 +220,8 @@ const groupedResults = computed<DailyGroup[]>(() => {
   return Array.from(groups.values());
 });
 
-// Highlight matching parts in note text
 const highlightNote = (
-  note: string,
+  note: string
 ): Array<{ text: string; match: boolean }> => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query || !note) return [{ text: note || "", match: false }];
@@ -261,7 +255,7 @@ onMounted(async () => {
     transactionStore.loadCategories(),
   ]);
 
-  // Auto-focus the search input
+  // Auto-focus the search input to trigger keyboard
   await nextTick();
   inputRef.value?.focus();
 });
@@ -274,6 +268,68 @@ onMounted(async () => {
   height: 100%;
 }
 
+/* search-bar styling remains for use inside TopNavigation */
+
+.search-bar {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--bg-card, #f5f5f5);
+  border: 1.5px solid var(--border-primary);
+  border-radius: 20px;
+  transition: border-color 0.15s;
+}
+
+.search-bar:focus-within {
+  border-color: var(--text-primary, #333);
+}
+
+.search-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--text-primary);
+  outline: none;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.search-input::placeholder {
+  color: var(--text-disabled);
+}
+
+.clear-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text-disabled, #bbb);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.clear-btn:hover {
+  background: var(--text-secondary, #888);
+}
+
+/* ── Page Content ── */
 .page-content {
   flex: 1;
   background: var(--bg-page);
@@ -281,7 +337,6 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
-/* Search Results */
 .search-results {
   padding: 0 16px;
 }
@@ -417,82 +472,6 @@ onMounted(async () => {
   right: 16px;
   height: 1px;
   background: #f0f0f0;
-}
-
-/* Floating Actions Container */
-.floating-actions-container {
-  position: fixed;
-  bottom: calc(82px + env(safe-area-inset-bottom));
-  left: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  z-index: 1001;
-}
-
-/* Search Bar */
-.search-bar {
-  flex: 1;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-  background: white;
-  border: 2px solid var(--border-primary);
-  border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.search-icon {
-  width: 20px;
-  height: 20px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 16px;
-  color: var(--text-primary);
-  outline: none;
-  font-family: inherit;
-}
-
-.search-input::placeholder {
-  color: var(--text-disabled);
-}
-
-/* Close / X Button */
-.close-fab {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--bg-card, #fff);
-  border: 2px solid var(--border-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  flex-shrink: 0;
-  padding: 0;
-  color: var(--text-primary);
-}
-
-.close-fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.close-fab:active {
-  transform: translateY(0);
 }
 
 /* Responsive */

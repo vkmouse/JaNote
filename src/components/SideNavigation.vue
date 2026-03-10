@@ -2,7 +2,6 @@
 import { useRoute } from "vue-router";
 import SyncIcon from "../assets/icons/icon-sync.svg?raw";
 import DollarCircleIcon from "../assets/icons/icon-dollar-circle.svg?raw";
-import TravelBudgetIcon from "../assets/icons/icon-travel-budget.svg?raw";
 
 interface Props {
   isOpen?: boolean;
@@ -20,7 +19,6 @@ const route = useRoute();
 
 const navItems = [
   { to: "/transactions", label: "記帳管理", icon: DollarCircleIcon },
-  { to: "/budget", label: "預算管理", icon: TravelBudgetIcon },
   { to: "/sync", label: "同步管理", icon: SyncIcon },
 ];
 

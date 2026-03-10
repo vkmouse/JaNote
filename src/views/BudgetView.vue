@@ -6,7 +6,6 @@
       <template #center>
         <div class="month-display" @click="openPicker">
           <span>{{ currentMonthDisplay }}</span>
-          <span class="month-chevron" v-html="ArrowDownIcon"></span>
         </div>
       </template>
       <template #right><NavAvatar /></template>
@@ -417,7 +416,6 @@ import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import ArrowDownIcon from "../assets/icons/icon-arrow-down.svg?raw";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import type { EntryType } from "../types";
@@ -701,16 +699,6 @@ watch(
 
 .month-display:hover {
   opacity: 0.7;
-}
-
-.month-chevron {
-  display: inline-flex;
-  align-items: center;
-}
-
-.month-chevron :deep(svg) {
-  width: 16px;
-  height: 16px;
 }
 
 /* ── Page content ── */
