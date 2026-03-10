@@ -118,6 +118,8 @@
         </svg>
       </button>
     </div>
+
+    <BottomTabBar />
   </section>
 </template>
 
@@ -131,6 +133,7 @@ import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import BottomTabBar from "../components/BottomTabBar.vue";
 
 interface DailyGroup {
   date: string;
@@ -274,7 +277,7 @@ onMounted(async () => {
 .page-content {
   flex: 1;
   background: var(--bg-page);
-  padding-bottom: 100px;
+  padding-bottom: 180px;
   overflow-y: auto;
 }
 
@@ -419,13 +422,13 @@ onMounted(async () => {
 /* Floating Actions Container */
 .floating-actions-container {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(82px + env(safe-area-inset-bottom));
   left: 16px;
   right: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 1000;
+  z-index: 1001;
 }
 
 /* Search Bar */

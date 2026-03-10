@@ -133,36 +133,7 @@
       </div>
     </div>
 
-    <BottomNavigation v-if="!isViewingShared">
-      <template #left>
-        <CapsuleGroup>
-          <button class="capsule-btn" @click="goToSearch" aria-label="搜尋">
-            <div class="icon" v-html="iconSearch"></div>
-            <span>搜尋</span>
-          </button>
-          <div class="capsule-divider"></div>
-          <button class="capsule-btn" @click="goToSummary" aria-label="總覽">
-            <div class="icon" v-html="iconPieChart"></div>
-            <span>總覽</span>
-          </button>
-          <div class="capsule-divider"></div>
-          <button class="capsule-btn" @click="goToBudget" aria-label="預算">
-            <div class="icon" v-html="iconTravelBudget"></div>
-            <span>預算</span>
-          </button>
-        </CapsuleGroup>
-      </template>
-      <template #right>
-        <CapsuleGroup>
-          <button class="capsule-btn add-btn" @click="goToNewTransaction" aria-label="新增交易">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-        </CapsuleGroup>
-      </template>
-    </BottomNavigation>
+    <BottomTabBar v-if="!isViewingShared" :show-add-button="true" @add="goToNewTransaction" />
   </section>
 </template>
 
@@ -178,11 +149,7 @@ import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
-import BottomNavigation from "../components/BottomNavigation.vue";
-import CapsuleGroup from "../components/CapsuleGroup.vue";
-import iconSearch from "../assets/icons/icon-search.svg?raw";
-import iconPieChart from "../assets/icons/icon-pie-chart.svg?raw";
-import iconTravelBudget from "../assets/icons/icon-travel-budget.svg?raw";
+import BottomTabBar from "../components/BottomTabBar.vue";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -697,22 +664,4 @@ onMounted(async () => {
   }
 }
 
-.capsule-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.icon {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon :deep(svg) {
-  width: 20px;
-  height: 20px;
-}
 </style>

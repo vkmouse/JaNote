@@ -404,23 +404,7 @@
       </div>
     </Transition>
 
-    <!-- Floating Add Button -->
-    <div v-if="!showModal" class="floating-actions-container">
-      <button class="fab" @click="openAddModal" aria-label="新增預算">
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
-    </div>
+    <BottomTabBar :show-add-button="true" @add="openAddModal" />
   </section>
 </template>
 
@@ -437,6 +421,7 @@ import ArrowDownIcon from "../assets/icons/icon-arrow-down.svg?raw";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import type { EntryType } from "../types";
+import BottomTabBar from "../components/BottomTabBar.vue";
 
 // ── Types ──────────────────────────────────────────────────
 
