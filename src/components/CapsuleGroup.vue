@@ -14,12 +14,14 @@
   border: 2px solid var(--border-primary);
   border-radius: 999px;
 
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 :deep(.capsule-btn) {
-  width: 50px;
-  height: 50px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -28,7 +30,9 @@
   align-items: center;
   justify-content: center;
   color: var(--text-primary);
-  transition: background 0.15s ease, transform 0.12s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.12s ease;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
@@ -64,12 +68,5 @@
   margin: 0 2px;
   flex-shrink: 0;
   border-radius: 1px;
-}
-
-@media (max-width: 480px) {
-  :deep(.capsule-btn) {
-    width: 46px;
-    height: 46px;
-  }
 }
 </style>

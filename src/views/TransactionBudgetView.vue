@@ -474,7 +474,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 10px 12px;
 }
 
 .left-controls,
@@ -845,12 +845,5 @@ watch(
   right: 16px;
   height: 1px;
   background: #f0f0f0;
-}
-
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .header-section {
-    padding: 10px 12px;
-  }
 }
 </style>

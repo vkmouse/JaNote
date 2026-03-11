@@ -298,35 +298,24 @@ function handleClose(): void {
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 0;
-}
-
-@media (min-width: 480px) {
-  .modal-overlay {
-    align-items: center;
-  }
+  padding: 16px;
+  backdrop-filter: blur(4px);
 }
 
 .modal {
   background: var(--bg-page);
-  border-radius: 20px 20px 0 0;
+  border-radius: 20px;
   width: 100%;
   max-width: 480px;
   padding: 24px;
-  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-height: 90vh;
   overflow-y: auto;
-}
-
-@media (min-width: 480px) {
-  .modal {
-    border-radius: 20px;
-    width: 90%;
-    max-height: 85vh;
-  }
 }
 
 .modal-header {
@@ -470,15 +459,12 @@ function handleClose(): void {
 
 .modal-enter-active .modal,
 .modal-leave-active .modal {
-  transition: transform 0.25s ease;
+  transition: transform 0.3s ease;
 }
 
-.modal-enter-from .modal {
-  transform: translateY(40px);
-}
-
+.modal-enter-from .modal,
 .modal-leave-to .modal {
-  transform: translateY(40px);
+  transform: scale(0.95) translateY(-20px);
 }
 
 /* ── Category multi-select ── */

@@ -151,10 +151,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
   -webkit-tap-highlight-color: transparent;
 }
 
-.tab-btn:hover {
-  background: var(--janote-expense-light);
-}
-
 .tab-btn:active {
   background: var(--janote-expense-light);
   transform: scale(0.91);

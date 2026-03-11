@@ -369,7 +369,7 @@ onMounted(async () => {
 .daily-group {
   background: var(--bg-page);
   border: 2px solid var(--border-primary);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -429,12 +429,12 @@ onMounted(async () => {
 }
 
 .category-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
@@ -481,18 +481,5 @@ onMounted(async () => {
   right: 16px;
   height: 1px;
   background: #f0f0f0;
-}
-
-/* Responsive */
-@media (max-width: 480px) {
-  .daily-group {
-    border-radius: 12px;
-  }
-
-  .category-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-  }
 }
 </style>

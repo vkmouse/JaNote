@@ -6,13 +6,25 @@
       <template #center>
         <div class="type-toggle">
           <button
-            :class="['toggle-btn', { active: transactionType === 'EXPENSE', 'expense-active': transactionType === 'EXPENSE' }]"
+            :class="[
+              'toggle-btn',
+              {
+                active: transactionType === 'EXPENSE',
+                'expense-active': transactionType === 'EXPENSE',
+              },
+            ]"
             @click="transactionType = 'EXPENSE'"
           >
             支出
           </button>
           <button
-            :class="['toggle-btn', { active: transactionType === 'INCOME', 'income-active': transactionType === 'INCOME' }]"
+            :class="[
+              'toggle-btn',
+              {
+                active: transactionType === 'INCOME',
+                'income-active': transactionType === 'INCOME',
+              },
+            ]"
             @click="transactionType = 'INCOME'"
           >
             收入
@@ -29,10 +41,16 @@
           <button
             v-for="category in filteredCategories"
             :key="category.id"
-            :class="['category-item', { selected: selectedCategoryId === category.id }]"
+            :class="[
+              'category-item',
+              { selected: selectedCategoryId === category.id },
+            ]"
             @click="selectCategory(category)"
           >
-            <div class="category-icon-wrapper" v-html="getCategoryIcon(category.name)"></div>
+            <div
+              class="category-icon-wrapper"
+              v-html="getCategoryIcon(category.name)"
+            ></div>
             <span class="category-label">{{ category.name }}</span>
           </button>
         </div>
@@ -42,8 +60,20 @@
       <div class="input-section">
         <div class="input-group">
           <label class="label">
-            <div class="category-icon-display" v-html="selectedCategoryIcon"></div>
-              <span :class="['amount-display', { 'amount-expense': transactionType === 'EXPENSE', 'amount-income': transactionType === 'INCOME' }]">{{ '$' + formattedAmount }}</span>
+            <div
+              class="category-icon-display"
+              v-html="selectedCategoryIcon"
+            ></div>
+            <span
+              :class="[
+                'amount-display',
+                {
+                  'amount-expense': transactionType === 'EXPENSE',
+                  'amount-income': transactionType === 'INCOME',
+                },
+              ]"
+              >{{ "$" + formattedAmount }}</span
+            >
           </label>
           <input
             v-model="notes"
@@ -58,128 +88,137 @@
       <!-- Date Picker & Calculator Panel -->
       <div class="input-panel">
         <CalendarPicker v-model="currentDate" />
-        <CalculatorPad v-model="amount" :canConfirm="canSave" @confirm="saveTransaction" />
+        <CalculatorPad
+          v-model="amount"
+          :canConfirm="canSave"
+          @confirm="saveTransaction"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import TopNavigation from '../components/TopNavigation.vue'
-import NavBack from '../components/NavBack.vue'
-import CalendarPicker from '../components/CalendarPicker.vue'
-import CalculatorPad from '../components/CalculatorPad.vue'
-import type { Category, EntryType, Transaction } from '../types'
-import { getCategoryIcon } from '../utils/categoryIcons'
-import { useTransactionStore } from '../stores/transactionStore'
+import { ref, computed, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import TopNavigation from "../components/TopNavigation.vue";
+import NavBack from "../components/NavBack.vue";
+import CalendarPicker from "../components/CalendarPicker.vue";
+import CalculatorPad from "../components/CalculatorPad.vue";
+import type { Category, EntryType, Transaction } from "../types";
+import { getCategoryIcon } from "../utils/categoryIcons";
+import { useTransactionStore } from "../stores/transactionStore";
 
-const router = useRouter()
-const route = useRoute()
-const transactionStore = useTransactionStore()
+const router = useRouter();
+const route = useRoute();
+const transactionStore = useTransactionStore();
 
 // State
-const editingTransactionId = ref<string | null>(null)
-const editingTransaction = ref<Transaction | null>(null)
-const transactionType = ref<EntryType>('EXPENSE')
-const selectedCategoryId = ref<string>('')
-const selectedCategoryName = ref<string>('選擇分類')
-const amount = ref<string>('')
-const notes = ref<string>('')
-const previousAutoNote = ref<string | null>(null)
-const currentDate = ref<number>(Date.now())
+const editingTransactionId = ref<string | null>(null);
+const editingTransaction = ref<Transaction | null>(null);
+const transactionType = ref<EntryType>("EXPENSE");
+const selectedCategoryId = ref<string>("");
+const selectedCategoryName = ref<string>("選擇分類");
+const amount = ref<string>("");
+const notes = ref<string>("");
+const previousAutoNote = ref<string | null>(null);
+const currentDate = ref<number>(Date.now());
 
 // Computed properties
 const filteredCategories = computed(() => {
-  return transactionStore.visibleCategories.filter(cat => cat.type === transactionType.value)
-})
+  return transactionStore.visibleCategories.filter(
+    (cat) => cat.type === transactionType.value,
+  );
+});
 
 const formattedAmount = computed(() => {
-  const num = amount.value || '0'
+  const num = amount.value || "0";
   // Add comma separators for numbers
   if (/^[0-9.]+$/.test(num)) {
-    const parts = num.split('.')
-    parts[0] = parts[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-    return parts.join('.')
+    const parts = num.split(".");
+    parts[0] = parts[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
   }
-  return num
-})
-
+  return num;
+});
 
 const canSave = computed(() => {
-  return !!(selectedCategoryId.value && amount.value && parseFloat(amount.value) > 0)
-})
+  return !!(
+    selectedCategoryId.value &&
+    amount.value &&
+    parseFloat(amount.value) > 0
+  );
+});
 
 const selectedCategoryIcon = computed(() => {
-  return selectedCategoryName.value && selectedCategoryName.value !== '選擇分類' 
-    ? getCategoryIcon(selectedCategoryName.value) 
-    : getCategoryIcon('其他')
-})
-
+  return selectedCategoryName.value && selectedCategoryName.value !== "選擇分類"
+    ? getCategoryIcon(selectedCategoryName.value)
+    : getCategoryIcon("其他");
+});
 
 // Methods
 const loadCategories = async () => {
-  await transactionStore.loadCategories()
-}
+  await transactionStore.loadCategories();
+};
 
 const loadTransaction = async (id: string) => {
-  const transaction = await transactionStore.getTransactionById(id)
+  const transaction = await transactionStore.getTransactionById(id);
   if (transaction) {
-    editingTransactionId.value = id
-    editingTransaction.value = transaction
-    transactionType.value = transaction.type
-    selectedCategoryId.value = transaction.category_id
-    amount.value = String(transaction.amount)
-    notes.value = transaction.note || ''
-    currentDate.value = transaction.date
-    
+    editingTransactionId.value = id;
+    editingTransaction.value = transaction;
+    transactionType.value = transaction.type;
+    selectedCategoryId.value = transaction.category_id;
+    amount.value = String(transaction.amount);
+    notes.value = transaction.note || "";
+    currentDate.value = transaction.date;
+
     // Set category name
-    const category = transactionStore.visibleCategories.find(c => c.id === transaction.category_id)
+    const category = transactionStore.visibleCategories.find(
+      (c) => c.id === transaction.category_id,
+    );
     if (category) {
-      selectedCategoryName.value = category.name
+      selectedCategoryName.value = category.name;
       // If the loaded transaction's note is empty or equals the category name,
       // treat it as an auto-inserted note so future category changes will replace it.
       if (!transaction.note || transaction.note === category.name) {
-        previousAutoNote.value = category.name
+        previousAutoNote.value = category.name;
       } else {
-        previousAutoNote.value = null
+        previousAutoNote.value = null;
       }
     }
   }
-}
+};
 
 const selectCategory = (category: Category) => {
-  selectedCategoryId.value = category.id
-  selectedCategoryName.value = category.name
+  selectedCategoryId.value = category.id;
+  selectedCategoryName.value = category.name;
   // Only overwrite notes when it's empty or was previously auto-inserted
   if (!notes.value || notes.value === previousAutoNote.value) {
-    notes.value = category.name
-    previousAutoNote.value = category.name
+    notes.value = category.name;
+    previousAutoNote.value = category.name;
   } else {
     // User has a custom note; stop treating notes as auto-inserted
-    previousAutoNote.value = null
+    previousAutoNote.value = null;
   }
-}
+};
 
 const onNotesInput = () => {
   // If user changes the notes away from the previously auto-inserted value,
   // clear the auto-note marker so future category changes won't overwrite.
   if (previousAutoNote.value && notes.value !== previousAutoNote.value) {
-    previousAutoNote.value = null
+    previousAutoNote.value = null;
   }
-}
-
+};
 
 const goBack = () => {
-  router.push('/transactions')
-}
+  router.push("/transactions");
+};
 
 const saveTransaction = async () => {
-  if (!canSave.value) return
+  if (!canSave.value) return;
 
-  const isEditing = !!editingTransactionId.value
-  
+  const isEditing = !!editingTransactionId.value;
+
   if (isEditing) {
     await transactionStore.updateTransaction({
       id: editingTransactionId.value!,
@@ -187,31 +226,31 @@ const saveTransaction = async () => {
       type: transactionType.value,
       amount: parseFloat(amount.value),
       note: notes.value,
-      date: currentDate.value
-    })
+      date: currentDate.value,
+    });
   } else {
     await transactionStore.addTransaction({
       category_id: selectedCategoryId.value,
       type: transactionType.value,
       amount: parseFloat(amount.value),
       note: notes.value,
-      date: currentDate.value
-    })
+      date: currentDate.value,
+    });
   }
-  
-  router.push('/transactions')
-}
+
+  router.push("/transactions");
+};
 
 // Lifecycle
 onMounted(async () => {
-  await loadCategories()
+  await loadCategories();
 
   // Check if we're editing an existing transaction
-  const transactionId = route.params.id as string
+  const transactionId = route.params.id as string;
   if (transactionId) {
-    await loadTransaction(transactionId)
+    await loadTransaction(transactionId);
   }
-})
+});
 </script>
 
 <style scoped>
@@ -221,12 +260,6 @@ onMounted(async () => {
   height: 100vh;
   background: var(--bg-page);
   overflow: hidden;
-}
-
-@media (max-width: 768px) {
-  .transaction-edit-page {
-    height: 100vh;
-  }
 }
 
 /* Type Toggle inside TopNavigation */
@@ -397,21 +430,14 @@ onMounted(async () => {
   flex: 1;
   border: 2px solid #e0e0e0;
   border-radius: 10px;
-  padding: 10px;
-  font-size: 14px;
+  padding: 8px;
+  font-size: 13px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .notes-input:focus {
   border-color: var(--border-primary);
-}
-
-@media (max-width: 480px) {
-  .notes-input {
-    padding: 8px;
-    font-size: 13px;
-  }
 }
 
 /* Input Panel - Unified Date Picker & Calculator Block (updated per request) */
@@ -430,8 +456,6 @@ onMounted(async () => {
   justify-content: center;
 }
 
-
-
 /* Scrollbar styling */
 .categories-section::-webkit-scrollbar {
   width: 4px;
@@ -449,5 +473,4 @@ onMounted(async () => {
 .categories-section::-webkit-scrollbar-thumb:hover {
   background: var(--text-disabled);
 }
-
 </style>

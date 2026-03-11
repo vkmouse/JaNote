@@ -228,7 +228,9 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
             </div>
             <div>
               <span>Last Sync</span>
-              <strong class="sync-time">{{ syncStore.lastSyncAt || "-" }}</strong>
+              <strong class="sync-time">{{
+                syncStore.lastSyncAt || "-"
+              }}</strong>
             </div>
           </div>
         </div>
@@ -275,8 +277,13 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
         </div>
 
         <!-- 收到的邀請 -->
-        <div v-if="userShareStore.receivedPendingInvites.length > 0" class="invites-list">
-          <h3>收到的邀請 ({{ userShareStore.receivedPendingInvites.length }})</h3>
+        <div
+          v-if="userShareStore.receivedPendingInvites.length > 0"
+          class="invites-list"
+        >
+          <h3>
+            收到的邀請 ({{ userShareStore.receivedPendingInvites.length }})
+          </h3>
           <div class="invite-items">
             <div
               v-for="share in userShareStore.receivedPendingInvites"
@@ -311,7 +318,10 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
         </div>
 
         <!-- 發出的邀請 (作為 owner) -->
-        <div v-if="userShareStore.sentPendingInvites.length > 0" class="invites-list">
+        <div
+          v-if="userShareStore.sentPendingInvites.length > 0"
+          class="invites-list"
+        >
           <h3>發出的邀請 ({{ userShareStore.sentPendingInvites.length }})</h3>
           <div class="invite-items">
             <div
@@ -404,20 +414,21 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   flex: 1;
   background: var(--bg-page);
   color: var(--text-primary);
-  padding: 36px 48px 60px;
+  padding: 20px 12px 40px;
   position: relative;
 }
 
 .hero {
   display: flex;
-  gap: 32px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
   justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 28px;
 }
 
 .brand h1 {
-  font-size: 40px;
+  font-size: 28px;
   margin: 4px 0 6px;
 }
 
@@ -437,8 +448,9 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   background: var(--bg-page);
   border: 2px solid var(--border-primary);
   border-radius: 18px;
-  padding: 18px 22px;
-  min-width: 360px;
+  padding: 14px 16px;
+  width: 100%;
+  min-width: 0;
   flex-shrink: 0;
 }
 
@@ -478,8 +490,8 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 .status-meta {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 8px;
 }
 
 .status-meta > div {
@@ -497,7 +509,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 .status-meta strong {
   display: block;
-  font-size: 14px;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -505,20 +517,21 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 .email-text {
   max-width: 100%;
+  font-size: 11px !important;
 }
 
 .sync-time {
-  font-size: 12px !important;
+  font-size: 10px !important;
 }
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   background: var(--bg-page);
   border: 2px solid var(--border-primary);
   border-radius: 16px;
-  padding: 16px;
+  padding: 14px;
   margin-bottom: 28px;
 }
 
@@ -557,7 +570,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   background: var(--bg-page);
   border: 2px solid var(--border-primary);
   border-radius: 16px;
-  padding: 20px;
+  padding: 16px;
   margin-bottom: 28px;
 }
 
@@ -577,12 +590,14 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 .invite-form {
   display: flex;
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
 }
 
 .invite-form input {
   flex: 1;
+  width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--border-primary);
@@ -598,6 +613,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 .btn-invite {
   padding: 12px 24px;
   white-space: nowrap;
+  width: 100%;
 }
 
 .invites-list {
@@ -612,13 +628,13 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 .invite-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
+  flex-direction: column;
   background: rgba(71, 184, 224, 0.06);
   border: 1px solid rgba(71, 184, 224, 0.2);
   border-radius: 12px;
-  padding: 12px 14px;
-  gap: 12px;
+  padding: 10px 12px;
+  gap: 10px;
 }
 
 .invite-item.received {
@@ -638,8 +654,9 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 
 .invite-info {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
@@ -648,7 +665,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
@@ -689,6 +706,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .btn-action {
@@ -700,6 +718,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
+  flex: 1;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -757,7 +776,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   font-family: inherit;
   border: none;
   border-radius: 12px;
-  padding: 12px 20px;
+  padding: 14px 20px;
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -766,6 +785,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
+  width: 100%;
 }
 
 .btn-primary {
@@ -794,139 +814,5 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 .btn-danger:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
-}
-
-@media (max-width: 900px) {
-  .page-content {
-    padding: 24px 16px 40px;
-  }
-
-  .hero {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-  }
-
-  .brand h1 {
-    font-size: 32px;
-  }
-
-  .status-card {
-    width: 100%;
-    min-width: 0;
-    padding: 16px 18px;
-  }
-
-  .status-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px 10px;
-  }
-
-  .status-meta strong {
-    font-size: 13px;
-  }
-
-  .email-text {
-    font-size: 12px !important;
-  }
-
-  .sync-time {
-    font-size: 11px !important;
-  }
-
-  .controls {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 14px;
-  }
-
-  .actions {
-    gap: 10px;
-  }
-
-  .page-content button {
-    width: 100%;
-    padding: 14px 20px;
-  }
-
-  .invite-form {
-    flex-direction: column;
-  }
-
-  .invite-form input {
-    width: 100%;
-  }
-
-  .btn-invite {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-content {
-    padding: 20px 12px 40px;
-  }
-
-  .brand h1 {
-    font-size: 28px;
-  }
-
-  .status-card {
-    padding: 14px 16px;
-  }
-
-  .status-meta {
-    gap: 12px 8px;
-  }
-
-  .status-meta strong {
-    font-size: 12px;
-  }
-
-  .email-text {
-    font-size: 11px !important;
-  }
-
-  .sync-time {
-    font-size: 10px !important;
-  }
-
-  .share-section {
-    padding: 16px;
-  }
-
-  .invite-form {
-    flex-direction: column;
-  }
-
-  .invite-form input,
-  .btn-invite {
-    width: 100%;
-  }
-
-  .invite-item {
-    padding: 10px 12px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .invite-info {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .invite-email {
-    width: 100%;
-  }
-
-  .invite-actions {
-    width: 100%;
-  }
-
-  .btn-action {
-    flex: 1;
-  }
 }
 </style>
