@@ -1,7 +1,7 @@
 <template>
   <section class="search-page">
     <TopNavigation>
-      <template #left><NavBack /></template>
+      <template #left><NavMenu /></template>
       <template #center>
         <div class="search-bar">
           <svg
@@ -119,7 +119,11 @@
       </div>
     </div>
 
-    <BottomTabBar />
+    <BottomTabBar
+      :show-add-button="true"
+      :add-disabled="isViewingShared"
+      @add="goToNewTransaction"
+    />
   </section>
 </template>
 
@@ -127,7 +131,7 @@
 import { ref, computed, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
-import NavBack from "../components/NavBack.vue";
+import NavMenu from "../components/NavMenu.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import type { Transaction } from "../types";
@@ -155,13 +159,17 @@ const clearSearch = () => {
   nextTick(() => inputRef.value?.focus());
 };
 
+const goToNewTransaction = () => {
+  router.push("/transactions/new");
+};
+
 const editTransaction = (id: string) => {
   router.push(`/transaction/${id}/edit`);
 };
 
 const getCategoryIconSvg = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find(
-    (c) => c.id === categoryId
+    (c) => c.id === categoryId,
   );
   return getCategoryIcon(category?.name || "其他");
 };
@@ -221,7 +229,7 @@ const groupedResults = computed<DailyGroup[]>(() => {
 });
 
 const highlightNote = (
-  note: string
+  note: string,
 ): Array<{ text: string; match: boolean }> => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query || !note) return [{ text: note || "", match: false }];
@@ -250,14 +258,14 @@ const highlightNote = (
 onMounted(async () => {
   await userStore.loadUser();
 
+  // Focus the search input immediately so iOS shows keyboard
+  // (must happen as close to the user gesture as possible)
+  inputRef.value?.focus();
+
   await Promise.all([
     transactionStore.loadTransactions(),
     transactionStore.loadCategories(),
   ]);
-
-  // Auto-focus the search input to trigger keyboard
-  await nextTick();
-  inputRef.value?.focus();
 });
 </script>
 
@@ -277,6 +285,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 0 12px;
+  margin: 0 8px;
   background: var(--bg-card, #f5f5f5);
   border: 1.5px solid var(--border-primary);
   border-radius: 20px;

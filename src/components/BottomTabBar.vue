@@ -1,11 +1,11 @@
 <template>
-  <nav class="bottom-tab-bar">
+  <nav v-show="!drawerOpen" class="bottom-tab-bar">
     <div class="inner">
       <div class="tab-capsule">
         <template v-for="(tab, i) in tabs" :key="tab.key">
           <button
             :class="['tab-btn', { active: isActive(tab.route) }]"
-            @click="router.push(tab.route)"
+            @click="router.replace(tab.route)"
             :aria-label="tab.label"
           >
             <span class="tab-icon" v-html="tab.icon" />
@@ -16,7 +16,12 @@
       </div>
 
       <div v-if="showAddButton" class="add-capsule">
-        <button class="add-btn" @click="emit('add')" aria-label="新增">
+        <button
+          class="add-btn"
+          :disabled="addDisabled"
+          @click="emit('add')"
+          aria-label="新增"
+        >
           <svg
             width="22"
             height="22"
@@ -36,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { inject } from "vue";
+import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import iconDollarCircle from "../assets/icons/icon-dollar-circle.svg?raw";
 import iconSearch from "../assets/icons/icon-search.svg?raw";
@@ -44,18 +51,41 @@ import iconTravelBudget from "../assets/icons/icon-travel-budget.svg?raw";
 
 defineProps<{
   showAddButton?: boolean;
+  addDisabled?: boolean;
 }>();
 
 const emit = defineEmits<{ add: [] }>();
+
+const drawerOpen = inject<Ref<boolean>>("sideDrawerOpen");
 
 const route = useRoute();
 const router = useRouter();
 
 const tabs = [
-  { key: "transactions", label: "記帳", route: "/transactions", icon: iconDollarCircle },
-  { key: "search", label: "搜尋", route: "/transactions/search", icon: iconSearch },
-  { key: "summary", label: "總覽", route: "/transactions/summary", icon: iconPieChart },
-  { key: "budget", label: "預算", route: "/budget", icon: iconTravelBudget },
+  {
+    key: "transactions",
+    label: "記帳",
+    route: "/transactions",
+    icon: iconDollarCircle,
+  },
+  {
+    key: "summary",
+    label: "總覽",
+    route: "/transactions/summary",
+    icon: iconPieChart,
+  },
+  {
+    key: "budget",
+    label: "預算",
+    route: "/transactions/budget",
+    icon: iconTravelBudget,
+  },
+  {
+    key: "search",
+    label: "搜尋",
+    route: "/transactions/search",
+    icon: iconSearch,
+  },
 ];
 
 const isActive = (tabRoute: string) => route.path === tabRoute;
@@ -204,5 +234,11 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
 .add-btn:active {
   transform: scale(0.91);
   opacity: 0.75;
+}
+
+.add-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 </style>

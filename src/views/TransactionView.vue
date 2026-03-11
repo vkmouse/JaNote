@@ -133,7 +133,11 @@
       </div>
     </div>
 
-    <BottomTabBar v-if="!isViewingShared" :show-add-button="true" @add="goToNewTransaction" />
+    <BottomTabBar
+      :show-add-button="true"
+      :add-disabled="isViewingShared"
+      @add="goToNewTransaction"
+    />
   </section>
 </template>
 
@@ -281,7 +285,9 @@ const loadCategories = async () => {
 };
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
+  const category = transactionStore.visibleCategories.find(
+    (c) => c.id === categoryId,
+  );
   return getCategoryIcon(category?.name || "其他");
 };
 
@@ -663,5 +669,4 @@ onMounted(async () => {
     font-size: 20px;
   }
 }
-
 </style>

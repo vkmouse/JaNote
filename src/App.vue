@@ -19,6 +19,7 @@ const closeSideDrawer = () => {
 
 // 提供給子組件使用
 provide("openSideDrawer", openSideDrawer);
+provide("sideDrawerOpen", sideDrawerOpen);
 
 // 初始化使用者狀態（全域，所有頁面共用）
 const userStore = useUserStore();

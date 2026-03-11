@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
-import NavBack from "../components/NavBack.vue";
+import NavMenu from "../components/NavMenu.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
@@ -170,7 +170,9 @@ const goToNewTransaction = () => router.push("/transactions/new");
 const goToBudget = () => router.push("/budget");
 
 const getCategoryIconSvg = (categoryId: string): string => {
-  const category = transactionStore.visibleCategories.find((c) => c.id === categoryId);
+  const category = transactionStore.visibleCategories.find(
+    (c) => c.id === categoryId,
+  );
   return getCategoryIcon(category?.name || "其他");
 };
 
@@ -201,7 +203,7 @@ watch(
 <template>
   <section class="transaction-summary-page">
     <TopNavigation>
-      <template #left><NavBack /></template>
+      <template #left><NavMenu /></template>
       <template #center>
         <div class="month-display" @click="openPicker">
           <span>{{ currentMonthDisplay }}</span>
@@ -361,7 +363,11 @@ watch(
       </div>
     </div>
 
-    <BottomTabBar />
+    <BottomTabBar
+      :show-add-button="true"
+      :add-disabled="isViewingShared"
+      @add="goToNewTransaction"
+    />
   </section>
 </template>
 
