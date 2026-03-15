@@ -2,7 +2,7 @@
   <div class="transaction-edit-page">
     <!-- Header -->
     <TopNavigation>
-      <template #left><NavBack :onBack="goBack" /></template>
+      <template #left><NavBack /></template>
       <template #center>
         <div class="type-toggle">
           <button
@@ -208,10 +208,6 @@ const onNotesInput = () => {
   if (previousAutoNote.value && notes.value !== previousAutoNote.value) {
     previousAutoNote.value = null;
   }
-};
-
-const goBack = () => {
-  router.push("/transactions");
 };
 
 const saveTransaction = async () => {

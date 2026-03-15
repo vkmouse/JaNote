@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/userStore";
 
 const userStore = useUserStore();
+const router = useRouter();
 
 // ── 本地 UI 狀態（純呈現，不屬於 store）──────────────────
 /** 目前輪替到第幾個共享帳號 */
 const currentShareIndex = ref(0);
+/** 單/雙擊計時器 */
+const clickTimer = ref<ReturnType<typeof setTimeout> | null>(null);
+const DOUBLE_CLICK_DELAY = 280;
 
 // ── 呈現層 Computed ────────────────────────────────────────
 const canSwitchAvatar = computed(() => userStore.userShares.length > 0);
@@ -45,8 +50,15 @@ const currentAvatarInfo = computed(() => {
 });
 
 // ── Handlers ───────────────────────────────────────────────
-/** 本人 → 共享1 → 共享2 … → 本人 循環切換 */
-const handleAvatarClick = () => {
+/** 單擊：本人頭像時進入同步管理 */
+const handleSingleClick = () => {
+  if (!userStore.isViewingShared) {
+    router.push("/sync");
+  }
+};
+
+/** 雙擊：本人 → 共享1 → 共享2 … → 本人 循環切換 */
+const handleDoubleClick = () => {
   if (!canSwitchAvatar.value) return;
 
   const shares = userStore.userShares;
@@ -71,6 +83,20 @@ const handleAvatarClick = () => {
       currentShareIndex.value = 0;
       userStore.setSelectedUser(null);
     }
+  }
+};
+
+/** 點擊分發：單擊 vs 雙擊 */
+const handleAvatarClick = () => {
+  if (clickTimer.value) {
+    clearTimeout(clickTimer.value);
+    clickTimer.value = null;
+    handleDoubleClick();
+  } else {
+    clickTimer.value = setTimeout(() => {
+      clickTimer.value = null;
+      handleSingleClick();
+    }, DOUBLE_CLICK_DELAY);
   }
 };
 

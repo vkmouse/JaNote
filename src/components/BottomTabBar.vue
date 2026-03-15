@@ -161,10 +161,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
   font-weight: 600;
 }
 
-.tab-btn.active:hover {
-  background: var(--janote-expense-light);
-}
-
 .tab-icon {
   display: flex;
   align-items: center;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import TopNavigation from "../components/TopNavigation.vue";
-import NavMenu from "../components/NavMenu.vue";
+import NavBack from "../components/NavBack.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import { useUserStore } from "../stores/userStore";
 import { useSyncStore } from "../stores/syncStore";
@@ -185,7 +185,7 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
 <template>
   <section class="sync-page">
     <TopNavigation>
-      <template #left><NavMenu /></template>
+      <template #left><NavBack /></template>
       <template #right><NavAvatar /></template>
     </TopNavigation>
 
