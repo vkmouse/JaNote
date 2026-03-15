@@ -30,8 +30,7 @@
   background: var(--bg-elevated, #ffffff);
   border-bottom: 1px solid var(--border, #e0e0e0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: end; /* 因為 padding-top 推高，改用 end 讓內容對齊底部內容區 */
   padding-bottom: 0;
   padding-left: 16px;
@@ -55,9 +54,14 @@
 
 .nav-left {
   justify-content: flex-start;
+  position: relative;
+  z-index: 1;
 }
 
 .nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   justify-content: center;
   min-width: 0;
   overflow: hidden;
@@ -65,6 +69,9 @@
 
 .nav-right {
   justify-content: flex-end;
+  position: relative;
+  z-index: 1;
+  margin-left: auto;
 }
 
 /* 佔位元素：高度與 nav 相同，避免頁面內容被 fixed nav 遮住 */

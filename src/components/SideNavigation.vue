@@ -20,7 +20,7 @@ const navItems = [
   { to: "/transactions", label: "記帳管理", icon: DollarCircleIcon },
 ];
 
-const isActive = (path: string) => route.path === path;
+const isActive = (path: string) => route.path.startsWith(path);
 
 const handleClose = () => {
   emit("close");
