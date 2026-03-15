@@ -22,7 +22,7 @@ const avatarWrapperWidth = computed(() =>
 
 const currentAvatarInfo = computed(() => {
   const ownerEmail = userStore.currentUserEmail;
-  const ownerInitial = ownerEmail ? ownerEmail.charAt(0).toUpperCase() : "U";
+  const ownerInitial = ownerEmail ? ownerEmail.charAt(0).toUpperCase() : "?";
 
   if (userStore.isViewingShared) {
     const share = userStore.userShares[currentShareIndex.value];
@@ -113,12 +113,11 @@ function _resolveShare(
 
 <template>
   <div
-    v-if="currentAvatarInfo.email"
     class="avatar-wrapper"
     :class="{ 'can-switch': canSwitchAvatar }"
     :style="{ width: avatarWrapperWidth }"
     @click="handleAvatarClick"
-    :title="currentAvatarInfo.email"
+    :title="currentAvatarInfo.email || '點擊進入同步設定'"
   >
     <div v-if="currentAvatarInfo.isShared" class="avatar-shared">
       <!-- 本人頭貼（右側，半透明背景） -->
