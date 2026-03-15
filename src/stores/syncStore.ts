@@ -5,6 +5,7 @@ import { syncMetaRepository } from "../db/repositories/syncMetaRepository";
 import { categoryRepository } from "../db/repositories/categoryRepository";
 import { transactionRepository } from "../db/repositories/transactionRepository";
 import { userShareRepository } from "../db/repositories/userShareRepository";
+import { budgetRepository } from "../db/repositories/budgetRepository";
 import { userRepository } from "../db/repositories/userRepository";
 import type {
   SyncQueueItem,
@@ -15,13 +16,14 @@ import type {
   CategoryPayload,
   TransactionPayload,
   UserSharePayload,
+  BudgetPayload,
 } from "../types";
 
 // ── Private business logic helpers ────────────────────────────────────────────
 
 function parsePayload(
   payload: string | null,
-): CategoryPayload | TransactionPayload | UserSharePayload | null {
+): CategoryPayload | TransactionPayload | UserSharePayload | BudgetPayload | null {
   if (!payload) return null;
   if (typeof payload === "string") {
     try {
@@ -124,10 +126,34 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
     });
     return;
   }
+
+  if (event.entity_type === "BGT") {
+    if (event.action === "DELETE") {
+      await budgetRepository.update(event.entity_id, (record) => {
+        if (!record) return null;
+        return { ...record, version: event.version, is_deleted: 1 };
+      });
+      return;
+    }
+    if (!payload || typeof payload !== "object") return;
+    const bgtPayload = payload as BudgetPayload;
+    await budgetRepository.upsert({
+      id: event.entity_id,
+      user_id: bgtPayload.user_id || "",
+      name: bgtPayload.name || "",
+      type: bgtPayload.type || "EXPENSE",
+      goal: Number(bgtPayload.goal) || 0,
+      month_key: bgtPayload.month_key || "",
+      category_ids: bgtPayload.category_ids || "",
+      version: event.version,
+      is_deleted: 0,
+    });
+    return;
+  }
 }
 
 async function bumpLocalVersion(
-  entityType: "CAT" | "TXN" | "SHR",
+  entityType: "CAT" | "TXN" | "SHR" | "BGT",
   entityId: string,
   version: number,
   action: "PUT" | "DELETE" | "POST",
@@ -165,6 +191,17 @@ async function bumpLocalVersion(
     });
     return;
   }
+  if (entityType === "BGT") {
+    await budgetRepository.update(entityId, (record) => {
+      if (!record) return null;
+      return {
+        ...record,
+        version,
+        is_deleted: action === "DELETE" ? 1 : record.is_deleted,
+      };
+    });
+    return;
+  }
 }
 
 async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
@@ -180,6 +217,11 @@ async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
           if (!record) return null;
           return { ...record, is_deleted: 1 };
         });
+      } else if (entry.entity_type === "BGT") {
+        await budgetRepository.update(entry.entity_id, (record) => {
+          if (!record) return null;
+          return { ...record, is_deleted: 1 };
+        });
       }
     }
     return;
@@ -192,6 +234,8 @@ async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
       await transactionRepository.upsert(snapshot);
     } else if (entry.entity_type === "SHR") {
       await userShareRepository.upsert(snapshot);
+    } else if (entry.entity_type === "BGT") {
+      await budgetRepository.upsert(snapshot);
     }
   } catch (error) {
     console.error(

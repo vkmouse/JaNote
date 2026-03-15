@@ -16,6 +16,10 @@ import {
   createUserSharesTable,
 } from "../repositories/userShareRepository";
 import {
+  dropBudgetsTable,
+  createBudgetsTable,
+} from "../repositories/budgetRepository";
+import {
   dropSyncEventsTable,
   createSyncEventsTable,
 } from "../repositories/syncEventRepository";
@@ -26,6 +30,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   try {
     // Drop existing tables to ensure clean state
     await dropSyncEventsTable(DB);
+    await dropBudgetsTable(DB);
     await dropTransactionsTable(DB);
     await dropCategoriesTable(DB);
     await dropUserSharesTable(DB);
@@ -36,6 +41,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     await createCategoriesTable(DB);
     await createTransactionsTable(DB);
     await createUserSharesTable(DB);
+    await createBudgetsTable(DB);
     await createSyncEventsTable(DB);
 
     return new Response(

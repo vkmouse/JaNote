@@ -2,15 +2,15 @@
 import { ref, computed, watch } from "vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useTransactionStore } from "../stores/transactionStore";
-import type { EntryType } from "../types";
+import type { Budget, EntryType } from "../types";
 
-export interface Budget {
-  id: string;
+export interface BudgetSavePayload {
+  id?: string;
   name: string;
   type: EntryType;
   goal: number;
-  categoryIds: string[];
-  monthKey: string;
+  month_key: string;
+  category_ids: string;
 }
 
 interface Props {
@@ -24,7 +24,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: [];
-  save: [budget: Budget];
+  save: [payload: BudgetSavePayload];
   delete: [id: string];
 }>();
 
@@ -46,7 +46,9 @@ watch(
         modalForm.value = {
           name: props.editingBudget.name,
           goal: props.editingBudget.goal,
-          selectedCategoryIds: [...props.editingBudget.categoryIds],
+          selectedCategoryIds: props.editingBudget.category_ids
+            .split(",")
+            .filter(Boolean),
         };
       } else {
         modalForm.value = { name: "", goal: 0, selectedCategoryIds: [] };
@@ -97,12 +99,12 @@ function handleSave(): void {
   if (!resolvedName || goal <= 0 || selectedCategoryIds.length === 0) return;
 
   emit("save", {
-    id: props.editingBudget?.id ?? `budget-${Date.now()}`,
+    id: props.editingBudget?.id,
     name: resolvedName,
     type: props.transactionType,
     goal,
-    categoryIds: selectedCategoryIds,
-    monthKey: props.monthKey,
+    month_key: props.monthKey,
+    category_ids: selectedCategoryIds.join(","),
   });
 }
 

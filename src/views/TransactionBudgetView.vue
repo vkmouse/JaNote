@@ -255,10 +255,11 @@ import DateRangePicker from "../components/DateRangePicker.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
-import type { EntryType } from "../types";
+import { useBudgetStore } from "../stores/budgetStore";
+import type { EntryType, Budget } from "../types";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import BudgetModal from "../components/BudgetModal.vue";
-import type { Budget } from "../components/BudgetModal.vue";
+import type { BudgetSavePayload } from "../components/BudgetModal.vue";
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -268,6 +269,7 @@ type ViewMode = "monthly" | "yearly" | "custom";
 
 const userStore = useUserStore();
 const transactionStore = useTransactionStore();
+const budgetStore = useBudgetStore();
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 
@@ -282,9 +284,6 @@ const showDateRangePicker = ref(false);
 const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
 const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
 const transactionType = ref<EntryType>("EXPENSE");
-
-// ── Budget persistence (localStorage) ─────────────────────
-const budgets = ref<Budget[]>([]);
 
 // ── Date display & picker ──────────────────────────────────
 
@@ -336,10 +335,11 @@ const filteredTransactions = computed(() => {
 
 // ── Category helpers ───────────────────────────────────────
 
-function getBudgetIcon(budget: { categoryIds: string[] }): string {
-  if (budget.categoryIds.length === 1) {
+function getBudgetIcon(budget: Budget): string {
+  const ids = budget.category_ids.split(",").filter(Boolean);
+  if (ids.length === 1) {
     const cat = transactionStore.visibleCategories.find(
-      (c) => c.id === budget.categoryIds[0],
+      (c) => c.id === ids[0],
     );
     return getCategoryIcon(cat?.name ?? "其他");
   }
@@ -347,22 +347,20 @@ function getBudgetIcon(budget: { categoryIds: string[] }): string {
 }
 
 function getActualForBudget(budget: Budget): number {
+  const ids = budget.category_ids.split(",").filter(Boolean);
   return filteredTransactions.value
-    .filter(
-      (t) =>
-        t.type === budget.type && budget.categoryIds.includes(t.category_id),
-    )
+    .filter((t) => t.type === budget.type && ids.includes(t.category_id))
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
 // ── Computed budgets with actual ───────────────────────────
 
 const currentBudgets = computed(() =>
-  budgets.value
+  budgetStore.visibleBudgets
     .filter(
       (b) =>
         b.type === transactionType.value &&
-        b.monthKey === currentMonthKey.value,
+        b.month_key === currentMonthKey.value,
     )
     .map((b) => {
       const actual = getActualForBudget(b);
@@ -404,18 +402,30 @@ function closeModal(): void {
   editingBudget.value = null;
 }
 
-function onBudgetSave(budget: Budget): void {
-  if (editingBudget.value) {
-    const idx = budgets.value.findIndex((b) => b.id === budget.id);
-    if (idx !== -1) budgets.value[idx] = budget;
+async function onBudgetSave(payload: BudgetSavePayload): Promise<void> {
+  if (payload.id) {
+    await budgetStore.updateBudget({
+      id: payload.id,
+      name: payload.name,
+      type: payload.type,
+      goal: payload.goal,
+      month_key: payload.month_key,
+      category_ids: payload.category_ids,
+    });
   } else {
-    budgets.value.push(budget);
+    await budgetStore.addBudget({
+      name: payload.name,
+      type: payload.type,
+      goal: payload.goal,
+      month_key: payload.month_key,
+      category_ids: payload.category_ids,
+    });
   }
   closeModal();
 }
 
-function onBudgetDelete(id: string): void {
-  budgets.value = budgets.value.filter((b) => b.id !== id);
+async function onBudgetDelete(id: string): Promise<void> {
+  await budgetStore.deleteBudget(id);
   closeModal();
 }
 
@@ -425,6 +435,7 @@ onMounted(async () => {
   await userStore.loadUser();
   await transactionStore.loadCategories();
   await transactionStore.loadTransactions();
+  await budgetStore.loadBudgets();
 });
 
 watch(
@@ -432,6 +443,7 @@ watch(
   async () => {
     await transactionStore.loadCategories();
     await transactionStore.loadTransactions();
+    await budgetStore.loadBudgets();
   },
 );
 </script>

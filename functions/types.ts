@@ -33,8 +33,9 @@ export interface ServiceContext {
  * - CAT: Category
  * - TXN: Transaction
  * - SHR: User Share
+ * - BGT: Budget
  */
-export type EntityType = "CAT" | "TXN" | "SHR";
+export type EntityType = "CAT" | "TXN" | "SHR" | "BGT";
 
 /**
  * Supported action types for sync operations
@@ -89,6 +90,18 @@ export interface Transaction {
   amount: number;
   note: string | null;
   date: number;
+  version: number;
+  is_deleted: number;
+}
+
+export interface Budget {
+  id: string;
+  user_id: string;
+  name: string;
+  type: string;
+  goal: number;
+  month_key: string;
+  category_ids: string;
   version: number;
   is_deleted: number;
 }

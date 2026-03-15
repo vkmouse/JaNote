@@ -1,7 +1,7 @@
 import type { StoreName, StoreMode, StoreCallback } from '../types'
 
 const DB_NAME = 'sync-ui'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let dbPromise: Promise<IDBDatabase> | null = null
 
@@ -42,6 +42,9 @@ export function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('user_shares')) {
         db.createObjectStore('user_shares', { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains('budgets')) {
+        db.createObjectStore('budgets', { keyPath: 'id' })
       }
     }
 

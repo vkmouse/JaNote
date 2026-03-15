@@ -46,6 +46,11 @@ import {
   putUserShare,
   deleteUserShare,
 } from "../services/userShareService";
+import {
+  postBudget,
+  putBudget,
+  deleteBudget,
+} from "../services/budgetService";
 
 /**
  * 根據使用者的 Email 取得 User ID。
@@ -84,6 +89,9 @@ const entityHandlers: Record<string, EntityHandler> = {
   "POST:TXN": postTransaction,
   "PUT:TXN": putTransaction,
   "DELETE:TXN": deleteTransaction,
+  "POST:BGT": postBudget,
+  "PUT:BGT": putBudget,
+  "DELETE:BGT": deleteBudget,
   "POST:SHR": postUserShare,
   "PUT:SHR": putUserShare,
   "DELETE:SHR": deleteUserShare,
@@ -311,7 +319,7 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
  * 這是為了確保外鍵關聯正確（交易通常會綁定分類）。
  */
 function sortPushCommands(commands: PushCommand[]): PushCommand[] {
-  const priority: Record<EntityType, number> = { CAT: 0, TXN: 1, SHR: 2 };
+  const priority: Record<EntityType, number> = { CAT: 0, TXN: 1, BGT: 2, SHR: 3 };
   return [...commands].sort(
     (a, b) => priority[a.entity_type] - priority[b.entity_type],
   );

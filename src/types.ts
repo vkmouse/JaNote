@@ -26,6 +26,18 @@ export interface Transaction {
   is_deleted: number
 }
 
+export interface Budget {
+  id: string
+  user_id: string
+  name: string
+  type: EntryType
+  goal: number
+  month_key: string
+  category_ids: string
+  version: number
+  is_deleted: number
+}
+
 export interface UserShare {
   id: string
   sender_id: string
@@ -39,7 +51,7 @@ export interface UserShare {
 
 export interface SyncQueueItem {
   mutation_id: string
-  entity_type: 'CAT' | 'TXN' | 'SHR'
+  entity_type: 'CAT' | 'TXN' | 'SHR' | 'BGT'
   entity_id: string
   action: 'PUT' | 'DELETE' | 'POST'
   payload: string | null
@@ -55,11 +67,11 @@ export interface SyncMeta {
 
 export interface PushCommand {
   mutation_id: string
-  entity_type: 'CAT' | 'TXN' | 'SHR'
+  entity_type: 'CAT' | 'TXN' | 'SHR' | 'BGT'
   entity_id: string
   action: 'PUT' | 'DELETE' | 'POST'
   base_version: number
-  payload: CategoryPayload | TransactionPayload | UserSharePayload | null
+  payload: CategoryPayload | TransactionPayload | UserSharePayload | BudgetPayload | null
 }
 
 export interface PushResult {
@@ -72,7 +84,7 @@ export interface PushResult {
 
 export interface PullEvent {
   entity_id: string
-  entity_type: 'CAT' | 'TXN' | 'SHR'
+  entity_type: 'CAT' | 'TXN' | 'SHR' | 'BGT'
   action: 'PUT' | 'DELETE'
   version: number
   payload: string | null
@@ -117,6 +129,16 @@ export interface UserSharePayload {
   status: 'PENDING' | 'ACTIVE'
 }
 
+export interface BudgetPayload {
+  id: string
+  user_id: string
+  name: string
+  type: EntryType
+  goal: number
+  month_key: string
+  category_ids: string
+}
+
 export interface LogEntry {
   id: string
   time: string
@@ -126,6 +148,6 @@ export interface LogEntry {
   tone: 'info' | 'warn' | 'error' | 'success'
 }
 
-export type StoreName = 'categories' | 'transactions' | 'sync_queue' | 'sync_meta' | 'user' | 'user_shares'
+export type StoreName = 'categories' | 'transactions' | 'sync_queue' | 'sync_meta' | 'user' | 'user_shares' | 'budgets'
 export type StoreMode = 'readonly' | 'readwrite'
 export type StoreCallback<T = any> = (store: IDBObjectStore, tx: IDBTransaction) => T | IDBRequest<any>

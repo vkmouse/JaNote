@@ -3,6 +3,7 @@ import type {
   User,
   Category,
   Transaction,
+  Budget,
   SyncQueueItem,
   SyncMeta,
   UserShare,
@@ -13,6 +14,7 @@ export interface AppDB {
   user: EntityTable<User, "id">;
   categories: EntityTable<Category, "id">;
   transactions: EntityTable<Transaction, "id">;
+  budgets: EntityTable<Budget, "id">;
   sync_queue: EntityTable<SyncQueueItem, "mutation_id">;
   sync_meta: EntityTable<SyncMeta, "key">;
   user_shares: EntityTable<UserShare, "id">;
@@ -23,6 +25,7 @@ export const schema = {
   user: "id",
   categories: "id",
   transactions: "id",
+  budgets: "id",
   sync_queue: "mutation_id, created_at, entity_id",
   sync_meta: "key",
   user_shares: "id",
