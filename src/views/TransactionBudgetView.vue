@@ -2,7 +2,10 @@
   <section class="budget-page">
     <!-- Top Navigation -->
     <TopNavigation>
-      <template #left><NavMenu /></template>
+      <template #left>
+        <NavMenu />
+        <button class="nav-search-btn" @click="router.push('/transactions/search')" aria-label="搜尋" v-html="iconSearch"></button>
+      </template>
       <template #center>
         <div class="month-display" @click="openPicker">
           <span>{{ currentMonthDisplay }}</span>
@@ -246,6 +249,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
 import NavAvatar from "../components/NavAvatar.vue";
@@ -253,6 +257,7 @@ import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
+import iconSearch from "../assets/icons/icon-search.svg?raw";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
@@ -267,6 +272,7 @@ type ViewMode = "monthly" | "yearly" | "custom";
 
 // ── Stores ─────────────────────────────────────────────────
 
+const router = useRouter();
 const userStore = useUserStore();
 const transactionStore = useTransactionStore();
 const budgetStore = useBudgetStore();
@@ -472,6 +478,34 @@ watch(
 
 .month-display:hover {
   opacity: 0.7;
+}
+
+.nav-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-left: 4px;
+}
+
+.nav-search-btn:hover {
+  background: #f0f0f0;
+}
+
+.nav-search-btn :deep(svg) {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ── Page content ── */

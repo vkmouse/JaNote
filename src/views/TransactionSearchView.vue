@@ -1,7 +1,7 @@
 <template>
   <section class="search-page">
     <TopNavigation>
-      <template #left><NavMenu /></template>
+      <template #left><NavBack /></template>
       <template #center>
         <div class="search-bar">
           <svg
@@ -131,7 +131,7 @@
 import { ref, computed, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
-import NavMenu from "../components/NavMenu.vue";
+import NavBack from "../components/NavBack.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import type { Transaction } from "../types";

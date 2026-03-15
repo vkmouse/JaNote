@@ -45,7 +45,6 @@ import { inject } from "vue";
 import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import iconDollarCircle from "../assets/icons/icon-dollar-circle.svg?raw";
-import iconSearch from "../assets/icons/icon-search.svg?raw";
 import iconPieChart from "../assets/icons/icon-pie-chart.svg?raw";
 import iconTravelBudget from "../assets/icons/icon-travel-budget.svg?raw";
 
@@ -79,12 +78,6 @@ const tabs = [
     label: "預算",
     route: "/transactions/budget",
     icon: iconTravelBudget,
-  },
-  {
-    key: "search",
-    label: "搜尋",
-    route: "/transactions/search",
-    icon: iconSearch,
   },
 ];
 
