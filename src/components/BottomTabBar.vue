@@ -46,7 +46,7 @@ import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import iconDollarCircle from "../assets/icons/icon-dollar-circle.svg?raw";
 import iconPieChart from "../assets/icons/icon-pie-chart.svg?raw";
-import iconTravelBudget from "../assets/icons/icon-travel-budget.svg?raw";
+import iconPiggyBank from "../assets/icons/new/icon-piggy-bank.svg?raw";
 
 defineProps<{
   showAddButton?: boolean;
@@ -77,7 +77,7 @@ const tabs = [
     key: "budget",
     label: "預算",
     route: "/transactions/budget",
-    icon: iconTravelBudget,
+    icon: iconPiggyBank,
   },
 ];
 

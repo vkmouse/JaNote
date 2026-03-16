@@ -3,6 +3,12 @@
     <!-- Header -->
     <TopNavigation>
       <template #left><NavBack /></template>
+      <template #right>
+        <div class="page-badge transaction-badge">
+          <span class="page-badge-icon" v-html="DollarCircleIcon"></span>
+          <span class="page-badge-label">記帳</span>
+        </div>
+      </template>
       <template #center>
         <div class="type-toggle">
           <button
@@ -108,6 +114,7 @@ import CalculatorPad from "../components/CalculatorPad.vue";
 import type { Category, EntryType, Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useTransactionStore } from "../stores/transactionStore";
+import DollarCircleIcon from "../assets/icons/icon-dollar-circle.svg?raw";
 
 const router = useRouter();
 const route = useRoute();
@@ -322,14 +329,16 @@ onMounted(async () => {
 
 .category-item {
   padding: 6px 4px;
-  border: none;
+  border: 2px solid transparent;
   border-radius: 12px;
   background: transparent;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: all 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .category-item:hover {
@@ -338,6 +347,23 @@ onMounted(async () => {
 
 .category-item.selected {
   background: #f0f0f0;
+  border-color: var(--border-primary);
+}
+
+.category-item.selected .category-icon-wrapper {
+  position: relative;
+}
+
+.category-item.selected .category-icon-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--border-primary);
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-page);
 }
 
 .category-icon-wrapper {
@@ -443,6 +469,46 @@ onMounted(async () => {
   margin: 0;
   border-radius: 0;
   padding: 16px;
+}
+
+/* Page badge */
+.page-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  border: 2px solid;
+  white-space: nowrap;
+}
+
+.transaction-badge {
+  background: var(--janote-expense-light);
+  color: var(--text-primary);
+  border-color: var(--janote-expense);
+}
+
+.page-badge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.page-badge-icon :deep(svg) {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.page-badge-label {
+  line-height: 1;
 }
 
 .back-icon {

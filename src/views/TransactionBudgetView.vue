@@ -4,7 +4,12 @@
     <TopNavigation>
       <template #left>
         <NavMenu />
-        <button class="nav-search-btn" @click="router.push('/transactions/search')" aria-label="搜尋" v-html="iconSearch"></button>
+        <button
+          class="nav-search-btn"
+          @click="router.push('/transactions/search')"
+          aria-label="搜尋"
+          v-html="iconSearch"
+        ></button>
       </template>
       <template #center>
         <div class="month-display" @click="openPicker">
@@ -229,16 +234,6 @@
       </div>
     </div>
 
-    <BudgetModal
-      :show="showModal"
-      :editingBudget="editingBudget"
-      :transactionType="transactionType"
-      :monthKey="currentMonthKey"
-      @close="closeModal"
-      @save="onBudgetSave"
-      @delete="onBudgetDelete"
-    />
-
     <BottomTabBar
       :show-add-button="true"
       :add-disabled="isViewingShared"
@@ -263,8 +258,6 @@ import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
 import type { EntryType, Budget } from "../types";
 import BottomTabBar from "../components/BottomTabBar.vue";
-import BudgetModal from "../components/BudgetModal.vue";
-import type { BudgetSavePayload } from "../components/BudgetModal.vue";
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -344,9 +337,7 @@ const filteredTransactions = computed(() => {
 function getBudgetIcon(budget: Budget): string {
   const ids = budget.category_ids.split(",").filter(Boolean);
   if (ids.length === 1) {
-    const cat = transactionStore.visibleCategories.find(
-      (c) => c.id === ids[0],
-    );
+    const cat = transactionStore.visibleCategories.find((c) => c.id === ids[0]);
     return getCategoryIcon(cat?.name ?? "其他");
   }
   return getCategoryIcon("其他");
@@ -388,51 +379,21 @@ const overallPercentage = computed(() =>
   totalGoal.value > 0 ? (totalActual.value / totalGoal.value) * 100 : 0,
 );
 
-// ── Modal ──────────────────────────────────────────────────
-
-const showModal = ref(false);
-const editingBudget = ref<Budget | null>(null);
+// ── Navigation to edit view ────────────────────────────────
 
 function openAddModal(): void {
-  editingBudget.value = null;
-  showModal.value = true;
+  router.push({
+    name: "budget-new",
+    query: {
+      type: transactionType.value,
+      year: selectedYear.value,
+      month: selectedMonth.value,
+    },
+  });
 }
 
 function openEditModal(budget: Budget): void {
-  editingBudget.value = budget;
-  showModal.value = true;
-}
-
-function closeModal(): void {
-  showModal.value = false;
-  editingBudget.value = null;
-}
-
-async function onBudgetSave(payload: BudgetSavePayload): Promise<void> {
-  if (payload.id) {
-    await budgetStore.updateBudget({
-      id: payload.id,
-      name: payload.name,
-      type: payload.type,
-      goal: payload.goal,
-      month_key: payload.month_key,
-      category_ids: payload.category_ids,
-    });
-  } else {
-    await budgetStore.addBudget({
-      name: payload.name,
-      type: payload.type,
-      goal: payload.goal,
-      month_key: payload.month_key,
-      category_ids: payload.category_ids,
-    });
-  }
-  closeModal();
-}
-
-async function onBudgetDelete(id: string): Promise<void> {
-  await budgetStore.deleteBudget(id);
-  closeModal();
+  router.push({ name: "budget-edit", params: { id: budget.id } });
 }
 
 // ── Lifecycle ──────────────────────────────────────────────
