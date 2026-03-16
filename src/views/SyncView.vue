@@ -791,5 +791,4 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   color: var(--text-light);
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
 }
-
 </style>

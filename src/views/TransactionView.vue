@@ -4,7 +4,12 @@
     <TopNavigation>
       <template #left>
         <NavMenu />
-        <button class="nav-search-btn" @click="router.push('/transactions/search')" aria-label="搜尋" v-html="iconSearch"></button>
+        <button
+          class="nav-search-btn"
+          @click="router.push('/transactions/search')"
+          aria-label="搜尋"
+          v-html="iconSearch"
+        ></button>
       </template>
       <template #center>
         <div class="month-display" @click="showMonthPicker = true">

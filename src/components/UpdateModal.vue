@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
 
 interface Props {
-  show: boolean
+  show: boolean;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
-  update: []
-  close: []
-}>()
+  update: [];
+  close: [];
+}>();
 
 const handleUpdate = () => {
-  emit('update')
-}
+  emit("update");
+};
 
 const handleClose = () => {
-  emit('close')
-}
+  emit("close");
+};
 </script>
 
 <template>
@@ -32,12 +32,8 @@ const handleClose = () => {
           <p>是否立即更新？</p>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="handleClose">
-            稍後再說
-          </button>
-          <button class="btn-primary" @click="handleUpdate">
-            立即更新
-          </button>
+          <button class="btn-secondary" @click="handleClose">稍後再說</button>
+          <button class="btn-primary" @click="handleUpdate">立即更新</button>
         </div>
       </div>
     </div>
@@ -64,7 +60,9 @@ const handleClose = () => {
   border-radius: 12px;
   max-width: 400px;
   width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 

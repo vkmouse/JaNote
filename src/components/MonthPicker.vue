@@ -162,5 +162,4 @@ const confirm = () => {
   cursor: pointer;
   transition: background 0.2s;
 }
-
 </style>

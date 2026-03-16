@@ -195,5 +195,4 @@ watch(
   font-weight: 600;
   transition: opacity 0.2s;
 }
-
 </style>

@@ -2,166 +2,222 @@
   <div class="calc-section">
     <div class="calc-grid">
       <!-- Row 1 -->
-      <button v-for="key in calculatorKeys.slice(0, 3)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+      <button
+        v-for="key in calculatorKeys.slice(0, 3)"
+        :key="key"
+        class="calc-btn number-btn"
+        @click="handleCalcKey(key)"
+      >
         {{ key }}
       </button>
-      <button class="calc-btn function-btn" @click="handleCalcKey('÷')">÷</button>
-      <button class="calc-btn function-btn" @click="handleCalcKey('AC')">AC</button>
+      <button class="calc-btn function-btn" @click="handleCalcKey('÷')">
+        ÷
+      </button>
+      <button class="calc-btn function-btn" @click="handleCalcKey('AC')">
+        AC
+      </button>
 
       <!-- Row 2 -->
-      <button v-for="key in calculatorKeys.slice(4, 7)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+      <button
+        v-for="key in calculatorKeys.slice(4, 7)"
+        :key="key"
+        class="calc-btn number-btn"
+        @click="handleCalcKey(key)"
+      >
         {{ key }}
       </button>
-      <button class="calc-btn function-btn" @click="handleCalcKey('×')">×</button>
-      <button class="calc-btn function-btn" @click="handleCalcKey('←')">←</button>
+      <button class="calc-btn function-btn" @click="handleCalcKey('×')">
+        ×
+      </button>
+      <button class="calc-btn function-btn" @click="handleCalcKey('←')">
+        ←
+      </button>
 
       <!-- Row 3 -->
-      <button v-for="key in calculatorKeys.slice(8, 11)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+      <button
+        v-for="key in calculatorKeys.slice(8, 11)"
+        :key="key"
+        class="calc-btn number-btn"
+        @click="handleCalcKey(key)"
+      >
         {{ key }}
       </button>
-      <button class="calc-btn function-btn" @click="handleCalcKey('+')">+</button>
-      <button class="calc-btn confirm-btn" @click="emit('confirm')" :disabled="!canConfirm">確定</button>
+      <button class="calc-btn function-btn" @click="handleCalcKey('+')">
+        +
+      </button>
+      <button
+        class="calc-btn confirm-btn"
+        @click="emit('confirm')"
+        :disabled="!canConfirm"
+      >
+        確定
+      </button>
 
       <!-- Row 4 -->
-      <button v-for="key in calculatorKeys.slice(12, 15)" :key="key" class="calc-btn number-btn" @click="handleCalcKey(key)">
+      <button
+        v-for="key in calculatorKeys.slice(12, 15)"
+        :key="key"
+        class="calc-btn number-btn"
+        @click="handleCalcKey(key)"
+      >
         {{ key }}
       </button>
-      <button class="calc-btn function-btn" @click="handleCalcKey('=')">&#61;</button>
+      <button class="calc-btn function-btn" @click="handleCalcKey('=')">
+        &#61;
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 
-const props = withDefaults(defineProps<{ modelValue: string; canConfirm?: boolean }>(), {
-  canConfirm: false
-})
+const props = withDefaults(
+  defineProps<{ modelValue: string; canConfirm?: boolean }>(),
+  {
+    canConfirm: false,
+  },
+);
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-  (e: 'confirm'): void
-}>()
+  (e: "update:modelValue", value: string): void;
+  (e: "confirm"): void;
+}>();
 
 const calculatorKeys = [
-  '7', '8', '9', '÷',
-  '4', '5', '6', '×',
-  '1', '2', '3', '+',
-  '00', '0', '.', '=',
-]
+  "7",
+  "8",
+  "9",
+  "÷",
+  "4",
+  "5",
+  "6",
+  "×",
+  "1",
+  "2",
+  "3",
+  "+",
+  "00",
+  "0",
+  ".",
+  "=",
+];
 
 const amount = computed({
   get: () => props.modelValue,
-  set: (value: string) => emit('update:modelValue', value)
-})
+  set: (value: string) => emit("update:modelValue", value),
+});
 
 const handleCalcKey = (key: string) => {
-  if (key === 'AC') {
-    amount.value = ''
-    return
+  if (key === "AC") {
+    amount.value = "";
+    return;
   }
 
-  if (key === '←') {
-    amount.value = amount.value.slice(0, -1)
-    return
+  if (key === "←") {
+    amount.value = amount.value.slice(0, -1);
+    return;
   }
 
-  if (key === '=') {
+  if (key === "=") {
     try {
       const evaluateExpression = (input: string): number | null => {
-        if (!input) return null
-        const expr = input.replace(/÷/g, '/').replace(/×/g, '*')
+        if (!input) return null;
+        const expr = input.replace(/÷/g, "/").replace(/×/g, "*");
 
-        const tokens: string[] = []
-        let i = 0
+        const tokens: string[] = [];
+        let i = 0;
         while (i < expr.length) {
-          const ch = expr[i]
-          if (!ch) break
-          if (ch === ' ') { i++; continue }
+          const ch = expr[i];
+          if (!ch) break;
+          if (ch === " ") {
+            i++;
+            continue;
+          }
           if (/[0-9.]/.test(ch)) {
-            let num = ch
-            i++
+            let num = ch;
+            i++;
             while (i < expr.length) {
-              const nextCh = expr[i]
-              if (!nextCh || !/[0-9.]/.test(nextCh)) break
-              num += nextCh
-              i++
+              const nextCh = expr[i];
+              if (!nextCh || !/[0-9.]/.test(nextCh)) break;
+              num += nextCh;
+              i++;
             }
-            if ((num.match(/\./g) || []).length > 1) return null
-            tokens.push(num)
-            continue
+            if ((num.match(/\./g) || []).length > 1) return null;
+            tokens.push(num);
+            continue;
           }
           if (/[+\-*/]/.test(ch)) {
-            tokens.push(ch)
-            i++
-            continue
+            tokens.push(ch);
+            i++;
+            continue;
           }
-          return null
+          return null;
         }
 
-        if (tokens.length === 0) return null
+        if (tokens.length === 0) return null;
 
-        const prec: Record<string, number> = { '+': 1, '-': 1, '*': 2, '/': 2 }
-        const output: string[] = []
-        const ops: string[] = []
+        const prec: Record<string, number> = { "+": 1, "-": 1, "*": 2, "/": 2 };
+        const output: string[] = [];
+        const ops: string[] = [];
 
         for (let t of tokens) {
           if (/^[0-9.]+$/.test(t)) {
-            output.push(t)
+            output.push(t);
           } else if (/^[+\-*/]$/.test(t)) {
             while (ops.length > 0) {
-              const topOp = ops[ops.length - 1]
-              if (!topOp || (prec[topOp] ?? 0) < (prec[t] ?? 0)) break
-              output.push(ops.pop()!)
+              const topOp = ops[ops.length - 1];
+              if (!topOp || (prec[topOp] ?? 0) < (prec[t] ?? 0)) break;
+              output.push(ops.pop()!);
             }
-            ops.push(t)
+            ops.push(t);
           } else {
-            return null
+            return null;
           }
         }
-        while (ops.length > 0) output.push(ops.pop()!)
+        while (ops.length > 0) output.push(ops.pop()!);
 
-        const stack: number[] = []
+        const stack: number[] = [];
         for (let token of output) {
           if (/^[0-9.]+$/.test(token)) {
-            stack.push(parseFloat(token))
+            stack.push(parseFloat(token));
           } else {
-            if (stack.length < 2) return null
-            const b = stack.pop()!
-            const a = stack.pop()!
-            let res: number
-            if (token === '+') res = a + b
-            else if (token === '-') res = a - b
-            else if (token === '*') res = a * b
-            else if (token === '/') {
-              if (b === 0) return null
-              res = a / b
-            } else return null
-            stack.push(res)
+            if (stack.length < 2) return null;
+            const b = stack.pop()!;
+            const a = stack.pop()!;
+            let res: number;
+            if (token === "+") res = a + b;
+            else if (token === "-") res = a - b;
+            else if (token === "*") res = a * b;
+            else if (token === "/") {
+              if (b === 0) return null;
+              res = a / b;
+            } else return null;
+            stack.push(res);
           }
         }
-        if (stack.length !== 1) return null
-        return stack[0] ?? null
-      }
+        if (stack.length !== 1) return null;
+        return stack[0] ?? null;
+      };
 
-      const result = evaluateExpression(amount.value)
+      const result = evaluateExpression(amount.value);
       if (result === null || Number.isNaN(result)) {
         // Invalid expression, ignore
       } else {
-        amount.value = String(Math.round(result * 100) / 100)
+        amount.value = String(Math.round(result * 100) / 100);
       }
     } catch {
       // Invalid expression or other error, ignore
     }
-    return
+    return;
   }
 
-  if (key === '.' && amount.value.includes('.')) {
-    return
+  if (key === "." && amount.value.includes(".")) {
+    return;
   }
 
-  amount.value += key
-}
+  amount.value += key;
+};
 </script>
 
 <style scoped>
