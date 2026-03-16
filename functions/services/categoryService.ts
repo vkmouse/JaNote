@@ -23,6 +23,7 @@ export async function postCategory(
   const { payloadObject } = parsePayload(event.payload);
   const name = payloadObject?.name;
   const type = payloadObject?.type;
+  const sort_order = payloadObject?.sort_order;
   const payloadUserId = payloadObject?.user_id;
 
   // 驗證 event.base_version 必須為 0
@@ -69,7 +70,15 @@ export async function postCategory(
 
   // 實際執行資料庫更新
   const newVersion = 1;
-  await createCategory(event.entity_id, userId, name, type, newVersion, DB);
+  await createCategory(
+    event.entity_id,
+    userId,
+    name,
+    type,
+    sort_order,
+    newVersion,
+    DB,
+  );
 
   // 寫入 sync_events
   const syncPayload = JSON.stringify({
@@ -80,6 +89,7 @@ export async function postCategory(
       user_id: userId,
       name,
       type,
+      sort_order,
     }),
   });
   await insertSyncEvent(
@@ -105,6 +115,7 @@ export async function putCategory(
   const { payloadObject } = parsePayload(event.payload);
   const name = payloadObject?.name;
   const type = payloadObject?.type;
+  const sort_order = payloadObject?.sort_order;
   const payloadUserId = payloadObject?.user_id;
 
   // 驗證 event.payload.user_id 中的 user_id 是否與 Token 的相同
@@ -146,7 +157,15 @@ export async function putCategory(
 
   // 實際執行資料庫更新
   const newVersion = currentVersion + 1;
-  await updateCategory(event.entity_id, userId, name, type, newVersion, DB);
+  await updateCategory(
+    event.entity_id,
+    userId,
+    name,
+    type,
+    sort_order,
+    newVersion,
+    DB,
+  );
 
   // 寫入 sync_events
   const syncPayload = JSON.stringify({
@@ -157,6 +176,7 @@ export async function putCategory(
       user_id: userId,
       name,
       type,
+      sort_order,
     }),
   });
   await insertSyncEvent(

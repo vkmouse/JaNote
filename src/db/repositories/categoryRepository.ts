@@ -2,7 +2,8 @@ import { db } from "../index";
 import type { Category } from "../../types";
 
 async function getAll(): Promise<Category[]> {
-  return db.categories.toArray();
+  const all = await db.categories.toArray();
+  return all.sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 async function getById(id: string): Promise<Category | undefined> {

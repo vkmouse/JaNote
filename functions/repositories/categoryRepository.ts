@@ -30,13 +30,14 @@ export async function createCategory(
   userId: string,
   name: string,
   type: string,
+  sort_order: number,
   version: number,
   DB: D1Database,
 ): Promise<void> {
   await DB.prepare(
-    "INSERT INTO categories (id, user_id, name, type, version, is_deleted) VALUES (?, ?, ?, ?, ?, 0)",
+    "INSERT INTO categories (id, user_id, name, type, sort_order, version, is_deleted) VALUES (?, ?, ?, ?, ?, ?, 0)",
   )
-    .bind(id, userId, name, type, version)
+    .bind(id, userId, name, type, sort_order, version)
     .run();
 }
 
@@ -45,13 +46,14 @@ export async function updateCategory(
   userId: string,
   name: string,
   type: string,
+  sort_order: number,
   version: number,
   DB: D1Database,
 ): Promise<void> {
   await DB.prepare(
-    "UPDATE categories SET name = ?, type = ?, version = ?, is_deleted = 0 WHERE id = ? AND user_id = ?",
+    "UPDATE categories SET name = ?, type = ?, sort_order = ?, version = ?, is_deleted = 0 WHERE id = ? AND user_id = ?",
   )
-    .bind(name, type, version, id, userId)
+    .bind(name, type, sort_order, version, id, userId)
     .run();
 }
 
@@ -78,6 +80,7 @@ export async function initializeDefaultCategories(
     "晚餐",
     "飲品",
     "點心",
+    "酒類",
     "交通",
     "購物",
     "娛樂",
@@ -87,36 +90,52 @@ export async function initializeDefaultCategories(
     "社交",
     "禮物",
     "數位",
-    "其他",
     "貓咪",
     "旅行",
+    "其他",
   ];
-  const incomeCategories = ["薪水", "獎金", "利息", "股息", "投資", "其他"];
+  const incomeCategories = ["薪水", "獎金", "交易", "投資", "股息", "利息"];
 
   // Import syncEventRepository to avoid circular dependency
   const { insertSyncEvent } = await import("./syncEventRepository");
 
-  for (const name of expenseCategories) {
+  for (let i = 0; i < expenseCategories.length; i++) {
+    const name = expenseCategories[i];
+    const sort_order = i + 1;
     const id = crypto.randomUUID();
-    await createCategory(id, userId, name, "EXPENSE", 1, DB);
+    await createCategory(id, userId, name, "EXPENSE", sort_order, 1, DB);
 
     const payload = JSON.stringify({
       action: "POST",
       version: 1,
-      payload: JSON.stringify({ id, user_id: userId, name, type: "EXPENSE" }),
+      payload: JSON.stringify({
+        id,
+        user_id: userId,
+        name,
+        type: "EXPENSE",
+        sort_order,
+      }),
     });
 
     await insertSyncEvent(userId, crypto.randomUUID(), "CAT", id, payload, DB);
   }
 
-  for (const name of incomeCategories) {
+  for (let i = 0; i < incomeCategories.length; i++) {
+    const name = incomeCategories[i];
+    const sort_order = 101 + i;
     const id = crypto.randomUUID();
-    await createCategory(id, userId, name, "INCOME", 1, DB);
+    await createCategory(id, userId, name, "INCOME", sort_order, 1, DB);
 
     const payload = JSON.stringify({
       action: "POST",
       version: 1,
-      payload: JSON.stringify({ id, user_id: userId, name, type: "INCOME" }),
+      payload: JSON.stringify({
+        id,
+        user_id: userId,
+        name,
+        type: "INCOME",
+        sort_order,
+      }),
     });
 
     await insertSyncEvent(userId, crypto.randomUUID(), "CAT", id, payload, DB);
@@ -135,6 +154,7 @@ export async function createCategoriesTable(DB: D1Database): Promise<void> {
       user_id TEXT NOT NULL,
       name TEXT NOT NULL,
       type TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
       version INTEGER NOT NULL,
       is_deleted INTEGER NOT NULL DEFAULT 0
     )

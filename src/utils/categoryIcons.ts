@@ -42,9 +42,9 @@ const categoryIconMap: Record<string, string> = {
   社交: iconSocial,
   禮物: iconGift,
   數位: iconDeviceMobile,
-  其他: iconSquaresFour,
   貓咪: iconCat,
   旅行: iconPlane,
+  其他: iconSquaresFour,
 
   // Income categories
   薪水: iconMoney,

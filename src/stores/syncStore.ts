@@ -23,7 +23,12 @@ import type {
 
 function parsePayload(
   payload: string | null,
-): CategoryPayload | TransactionPayload | UserSharePayload | BudgetPayload | null {
+):
+  | CategoryPayload
+  | TransactionPayload
+  | UserSharePayload
+  | BudgetPayload
+  | null {
   if (!payload) return null;
   if (typeof payload === "string") {
     try {
@@ -47,6 +52,7 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
             user_id: "",
             name: "Unknown",
             type: "EXPENSE",
+            sortOrder: 0,
             version: event.version,
             is_deleted: 1,
           };
@@ -62,6 +68,7 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
       user_id: catPayload.user_id || "",
       name: catPayload.name || "Untitled",
       type: catPayload.type || "EXPENSE",
+      sortOrder: catPayload.sort_order,
       version: event.version,
       is_deleted: 0,
     });

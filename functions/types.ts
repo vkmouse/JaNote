@@ -78,6 +78,7 @@ export interface Category {
   user_id: string;
   name: string;
   type: string;
+  sort_order: number;
   version: number;
   is_deleted: number;
 }
