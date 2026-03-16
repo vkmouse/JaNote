@@ -37,10 +37,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-:deep(.capsule-btn:hover) {
-  background: #f0f0f0;
-}
-
 :deep(.capsule-btn:active) {
   transform: scale(0.91);
   background: #e8e8e8;
@@ -49,11 +45,6 @@
 :deep(.capsule-btn.add-btn) {
   background: var(--janote-action, #1a1a1a);
   color: #fff;
-}
-
-:deep(.capsule-btn.add-btn:hover) {
-  opacity: 0.88;
-  background: var(--janote-action, #1a1a1a);
 }
 
 :deep(.capsule-btn.add-btn:active) {

@@ -32,10 +32,6 @@ const handleMenuClick = () => {
   flex-shrink: 0;
 }
 
-.nav-btn:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .nav-btn:active {
   background: var(--bg-active, #e0e0e0);
 }

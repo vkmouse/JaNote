@@ -315,10 +315,6 @@ const handleConfirm = () => {
   transition: background 0.2s;
 }
 
-.close-btn:hover {
-  background: #f0f0f0;
-}
-
 .date-range-display {
   display: flex;
   align-items: center;
@@ -388,10 +384,6 @@ const handleConfirm = () => {
   justify-content: center;
 }
 
-.calendar-nav-btn:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .calendar-nav-btn:active {
   background: var(--bg-active, #e0e0e0);
 }
@@ -447,10 +439,6 @@ const handleConfirm = () => {
   user-select: none;
 }
 
-.calendar-day:hover:not(.selected-start):not(.selected-end) {
-  background: #f0f0f0;
-}
-
 .calendar-day.other-month {
   color: var(--text-disabled);
 }
@@ -489,17 +477,9 @@ const handleConfirm = () => {
   color: var(--text-primary);
 }
 
-.cancel-btn:hover {
-  background: #dee2e6;
-}
-
 .confirm-btn {
   background: var(--janote-action);
   color: var(--text-light);
-}
-
-.confirm-btn:hover:not(:disabled) {
-  opacity: 0.9;
 }
 
 .confirm-btn:disabled {

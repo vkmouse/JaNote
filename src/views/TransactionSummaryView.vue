@@ -412,10 +412,6 @@ watch(
   margin-left: 4px;
 }
 
-.nav-search-btn:hover {
-  background: #f0f0f0;
-}
-
 .nav-search-btn :deep(svg) {
   width: 20px;
   height: 20px;
@@ -423,10 +419,6 @@ watch(
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.month-display:hover {
-  opacity: 0.7;
 }
 
 .page-content {
@@ -458,11 +450,6 @@ watch(
   cursor: pointer;
   transition: all 0.2s;
   min-width: 38px;
-}
-
-.mode-btn:hover,
-.toggle-btn:hover {
-  background: #f0f0f0;
 }
 
 /* 月/年：active = 黑底白字 */

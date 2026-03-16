@@ -341,10 +341,6 @@ onMounted(async () => {
     border-color 0.2s;
 }
 
-.category-item:hover {
-  background: #f9f9f9;
-}
-
 .category-item.selected {
   background: #f0f0f0;
   border-color: var(--border-primary);

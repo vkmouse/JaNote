@@ -131,10 +131,6 @@ watch(
   justify-content: center;
 }
 
-.picker-controls button:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .picker-controls button:active {
   background: var(--bg-active, #e0e0e0);
 }
@@ -181,11 +177,6 @@ watch(
   transition: all 0.2s;
 }
 
-.year-btn:hover {
-  border-color: var(--janote-income);
-  background: var(--janote-income-light);
-}
-
 .year-btn.active {
   background: var(--janote-income);
   border-color: var(--janote-income);
@@ -205,7 +196,4 @@ watch(
   transition: opacity 0.2s;
 }
 
-.confirm-btn:hover {
-  opacity: 0.9;
-}
 </style>

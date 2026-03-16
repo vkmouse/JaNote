@@ -195,18 +195,10 @@ const handleCalcKey = (key: string) => {
   background: #ffffff;
 }
 
-.calc-btn.number-btn:hover {
-  background: #f8f9fa;
-}
-
 .calc-btn.function-btn {
   background: #e9ecef;
   color: var(--text-primary);
   font-weight: 700;
-}
-
-.calc-btn.function-btn:hover {
-  background: #dee2e6;
 }
 
 .calc-btn.confirm-btn {
@@ -221,11 +213,6 @@ const handleCalcKey = (key: string) => {
   justify-content: center;
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
   border: 2px solid var(--janote-action);
-}
-
-.calc-btn.confirm-btn:hover:not(:disabled) {
-  background: #ef4444;
-  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
 }
 
 .calc-btn.confirm-btn:active:not(:disabled) {

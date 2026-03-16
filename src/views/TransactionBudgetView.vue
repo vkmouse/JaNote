@@ -437,10 +437,6 @@ watch(
   transition: opacity 0.15s;
 }
 
-.month-display:hover {
-  opacity: 0.7;
-}
-
 .nav-search-btn {
   display: flex;
   align-items: center;
@@ -454,10 +450,6 @@ watch(
   cursor: pointer;
   transition: background 0.15s;
   margin-left: 4px;
-}
-
-.nav-search-btn:hover {
-  background: #f0f0f0;
 }
 
 .nav-search-btn :deep(svg) {
@@ -513,11 +505,6 @@ watch(
   cursor: pointer;
   transition: all 0.2s;
   min-width: 38px;
-}
-
-.mode-btn:hover,
-.toggle-btn:hover {
-  background: #f0f0f0;
 }
 
 .mode-btn.active {
@@ -733,10 +720,6 @@ watch(
   position: relative;
   background: var(--bg-page);
   transition: background 0.15s;
-}
-
-.budget-item:hover {
-  background: #f9f9f9;
 }
 
 .item-left {

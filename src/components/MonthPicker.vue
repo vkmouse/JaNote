@@ -98,10 +98,6 @@ const confirm = () => {
   justify-content: center;
 }
 
-.picker-controls button:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .picker-controls button:active {
   background: var(--bg-active, #e0e0e0);
 }
@@ -147,11 +143,6 @@ const confirm = () => {
   transition: all 0.2s;
 }
 
-.month-btn:hover {
-  border-color: var(--janote-income);
-  background: var(--janote-income-light);
-}
-
 .month-btn.active {
   background: var(--janote-income);
   border-color: var(--janote-income);
@@ -172,7 +163,4 @@ const confirm = () => {
   transition: background 0.2s;
 }
 
-.confirm-btn:hover {
-  background: #333;
-}
 </style>

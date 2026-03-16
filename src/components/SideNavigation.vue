@@ -140,10 +140,6 @@ const handleNavClick = () => {
   transition: background-color 0.2s;
 }
 
-.close-btn:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .close-btn:active {
   background: var(--bg-active, #e0e0e0);
 }
@@ -166,10 +162,6 @@ const handleNavClick = () => {
     background 0.2s ease,
     color 0.2s ease;
   text-decoration: none;
-}
-
-.nav-link:hover {
-  background: var(--janote-expense-light);
 }
 
 .nav-link.active {

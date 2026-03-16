@@ -25,8 +25,8 @@
             autocomplete="off"
           />
           <button
-            v-if="searchQuery"
             class="clear-btn"
+            :class="{ invisible: !searchQuery }"
             @click="clearSearch"
             aria-label="清除搜尋"
           >
@@ -279,13 +279,12 @@ onMounted(async () => {
 /* search-bar styling remains for use inside TopNavigation */
 
 .search-bar {
-  flex: 1;
+  width: 100%;
   height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  margin: 0 8px;
   background: var(--bg-card, #f5f5f5);
   border: 1.5px solid var(--border-primary);
   border-radius: 20px;
@@ -334,8 +333,9 @@ onMounted(async () => {
   transition: background 0.15s;
 }
 
-.clear-btn:hover {
-  background: var(--text-secondary, #888);
+.clear-btn.invisible {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* ── Page Content ── */
@@ -415,10 +415,6 @@ onMounted(async () => {
   cursor: pointer;
   position: relative;
   background: var(--bg-page);
-}
-
-.transaction-item:hover {
-  background: #f9f9f9;
 }
 
 .item-left {

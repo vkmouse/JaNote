@@ -62,6 +62,7 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  width: calc(100% - 140px);
   justify-content: center;
   min-width: 0;
   overflow: hidden;

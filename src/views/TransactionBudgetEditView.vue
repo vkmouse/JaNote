@@ -390,10 +390,6 @@ onMounted(async () => {
     border-color 0.2s;
 }
 
-.category-item:hover {
-  background: #f9f9f9;
-}
-
 .category-item.selected {
   background: #f0f0f0;
   border-color: var(--border-primary);
@@ -537,10 +533,6 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.date-control-btn:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .date-control-btn:active {
   background: var(--bg-active, #e0e0e0);
 }
@@ -557,10 +549,6 @@ onMounted(async () => {
   padding: 8px 12px;
   border-radius: 8px;
   transition: all 0.2s;
-}
-
-.date-info:hover {
-  background: #f8f9fa;
 }
 
 .date-text {

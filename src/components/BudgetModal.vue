@@ -348,10 +348,6 @@ function handleClose(): void {
   flex-shrink: 0;
 }
 
-.modal-close:hover {
-  background: #e0e0e0;
-}
-
 .modal-body {
   display: flex;
   flex-direction: column;
@@ -425,27 +421,14 @@ function handleClose(): void {
   color: #b91c1c;
 }
 
-.modal-delete-btn:hover {
-  background: var(--janote-action, #f87171);
-  color: var(--text-light);
-}
-
 .modal-cancel-btn {
   background: #f0f0f0;
   color: var(--text-primary);
 }
 
-.modal-cancel-btn:hover {
-  background: #e0e0e0;
-}
-
 .modal-save-btn {
   background: var(--text-primary);
   color: var(--text-light);
-}
-
-.modal-save-btn:hover {
-  opacity: 0.8;
 }
 
 /* ── Modal transition ── */
@@ -486,10 +469,6 @@ function handleClose(): void {
   cursor: pointer;
   min-height: 48px;
   transition: border-color 0.2s;
-}
-
-.category-select-trigger:hover {
-  border-color: var(--border-primary);
 }
 
 .select-preview {
@@ -551,10 +530,6 @@ function handleClose(): void {
   padding: 10px 14px;
   cursor: pointer;
   transition: background 0.15s;
-}
-
-.dropdown-item:hover {
-  background: #f9f9f9;
 }
 
 .dropdown-item.selected {

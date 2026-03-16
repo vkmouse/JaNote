@@ -493,10 +493,6 @@ onMounted(async () => {
   user-select: none;
 }
 
-.month-display:hover {
-  opacity: 0.7;
-}
-
 .nav-search-btn {
   display: flex;
   align-items: center;
@@ -510,10 +506,6 @@ onMounted(async () => {
   cursor: pointer;
   transition: background 0.15s;
   margin-left: 4px;
-}
-
-.nav-search-btn:hover {
-  background: #f0f0f0;
 }
 
 .nav-search-btn :deep(svg) {
@@ -612,10 +604,6 @@ onMounted(async () => {
   position: relative;
   background: var(--bg-page);
   z-index: 1;
-}
-
-.transaction-item:hover {
-  background: #f9f9f9;
 }
 
 .delete-btn {

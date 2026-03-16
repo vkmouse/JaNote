@@ -122,18 +122,9 @@ const handleClose = () => {
   border: 1px solid #d1d5db;
 }
 
-.btn-secondary:hover {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
-}
-
 .btn-primary {
   background-color: #3b82f6;
   color: white;
-}
-
-.btn-primary:hover {
-  background-color: #2563eb;
 }
 
 .btn-primary:active {

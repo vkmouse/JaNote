@@ -212,10 +212,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
   -webkit-tap-highlight-color: transparent;
 }
 
-.add-btn:hover {
-  opacity: 0.88;
-}
-
 .add-btn:active {
   transform: scale(0.91);
   opacity: 0.75;

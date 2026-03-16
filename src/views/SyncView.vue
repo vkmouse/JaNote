@@ -734,24 +734,12 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   box-shadow: 0 2px 6px rgba(255, 201, 82, 0.3);
 }
 
-.btn-accept:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(255, 201, 82, 0.4);
-}
-
 .btn-reject,
 .btn-cancel,
 .btn-remove {
   background: var(--janote-action);
   color: var(--text-light);
   box-shadow: 0 2px 6px rgba(248, 113, 113, 0.3);
-}
-
-.btn-reject:hover:not(:disabled),
-.btn-cancel:hover:not(:disabled),
-.btn-remove:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(248, 113, 113, 0.4);
 }
 
 .status-pending {
@@ -792,11 +780,6 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   box-shadow: 0 2px 8px rgba(255, 201, 82, 0.3);
 }
 
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 201, 82, 0.4);
-}
-
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -809,8 +792,4 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
 }
 
-.btn-danger:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
-}
 </style>

@@ -238,10 +238,6 @@ const isToday = (day: CalendarDay): boolean => {
   flex-shrink: 0;
 }
 
-.date-control-btn:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .date-control-btn:active {
   background: var(--bg-active, #e0e0e0);
 }
@@ -258,10 +254,6 @@ const isToday = (day: CalendarDay): boolean => {
   padding: 8px 12px;
   border-radius: 8px;
   transition: all 0.2s;
-}
-
-.date-info:hover {
-  background: #f8f9fa;
 }
 
 .date-text {
@@ -327,10 +319,6 @@ const isToday = (day: CalendarDay): boolean => {
   justify-content: center;
 }
 
-.calendar-nav-btn:hover {
-  background: var(--bg-hover, #f5f5f5);
-}
-
 .calendar-nav-btn:active {
   background: var(--bg-active, #e0e0e0);
 }
@@ -352,10 +340,6 @@ const isToday = (day: CalendarDay): boolean => {
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
-}
-
-.today-btn:hover {
-  opacity: 0.8;
 }
 
 .calendar-weekdays {
@@ -389,10 +373,6 @@ const isToday = (day: CalendarDay): boolean => {
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
-}
-
-.calendar-day:hover {
-  background: #f5f5f5;
 }
 
 .calendar-day.other-month {
