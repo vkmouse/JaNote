@@ -105,7 +105,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  padding: 0 16px calc(24px + env(safe-area-inset-bottom));
 }
 
 /* Tab capsule — 大膠囊用 padding: 4px 讓小膠囊與邊框保持距離 */

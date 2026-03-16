@@ -29,17 +29,11 @@
       <!-- Stats Section -->
       <div class="stats-section">
         <div class="summary-section">
-          <div
-            class="summary-item summary-item-left"
-            @click="router.push('/transactions/summary')"
-          >
+          <div class="summary-item summary-item-left">
             <div class="summary-label">月支出</div>
             <div class="summary-amount">${{ monthlyExpense.toLocaleString() }}</div>
           </div>
-          <div
-            class="summary-item summary-item-right"
-            @click="router.push('/transactions/summary')"
-          >
+          <div class="summary-item summary-item-right">
             <div class="summary-label">月收入</div>
             <div class="summary-amount">${{ monthlyIncome.toLocaleString() }}</div>
           </div>
@@ -573,7 +567,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   width: fit-content;
-  cursor: pointer;
 }
 
 .summary-item-left {
