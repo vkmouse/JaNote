@@ -291,11 +291,13 @@ watch(
       </div>
 
       <!-- 甜甜圈圖表 -->
-      <DonutChart
-        :centerLabel="centerLabel"
-        :centerBalance="centerBalance"
-        :slices="donutSlices"
-      />
+      <div class="chart-wrapper">
+        <DonutChart
+          :centerLabel="centerLabel"
+          :centerBalance="centerBalance"
+          :slices="donutSlices"
+        />
+      </div>
 
       <!-- 分類摘要列表 -->
       <div class="category-list">
@@ -494,9 +496,13 @@ watch(
   justify-content: flex-end;
 }
 
+.chart-wrapper {
+  padding: 0 16px 16px;
+}
+
 /* ── 分類列表 ── */
 .category-list {
-  padding: 16px;
+  padding: 0 16px;
 }
 
 .empty-state {

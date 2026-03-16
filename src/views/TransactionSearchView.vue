@@ -118,12 +118,6 @@
         </div>
       </div>
     </div>
-
-    <BottomTabBar
-      :show-add-button="true"
-      :add-disabled="isViewingShared"
-      @add="goToNewTransaction"
-    />
   </section>
 </template>
 
@@ -133,7 +127,6 @@ import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import NavAvatar from "../components/NavAvatar.vue";
-import BottomTabBar from "../components/BottomTabBar.vue";
 import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useUserStore } from "../stores/userStore";
@@ -157,10 +150,6 @@ const isViewingShared = computed(() => userStore.isViewingShared);
 const clearSearch = () => {
   searchQuery.value = "";
   nextTick(() => inputRef.value?.focus());
-};
-
-const goToNewTransaction = () => {
-  router.push("/transactions/new");
 };
 
 const editTransaction = (id: string) => {
@@ -342,7 +331,7 @@ onMounted(async () => {
 .page-content {
   flex: 1;
   background: var(--bg-page);
-  padding-bottom: 180px;
+  padding-bottom: 24px;
   overflow-y: auto;
 }
 
