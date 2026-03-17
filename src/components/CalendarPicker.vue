@@ -226,6 +226,12 @@ const isToday = (day: CalendarDay): boolean => {
   background: var(--bg-active, #e0e0e0);
 }
 
+.arrow-icon :deep(svg) {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .calendar-title {
   font-size: 16px;
   font-weight: 700;

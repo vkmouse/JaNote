@@ -176,7 +176,7 @@ async function saveBudget(): Promise<void> {
     name: resolvedName,
     type: transactionType.value,
     goal: parseFloat(amount.value),
-    month_key: `${selectedYear.value}-${selectedMonth.value}`,
+    month_key: `${selectedYear.value}${String(selectedMonth.value).padStart(2, "0")}`,
     category_ids: selectedCategoryIds.value.join(","),
   };
 
@@ -201,9 +201,10 @@ async function loadBudget(id: string): Promise<void> {
   selectedCategoryIds.value = budget.category_ids.split(",").filter(Boolean);
   budgetName.value = budget.name;
   amount.value = String(budget.goal);
-  const [yearStr, monthStr] = budget.month_key.split("-");
-  selectedYear.value = parseInt(yearStr ?? String(new Date().getFullYear()));
-  selectedMonth.value = parseInt(monthStr ?? String(new Date().getMonth() + 1));
+  const yearStr = budget.month_key.slice(0, 4);
+  const monthStr = budget.month_key.slice(4, 6);
+  selectedYear.value = parseInt(yearStr || String(new Date().getFullYear()));
+  selectedMonth.value = parseInt(monthStr || String(new Date().getMonth() + 1));
 }
 
 // ── Lifecycle ──────────────────────────────────────────────

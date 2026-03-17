@@ -149,6 +149,9 @@
               <div class="category-icon" v-html="getBudgetIcon(budget)"></div>
               <div class="category-info">
                 <div class="category-name">{{ budget.name }}</div>
+                <div class="month-key-label">
+                  {{ formatMonthKey(budget.month_key) }}
+                </div>
                 <div class="progress-row">
                   <div class="progress-bar-track">
                     <div
@@ -268,32 +271,37 @@ function openPicker(): void {
   else showDateRangePicker.value = true;
 }
 
-// ── Budget key for monthly lookup ─────────────────────────
+// ── Month key helpers ─────────────────────────────────────
 
-const currentMonthKey = computed(
-  () => `${selectedYear.value}-${selectedMonth.value}`,
-);
+function toMonthKey(year: number, month: number): string {
+  return `${year}${String(month).padStart(2, "0")}`;
+}
 
-// ── Filtered transactions (date range for actual amounts) ──
+function formatMonthKey(key: string): string {
+  const year = key.slice(0, 4);
+  const month = parseInt(key.slice(4, 6));
+  return `${year}年${month}月`;
+}
 
-const filteredTransactions = computed(() => {
-  return transactionStore.visibleTransactions.filter((t) => {
-    const date = new Date(t.date);
-    if (isNaN(date.getTime())) return false;
-    if (viewMode.value === "monthly") {
-      return (
-        date.getFullYear() === selectedYear.value &&
-        date.getMonth() + 1 === selectedMonth.value
-      );
-    } else if (viewMode.value === "yearly") {
-      return date.getFullYear() === selectedYear.value;
-    } else {
-      return (
-        date >= new Date(customStartDate.value) &&
-        date <= new Date(customEndDate.value)
-      );
-    }
-  });
+// ── Budget key range for filtering ────────────────────────
+
+const budgetKeyRange = computed(() => {
+  if (viewMode.value === "monthly") {
+    const key = toMonthKey(selectedYear.value, selectedMonth.value);
+    return { start: key, end: key };
+  } else if (viewMode.value === "yearly") {
+    return {
+      start: toMonthKey(selectedYear.value, 1),
+      end: toMonthKey(selectedYear.value, 12),
+    };
+  } else {
+    const s = new Date(customStartDate.value);
+    const e = new Date(customEndDate.value);
+    return {
+      start: toMonthKey(s.getFullYear(), s.getMonth() + 1),
+      end: toMonthKey(e.getFullYear(), e.getMonth() + 1),
+    };
+  }
 });
 
 // ── Category helpers ───────────────────────────────────────
@@ -309,19 +317,59 @@ function getBudgetIcon(budget: Budget): string {
 
 function getActualForBudget(budget: Budget): number {
   const ids = budget.category_ids.split(",").filter(Boolean);
-  return filteredTransactions.value
-    .filter((t) => t.type === budget.type && ids.includes(t.category_id))
+  const bKey = budget.month_key;
+  const bYear = parseInt(bKey.slice(0, 4));
+  const bMonth = parseInt(bKey.slice(4, 6));
+
+  let rangeStart: Date;
+  let rangeEnd: Date;
+
+  if (viewMode.value === "monthly" || viewMode.value === "yearly") {
+    rangeStart = new Date(bYear, bMonth - 1, 1, 0, 0, 0, 0);
+    rangeEnd = new Date(bYear, bMonth, 0, 23, 59, 59, 999);
+  } else {
+    const { start: startKey, end: endKey } = budgetKeyRange.value;
+    const customStart = new Date(customStartDate.value);
+    const customEnd = new Date(customEndDate.value);
+    if (bKey === startKey && bKey === endKey) {
+      rangeStart = customStart;
+      rangeEnd = customEnd;
+    } else if (bKey === startKey) {
+      rangeStart = customStart;
+      rangeEnd = new Date(bYear, bMonth, 0, 23, 59, 59, 999);
+    } else if (bKey === endKey) {
+      rangeStart = new Date(bYear, bMonth - 1, 1, 0, 0, 0, 0);
+      rangeEnd = customEnd;
+    } else {
+      rangeStart = new Date(bYear, bMonth - 1, 1, 0, 0, 0, 0);
+      rangeEnd = new Date(bYear, bMonth, 0, 23, 59, 59, 999);
+    }
+  }
+
+  return transactionStore.visibleTransactions
+    .filter((t) => {
+      const date = new Date(t.date);
+      if (isNaN(date.getTime())) return false;
+      return (
+        t.type === budget.type &&
+        ids.includes(t.category_id) &&
+        date >= rangeStart &&
+        date <= rangeEnd
+      );
+    })
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
 // ── Computed budgets with actual ───────────────────────────
 
-const currentBudgets = computed(() =>
-  budgetStore.visibleBudgets
+const currentBudgets = computed(() => {
+  const { start, end } = budgetKeyRange.value;
+  return budgetStore.visibleBudgets
     .filter(
       (b) =>
         b.type === transactionType.value &&
-        b.month_key === currentMonthKey.value,
+        b.month_key >= start &&
+        b.month_key <= end,
     )
     .map((b) => {
       const actual = getActualForBudget(b);
@@ -330,8 +378,8 @@ const currentBudgets = computed(() =>
         actual,
         percentage: b.goal > 0 ? (actual / b.goal) * 100 : 0,
       };
-    }),
-);
+    });
+});
 
 const totalGoal = computed(() =>
   currentBudgets.value.reduce((s, b) => s + b.goal, 0),
@@ -689,6 +737,13 @@ watch(
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.month-key-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-disabled);
+  letter-spacing: 0.03em;
 }
 
 .progress-row {

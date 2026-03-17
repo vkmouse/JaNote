@@ -395,6 +395,12 @@ const handleConfirm = () => {
   height: 20px;
 }
 
+.arrow-icon :deep(svg) {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .calendar-title {
   font-size: 16px;
   font-weight: 700;

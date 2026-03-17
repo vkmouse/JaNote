@@ -134,9 +134,10 @@ watch(
   background: var(--bg-active, #e0e0e0);
 }
 
-.picker-controls button svg {
-  width: 16px;
-  height: 16px;
+.picker-arrow :deep(svg) {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .picker-arrow {
