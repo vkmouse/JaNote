@@ -3,97 +3,51 @@
     <!-- Header -->
     <TopNavigation>
       <template #left><NavBack /></template>
+      <template #center>
+        <div class="date-display" @click="showCalendar = true">
+          <span>{{ formattedDate }}</span>
+        </div>
+      </template>
       <template #right>
         <div class="page-badge transaction-badge">
           <span class="page-badge-icon" v-html="DollarCircleIcon"></span>
-          <span class="page-badge-label">記帳</span>
-        </div>
-      </template>
-      <template #center>
-        <div class="type-toggle">
-          <button
-            :class="[
-              'toggle-btn',
-              {
-                active: transactionType === 'EXPENSE',
-                'expense-active': transactionType === 'EXPENSE',
-              },
-            ]"
-            @click="transactionType = 'EXPENSE'"
-          >
-            支出
-          </button>
-          <button
-            :class="[
-              'toggle-btn',
-              {
-                active: transactionType === 'INCOME',
-                'income-active': transactionType === 'INCOME',
-              },
-            ]"
-            @click="transactionType = 'INCOME'"
-          >
-            收入
-          </button>
+          <span class="page-badge-label">記賬</span>
         </div>
       </template>
     </TopNavigation>
 
     <!-- Main Content -->
     <div class="edit-content page">
+      <!-- Header Section -->
+      <div class="header-section">
+        <div class="left-controls">
+          <TypeToggle v-model="transactionType" />
+        </div>
+        <div class="right-controls">
+          <TypeToggle v-model="transactionType" />
+        </div>
+      </div>
+
       <!-- Categories Grid -->
       <div class="categories-section">
-        <div class="categories-grid">
-          <button
-            v-for="category in filteredCategories"
-            :key="category.id"
-            :class="[
-              'category-item',
-              { selected: selectedCategoryId === category.id },
-            ]"
-            @click="selectCategory(category)"
-          >
-            <div
-              class="category-icon-wrapper"
-              v-html="getCategoryIcon(category.name)"
-            ></div>
-            <span class="category-label">{{ category.name }}</span>
-          </button>
-        </div>
+        <CategoryGrid
+          :categories="filteredCategories"
+          v-model="selectedCategoryId"
+          @select="onCategorySelect"
+        />
       </div>
 
       <!-- Amount and Notes Input -->
-      <div class="input-section">
-        <div class="input-group">
-          <label class="label">
-            <div
-              class="category-icon-display"
-              v-html="selectedCategoryIcon"
-            ></div>
-            <span
-              :class="[
-                'amount-display',
-                {
-                  'amount-expense': transactionType === 'EXPENSE',
-                  'amount-income': transactionType === 'INCOME',
-                },
-              ]"
-              >{{ "$" + formattedAmount }}</span
-            >
-          </label>
-          <input
-            v-model="notes"
-            @input="onNotesInput"
-            type="text"
-            placeholder="備註"
-            class="notes-input"
-          />
-        </div>
-      </div>
+      <AmountInput
+        :icon="selectedCategoryIcon"
+        :formattedAmount="formattedAmount"
+        :type="transactionType"
+        v-model="notes"
+        placeholder="備註"
+      />
 
-      <!-- Date Picker & Calculator Panel -->
+      <!-- Calculator Panel -->
       <div class="input-panel">
-        <CalendarPicker v-model="currentDate" />
         <CalculatorPad
           v-model="amount"
           :canConfirm="canSave"
@@ -101,11 +55,13 @@
         />
       </div>
     </div>
+
+    <CalendarPicker v-model:open="showCalendar" v-model="currentDate" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
@@ -115,6 +71,9 @@ import type { Category, EntryType, Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useTransactionStore } from "../stores/transactionStore";
 import DollarCircleIcon from "../assets/icons/icon-dollar-circle.svg?raw";
+import TypeToggle from "../components/TypeToggle.vue";
+import CategoryGrid from "../components/CategoryGrid.vue";
+import AmountInput from "../components/AmountInput.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -125,11 +84,11 @@ const editingTransactionId = ref<string | null>(null);
 const editingTransaction = ref<Transaction | null>(null);
 const transactionType = ref<EntryType>("EXPENSE");
 const selectedCategoryId = ref<string>("");
-const selectedCategoryName = ref<string>("選擇分類");
 const amount = ref<string>("");
 const notes = ref<string>("");
 const previousAutoNote = ref<string | null>(null);
 const currentDate = ref<number>(Date.now());
+const showCalendar = ref(false);
 
 // Computed properties
 const filteredCategories = computed(() => {
@@ -158,9 +117,20 @@ const canSave = computed(() => {
 });
 
 const selectedCategoryIcon = computed(() => {
-  return selectedCategoryName.value && selectedCategoryName.value !== "選擇分類"
-    ? getCategoryIcon(selectedCategoryName.value)
-    : getCategoryIcon("其他");
+  const category = transactionStore.visibleCategories.find(
+    (c) => c.id === selectedCategoryId.value,
+  );
+  return getCategoryIcon(category?.name || "其他");
+});
+
+const formattedDate = computed(() => {
+  const date = new Date(currentDate.value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+  const weekDay = weekDays[date.getDay()];
+  return `${year}/${month}/${day} 星期${weekDay}`;
 });
 
 // Methods
@@ -179,14 +149,10 @@ const loadTransaction = async (id: string) => {
     notes.value = transaction.note || "";
     currentDate.value = transaction.date;
 
-    // Set category name
     const category = transactionStore.visibleCategories.find(
       (c) => c.id === transaction.category_id,
     );
     if (category) {
-      selectedCategoryName.value = category.name;
-      // If the loaded transaction's note is empty or equals the category name,
-      // treat it as an auto-inserted note so future category changes will replace it.
       if (!transaction.note || transaction.note === category.name) {
         previousAutoNote.value = category.name;
       } else {
@@ -196,25 +162,33 @@ const loadTransaction = async (id: string) => {
   }
 };
 
-const selectCategory = (category: Category) => {
-  selectedCategoryId.value = category.id;
-  selectedCategoryName.value = category.name;
-  // Only overwrite notes when it's empty or was previously auto-inserted
+const onCategorySelect = (category: Category) => {
   if (!notes.value || notes.value === previousAutoNote.value) {
     notes.value = category.name;
     previousAutoNote.value = category.name;
   } else {
-    // User has a custom note; stop treating notes as auto-inserted
     previousAutoNote.value = null;
   }
 };
 
-const onNotesInput = () => {
-  // If user changes the notes away from the previously auto-inserted value,
-  // clear the auto-note marker so future category changes won't overwrite.
-  if (previousAutoNote.value && notes.value !== previousAutoNote.value) {
+watch(notes, (newVal) => {
+  if (previousAutoNote.value && newVal !== previousAutoNote.value) {
     previousAutoNote.value = null;
   }
+});
+
+const previousDate = () => {
+  const date = new Date(currentDate.value);
+  date.setDate(date.getDate() - 1);
+  date.setHours(0, 0, 0, 0);
+  currentDate.value = date.getTime();
+};
+
+const nextDate = () => {
+  const date = new Date(currentDate.value);
+  date.setDate(date.getDate() + 1);
+  date.setHours(0, 0, 0, 0);
+  currentDate.value = date.getTime();
 };
 
 const saveTransaction = async () => {
@@ -265,44 +239,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* Type Toggle inside TopNavigation */
-.type-toggle {
-  display: flex;
-  background: #f5f5f5;
-  border-radius: 12px;
-  border: 2px solid var(--border-primary);
-}
-
-.toggle-btn {
-  padding: 4px 20px;
-  border: none;
-  background: var(--bg-page);
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--text-primary);
-  transition: all 0.2s;
-}
-
-.toggle-btn.active {
-  background: var(--text-primary);
-  color: var(--text-light);
-}
-
-/* Expense / Income specific active styles */
-.toggle-btn.expense-active {
-  background: var(--janote-expense);
-  color: var(--text-primary);
-  border-color: transparent;
-}
-
-.toggle-btn.income-active {
-  background: var(--janote-income);
-  color: var(--text-light);
-  border-color: transparent;
-}
-
 /* Main Content */
 .edit-content {
   flex: 1;
@@ -321,150 +257,45 @@ onMounted(async () => {
   border-bottom: 2px solid var(--border-primary);
 }
 
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-
-.category-item {
-  padding: 6px 4px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition:
-    background 0.2s,
-    border-color 0.2s;
-}
-
-.category-item.selected {
-  background: #f0f0f0;
-  border-color: var(--border-primary);
-}
-
-.category-item.selected .category-icon-wrapper {
-  position: relative;
-}
-
-.category-item.selected .category-icon-wrapper::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 8px;
-  height: 8px;
-  background: var(--border-primary);
-  border-radius: 50%;
-  border: 1.5px solid var(--bg-page);
-}
-
-.category-icon-wrapper {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.category-icon-wrapper :deep(svg) {
-  width: 24px;
-  height: 24px;
-  stroke: var(--text-primary);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.category-label {
-  font-size: 12px;
-  font-weight: 500;
-  text-align: center;
-  word-break: break-word;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-/* Input Section */
-.input-section {
-  flex-shrink: 0;
-  padding: 16px;
-  border-bottom: 2px solid var(--border-primary);
-}
-
-.input-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.label {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  flex: 0 0 auto;
-  min-width: 150px;
-}
-
-.category-icon-display {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.category-icon-display :deep(svg) {
-  width: 24px;
-  height: 24px;
-  stroke: var(--text-primary);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.amount-display {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-/* Amount color follows transaction type */
-.amount-display.amount-expense {
-  color: var(--text-primary);
-}
-
-.amount-display.amount-income {
-  color: var(--text-primary);
-}
-
-.notes-input {
-  flex: 1;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 8px;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.notes-input:focus {
-  border-color: var(--border-primary);
-}
-
-/* Input Panel - Unified Date Picker & Calculator Block (updated per request) */
+/* Input Panel */
 .input-panel {
   flex-shrink: 0;
   background: var(--janote-expense);
   margin: 0;
   border-radius: 0;
   padding: 16px;
+}
+
+/* Header Section */
+.header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.right-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Date display in TopNav */
+.date-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
 }
 
 /* Page badge */

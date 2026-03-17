@@ -1,21 +1,8 @@
 <template>
-  <div class="date-section">
-    <button class="date-control-btn" @click="previousDate">
-      <span v-html="ArrowLeftIcon" class="arrow-icon"></span>
-    </button>
-    <button class="date-info" @click="showCalendar = true">
-      <span v-html="CalendarIcon" class="date-icon"></span>
-      <span class="date-text">{{ formattedDate }}</span>
-    </button>
-    <button class="date-control-btn" @click="nextDate">
-      <span v-html="ArrowRightIcon" class="arrow-icon"></span>
-    </button>
-  </div>
-
   <div
-    v-if="showCalendar"
+    v-if="open"
     class="calendar-overlay"
-    @click="showCalendar = false"
+    @click="$emit('update:open', false)"
   >
     <div class="calendar-modal" @click.stop>
       <div class="calendar-header">
@@ -54,7 +41,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import CalendarIcon from "../assets/icons/icon-calendar.svg?raw";
 import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
 import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
 
@@ -66,10 +52,12 @@ interface CalendarDay {
   date: Date;
 }
 
-const props = defineProps<{ modelValue: number }>();
-const emit = defineEmits<{ (e: "update:modelValue", value: number): void }>();
+const props = defineProps<{ open: boolean; modelValue: number }>();
+const emit = defineEmits<{
+  (e: "update:open", value: boolean): void;
+  (e: "update:modelValue", value: number): void;
+}>();
 
-const showCalendar = ref(false);
 const calendarViewDate = ref(new Date(props.modelValue));
 const weekdays = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
 
@@ -81,16 +69,6 @@ watch(
     }
   },
 );
-
-const formattedDate = computed(() => {
-  const date = new Date(props.modelValue);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
-  const weekDay = weekDays[date.getDay()];
-  return `${year}/${month}/${day} 星期${weekDay}`;
-});
 
 const calendarYearMonth = computed(() => {
   const year = calendarViewDate.value.getFullYear();
@@ -158,18 +136,6 @@ const updateDate = (date: Date) => {
   calendarViewDate.value = new Date(date);
 };
 
-const previousDate = () => {
-  const date = new Date(props.modelValue);
-  date.setDate(date.getDate() - 1);
-  updateDate(date);
-};
-
-const nextDate = () => {
-  const date = new Date(props.modelValue);
-  date.setDate(date.getDate() + 1);
-  updateDate(date);
-};
-
 const previousMonth = () => {
   const newDate = new Date(calendarViewDate.value);
   newDate.setMonth(newDate.getMonth() - 1);
@@ -184,13 +150,13 @@ const nextMonth = () => {
 
 const selectToday = () => {
   updateDate(new Date());
-  showCalendar.value = false;
+  emit("update:open", false);
 };
 
 const selectDate = (day: CalendarDay) => {
   const selected = new Date(day.year, day.month, day.day);
   updateDate(selected);
-  showCalendar.value = false;
+  emit("update:open", false);
 };
 
 const isSelectedDate = (day: CalendarDay): boolean => {
@@ -213,68 +179,6 @@ const isToday = (day: CalendarDay): boolean => {
 </script>
 
 <style scoped>
-.date-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  background: #ffffff;
-  border-radius: 8px;
-  border: 2px solid var(--border-primary);
-}
-
-.date-control-btn {
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  color: var(--text-primary, #333);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.date-control-btn:active {
-  background: var(--bg-active, #e0e0e0);
-}
-
-.date-info {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex: 1;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.date-text {
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: 16px;
-  white-space: nowrap;
-}
-
-.date-icon {
-  color: #000;
-}
-
-.arrow-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-}
-
 .calendar-overlay {
   position: fixed;
   top: 0;

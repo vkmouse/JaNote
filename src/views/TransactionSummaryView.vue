@@ -10,6 +10,8 @@ import DateRangePicker from "../components/DateRangePicker.vue";
 import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
 import type { EntryType } from "../types";
+import ViewModeToggle from "../components/ViewModeToggle.vue";
+import TypeToggle from "../components/TypeToggle.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import iconSearch from "../assets/icons/icon-search.svg?raw";
 import { useUserStore } from "../stores/userStore";
@@ -239,54 +241,10 @@ watch(
       <!-- 右：支出/收入 toggle，靠右 -->
       <div class="header-section">
         <div class="left-controls">
-          <div class="view-mode-toggle">
-            <button
-              :class="['mode-btn', { active: viewMode === 'monthly' }]"
-              @click="viewMode = 'monthly'"
-            >
-              月
-            </button>
-            <button
-              :class="['mode-btn', { active: viewMode === 'yearly' }]"
-              @click="viewMode = 'yearly'"
-            >
-              年
-            </button>
-            <button
-              :class="['mode-btn', { active: viewMode === 'custom' }]"
-              @click="viewMode = 'custom'"
-            >
-              自訂
-            </button>
-          </div>
+          <ViewModeToggle v-model="viewMode" />
         </div>
         <div class="right-controls">
-          <div class="type-toggle">
-            <button
-              :class="[
-                'toggle-btn',
-                {
-                  active: transactionType === 'EXPENSE',
-                  'expense-active': transactionType === 'EXPENSE',
-                },
-              ]"
-              @click="transactionType = 'EXPENSE'"
-            >
-              支出
-            </button>
-            <button
-              :class="[
-                'toggle-btn',
-                {
-                  active: transactionType === 'INCOME',
-                  'income-active': transactionType === 'INCOME',
-                },
-              ]"
-              @click="transactionType = 'INCOME'"
-            >
-              收入
-            </button>
-          </div>
+          <TypeToggle v-model="transactionType" />
         </div>
       </div>
 
@@ -432,48 +390,6 @@ watch(
   flex: 1;
   background: var(--bg-page);
   padding-bottom: 100px;
-}
-
-/* ── 共用 toggle 尺寸規格 ── */
-.view-mode-toggle,
-.type-toggle {
-  display: flex;
-  gap: 2px;
-  border: 2px solid var(--border-primary);
-  border-radius: 20px;
-  padding: 2px;
-  background: var(--bg-page);
-}
-
-.mode-btn,
-.toggle-btn {
-  padding: 4px 14px;
-  border: none;
-  border-radius: 16px;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 38px;
-}
-
-/* 月/年：active = 黑底白字 */
-.mode-btn.active {
-  background: var(--text-primary);
-  color: var(--text-light);
-}
-
-/* 支出/收入：active 保留各自用色 */
-.toggle-btn.expense-active {
-  background: var(--janote-expense);
-  color: var(--text-primary);
-}
-
-.toggle-btn.income-active {
-  background: var(--janote-income);
-  color: var(--text-light);
 }
 
 /* ── 月份 / 年份切換列 ── */
