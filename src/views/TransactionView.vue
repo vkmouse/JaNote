@@ -328,18 +328,6 @@ const goToNewTransaction = () => {
   router.push("/transactions/new");
 };
 
-const goToSearch = () => {
-  router.push("/transactions/search");
-};
-
-const goToSummary = () => {
-  router.push("/transactions/summary");
-};
-
-const goToBudget = () => {
-  router.push("/budget");
-};
-
 const editTransaction = (id: string) => {
   if (isViewingShared.value) return;
   router.push(`/transaction/${id}/edit`);

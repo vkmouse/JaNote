@@ -170,7 +170,6 @@ const centerBalance = computed(() => {
 
 const goToSearch = () => router.push("/transactions/search");
 const goToNewTransaction = () => router.push("/transactions/new");
-const goToBudget = () => router.push("/budget");
 
 const getCategoryIconSvg = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find(

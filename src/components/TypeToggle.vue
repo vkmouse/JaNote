@@ -1,41 +1,52 @@
 <script setup lang="ts">
-import type { EntryType } from "../types";
+withDefaults(
+  defineProps<{
+    modelValue: any;
+    leftLabel?: string;
+    rightLabel?: string;
+    leftValue?: any;
+    rightValue?: any;
+  }>(),
+  {
+    leftLabel: "支出",
+    rightLabel: "收入",
+    leftValue: "EXPENSE",
+    rightValue: "INCOME",
+  },
+);
 
-defineProps<{ modelValue: EntryType }>();
-defineEmits<{ "update:modelValue": [value: EntryType] }>();
+defineEmits<{ "update:modelValue": [value: any] }>();
 </script>
 
 <template>
-  <div class="type-toggle">
+  <div class="state-toggle">
     <button
       :class="[
         'toggle-btn',
         {
-          active: modelValue === 'EXPENSE',
-          'expense-active': modelValue === 'EXPENSE',
+          active: modelValue === leftValue,
         },
       ]"
-      @click="$emit('update:modelValue', 'EXPENSE')"
+      @click="$emit('update:modelValue', leftValue)"
     >
-      支出
+      {{ leftLabel }}
     </button>
     <button
       :class="[
         'toggle-btn',
         {
-          active: modelValue === 'INCOME',
-          'income-active': modelValue === 'INCOME',
+          active: modelValue === rightValue,
         },
       ]"
-      @click="$emit('update:modelValue', 'INCOME')"
+      @click="$emit('update:modelValue', rightValue)"
     >
-      收入
+      {{ rightLabel }}
     </button>
   </div>
 </template>
 
 <style scoped>
-.type-toggle {
+.state-toggle {
   display: flex;
   gap: 2px;
   border: 2px solid var(--border-primary);
@@ -57,12 +68,12 @@ defineEmits<{ "update:modelValue": [value: EntryType] }>();
   min-width: 38px;
 }
 
-.toggle-btn.expense-active {
+.toggle-btn:first-child.active {
   background: var(--janote-expense);
   color: var(--text-primary);
 }
 
-.toggle-btn.income-active {
+.toggle-btn:last-child.active {
   background: var(--janote-income);
   color: var(--text-light);
 }

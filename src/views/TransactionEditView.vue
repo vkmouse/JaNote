@@ -8,12 +8,6 @@
           <span>{{ formattedDate }}</span>
         </div>
       </template>
-      <template #right>
-        <div class="page-badge transaction-badge">
-          <span class="page-badge-icon" v-html="DollarCircleIcon"></span>
-          <span class="page-badge-label">記賬</span>
-        </div>
-      </template>
     </TopNavigation>
 
     <!-- Main Content -->
@@ -21,7 +15,13 @@
       <!-- Header Section -->
       <div class="header-section">
         <div class="left-controls">
-          <TypeToggle v-model="transactionType" />
+          <button
+            class="page-badge transaction-badge"
+            @click="router.replace('/transactions/budget/new')"
+          >
+            <span class="page-badge-icon" v-html="DollarCircleIcon"></span>
+            <span class="page-badge-label">記帳</span>
+          </button>
         </div>
         <div class="right-controls">
           <TypeToggle v-model="transactionType" />
@@ -130,7 +130,7 @@ const formattedDate = computed(() => {
   const day = String(date.getDate()).padStart(2, "0");
   const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
   const weekDay = weekDays[date.getDay()];
-  return `${year}/${month}/${day} 星期${weekDay}`;
+  return `${year}年${month}月${day} 星期${weekDay}`;
 });
 
 // Methods
@@ -215,7 +215,7 @@ const saveTransaction = async () => {
     });
   }
 
-  router.push("/transactions");
+  router.replace("/transactions");
 };
 
 // Lifecycle
@@ -309,6 +309,8 @@ onMounted(async () => {
   font-size: 13px;
   border: 2px solid;
   white-space: nowrap;
+  cursor: pointer;
+  background: none;
 }
 
 .transaction-badge {

@@ -252,8 +252,8 @@ const handleCalcKey = (key: string) => {
 }
 
 .calc-btn.function-btn {
-  background: #e9ecef;
-  color: var(--text-primary);
+  background: var(--janote-income);
+  color: var(--text-light);
   font-weight: 700;
 }
 
@@ -268,7 +268,7 @@ const handleCalcKey = (key: string) => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
-  border: 2px solid var(--janote-action);
+  border: 2px solid var(--border-primary);
 }
 
 .calc-btn.confirm-btn:active:not(:disabled) {
@@ -280,6 +280,5 @@ const handleCalcKey = (key: string) => {
   color: #adb5bd;
   cursor: not-allowed;
   box-shadow: none;
-  border: 2px solid #e9ecef;
 }
 </style>

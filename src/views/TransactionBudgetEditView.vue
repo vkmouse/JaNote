@@ -8,12 +8,6 @@
           <span>{{ selectedYear }}年{{ selectedMonth }}月</span>
         </div>
       </template>
-      <template #right>
-        <div class="page-badge budget-badge">
-          <span class="page-badge-icon" v-html="PiggyBankIcon"></span>
-          <span class="page-badge-label">預算</span>
-        </div>
-      </template>
     </TopNavigation>
 
     <!-- Main Content -->
@@ -21,7 +15,13 @@
       <!-- Header Section -->
       <div class="header-section">
         <div class="left-controls">
-          <TypeToggle v-model="transactionType" />
+          <button
+            class="page-badge budget-badge"
+            @click="router.replace('/transactions/new')"
+          >
+            <span class="page-badge-icon" v-html="PiggyBankIcon"></span>
+            <span class="page-badge-label">預算</span>
+          </button>
         </div>
         <div class="right-controls">
           <TypeToggle v-model="transactionType" />
@@ -186,7 +186,7 @@ async function saveBudget(): Promise<void> {
     await budgetStore.addBudget(payload);
   }
 
-  router.push("/transactions/budget");
+  router.replace("/transactions/budget");
 }
 
 // ── Load existing budget ───────────────────────────────────
@@ -307,6 +307,8 @@ onMounted(async () => {
   font-size: 13px;
   border: 2px solid;
   white-space: nowrap;
+  cursor: pointer;
+  background: none;
 }
 
 .budget-badge {
