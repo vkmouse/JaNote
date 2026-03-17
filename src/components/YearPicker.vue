@@ -4,11 +4,11 @@
       <h3>選擇年份</h3>
       <div class="picker-controls">
         <button @click="previousDecade">
-          <span v-html="ArrowLeftIcon" class="picker-arrow"></span>
+          <span v-html="iconChevronLeft" class="picker-arrow"></span>
         </button>
         <span class="picker-range">{{ startYear }} - {{ endYear }}</span>
         <button @click="nextDecade">
-          <span v-html="ArrowRightIcon" class="picker-arrow"></span>
+          <span v-html="iconChevronRight" class="picker-arrow"></span>
         </button>
       </div>
       <div class="year-grid">
@@ -28,8 +28,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
-import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
+import { iconChevronLeft, iconChevronRight } from "../utils/icons";
 
 const props = defineProps<{ open: boolean; year: number }>();
 const emit = defineEmits<{

@@ -214,7 +214,7 @@ import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import iconSearch from "../assets/icons/icon-search.svg?raw";
+import { iconSearch } from "../utils/icons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";

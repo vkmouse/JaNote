@@ -1,28 +1,30 @@
 // Category Icon Mapping
-import iconBowlSteam from "../assets/icons/new/icon-bowl-steam.svg?raw";
-import iconBread from "../assets/icons/new/icon-bread.svg?raw";
-import iconBus from "../assets/icons/new/icon-bus.svg?raw";
-import iconCat from "../assets/icons/new/icon-cat.svg?raw";
-import iconChartLineUp from "../assets/icons/new/icon-chart-line-up.svg?raw";
-import iconChartNoAxesColumnIncreasing from "../assets/icons/new/icon-chart-no-axes-column-increasing.svg?raw";
-import iconCoffee from "../assets/icons/new/icon-coffee.svg?raw";
-import iconCoin from "../assets/icons/new/icon-coin.svg?raw";
-import iconCookie from "../assets/icons/new/icon-cookie.svg?raw";
-import iconDeviceMobile from "../assets/icons/new/icon-device-mobile.svg?raw";
-import iconGameController from "../assets/icons/new/icon-game-controller.svg?raw";
-import iconGift from "../assets/icons/new/icon-gift.svg?raw";
-import iconHandshake from "../assets/icons/new/icon-handshake.svg?raw";
-import iconHospital from "../assets/icons/new/icon-hospital.svg?raw";
-import iconHouseLine from "../assets/icons/new/icon-house-line.svg?raw";
-import iconMoney from "../assets/icons/new/icon-money.svg?raw";
-import iconPiggyBank from "../assets/icons/new/icon-piggy-bank.svg?raw";
-import iconPlane from "../assets/icons/new/icon-plane.svg?raw";
-import iconShoppingBag from "../assets/icons/new/icon-shopping-bag.svg?raw";
-import iconShoppingCart from "../assets/icons/new/icon-shopping-cart.svg?raw";
-import iconSocial from "../assets/icons/icon-social.svg?raw";
-import iconSquaresFour from "../assets/icons/new/icon-squares-four.svg?raw";
-import iconUtensils from "../assets/icons/new/icon-utensils.svg?raw";
-import iconWine from "../assets/icons/new/icon-wine.svg?raw";
+import {
+  iconBowlSteam,
+  iconBread,
+  iconBus,
+  iconCat,
+  iconChartLineUp,
+  iconChartNoAxesColumnIncreasing,
+  iconCoffee,
+  iconCoin,
+  iconCookie,
+  iconDeviceMobile,
+  iconGameController,
+  iconGift,
+  iconHandshake,
+  iconHospital,
+  iconHouseLine,
+  iconMoney,
+  iconPiggyBank,
+  iconPlane,
+  iconShoppingBag,
+  iconShoppingCart,
+  iconSocial,
+  iconSquaresFour,
+  iconUtensils,
+  iconWine,
+} from "./icons";
 
 // Category name to icon mapping
 const categoryIconMap: Record<string, string> = {

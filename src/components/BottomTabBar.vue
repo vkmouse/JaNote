@@ -44,9 +44,7 @@
 import { inject } from "vue";
 import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import iconDollarCircle from "../assets/icons/icon-dollar-circle.svg?raw";
-import iconPieChart from "../assets/icons/icon-pie-chart.svg?raw";
-import iconPiggyBank from "../assets/icons/new/icon-piggy-bank.svg?raw";
+import { iconDollarCircle, iconPieChart, iconPiggyBank } from "../utils/icons";
 
 defineProps<{
   showAddButton?: boolean;

@@ -7,11 +7,11 @@
     <div class="calendar-modal" @click.stop>
       <div class="calendar-header">
         <button class="calendar-nav-btn" @click="previousMonth">
-          <span v-html="ArrowLeftIcon" class="arrow-icon"></span>
+          <span v-html="iconChevronLeft" class="arrow-icon"></span>
         </button>
         <span class="calendar-title">{{ calendarYearMonth }}</span>
         <button class="calendar-nav-btn" @click="nextMonth">
-          <span v-html="ArrowRightIcon" class="arrow-icon"></span>
+          <span v-html="iconChevronRight" class="arrow-icon"></span>
         </button>
         <button class="today-btn" @click="selectToday">今日</button>
       </div>
@@ -41,8 +41,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
-import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
+import { iconChevronLeft, iconChevronRight } from "../utils/icons";
 
 interface CalendarDay {
   day: number;

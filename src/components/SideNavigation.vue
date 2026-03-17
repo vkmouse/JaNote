@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import DollarCircleIcon from "../assets/icons/icon-dollar-circle.svg?raw";
+import { iconDollarCircle } from "../utils/icons";
 
 interface Props {
   isOpen?: boolean;
@@ -17,7 +17,7 @@ const emit = defineEmits<{
 const route = useRoute();
 
 const navItems = [
-  { to: "/transactions", label: "記帳管理", icon: DollarCircleIcon },
+  { to: "/transactions", label: "記帳管理", icon: iconDollarCircle },
 ];
 
 const isActive = (path: string) => route.path.startsWith(path);

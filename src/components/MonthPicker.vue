@@ -4,11 +4,11 @@
       <h3>選擇年月</h3>
       <div class="picker-controls">
         <button @click="emit('update:year', year - 1)">
-          <span v-html="ArrowLeftIcon" class="picker-arrow"></span>
+          <span v-html="iconChevronLeft" class="picker-arrow"></span>
         </button>
         <span class="picker-year">{{ year }}</span>
         <button @click="emit('update:year', year + 1)">
-          <span v-html="ArrowRightIcon" class="picker-arrow"></span>
+          <span v-html="iconChevronRight" class="picker-arrow"></span>
         </button>
       </div>
       <div class="month-grid">
@@ -27,8 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
-import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
+import { iconChevronLeft, iconChevronRight } from "../utils/icons";
 
 const props = defineProps<{ open: boolean; year: number; month: number }>();
 const emit = defineEmits<{

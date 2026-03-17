@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject } from "vue";
-import MenuIcon from "../assets/icons/icon-menu.svg?raw";
+import { iconBars3 } from "../utils/icons";
 
 // ── 注入側邊欄打開方法 ────────────────────────────────────────
 const openSideDrawer = inject<() => void>("openSideDrawer");
@@ -13,7 +13,7 @@ const handleMenuClick = () => {
 
 <template>
   <button class="nav-btn" @click="handleMenuClick" aria-label="選單">
-    <span v-html="MenuIcon" class="icon"></span>
+    <span v-html="iconBars3" class="icon"></span>
   </button>
 </template>
 

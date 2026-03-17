@@ -31,11 +31,15 @@
         <div class="summary-section">
           <div class="summary-item summary-item-left">
             <div class="summary-label">月支出</div>
-            <div class="summary-amount">${{ monthlyExpense.toLocaleString() }}</div>
+            <div class="summary-amount">
+              ${{ monthlyExpense.toLocaleString() }}
+            </div>
           </div>
           <div class="summary-item summary-item-right">
             <div class="summary-label">月收入</div>
-            <div class="summary-amount">${{ monthlyIncome.toLocaleString() }}</div>
+            <div class="summary-amount">
+              ${{ monthlyIncome.toLocaleString() }}
+            </div>
           </div>
         </div>
         <div class="chart-section">
@@ -170,7 +174,7 @@ import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
 import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import iconSearch from "../assets/icons/icon-search.svg?raw";
+import { iconSearch } from "../utils/icons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import BottomTabBar from "../components/BottomTabBar.vue";

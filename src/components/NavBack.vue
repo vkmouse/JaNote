@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
+import { iconChevronLeft } from "../utils/icons";
 
 interface Props {
   onBack?: () => void;
@@ -18,7 +18,7 @@ const handleBackClick = () => {
 
 <template>
   <button class="nav-btn" @click="handleBackClick" aria-label="返回">
-    <span v-html="ArrowLeftIcon" class="icon"></span>
+    <span v-html="iconChevronLeft" class="icon"></span>
   </button>
 </template>
 

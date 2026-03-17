@@ -19,7 +19,7 @@
             class="page-badge transaction-badge"
             @click="router.replace('/transactions/budget/new')"
           >
-            <span class="page-badge-icon" v-html="DollarCircleIcon"></span>
+            <span class="page-badge-icon" v-html="iconDollarCircle"></span>
             <span class="page-badge-label">記帳</span>
           </button>
         </div>
@@ -70,7 +70,7 @@ import CalculatorPad from "../components/CalculatorPad.vue";
 import type { Category, EntryType, Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useTransactionStore } from "../stores/transactionStore";
-import DollarCircleIcon from "../assets/icons/icon-dollar-circle.svg?raw";
+import { iconDollarCircle } from "../utils/icons";
 import TypeToggle from "../components/TypeToggle.vue";
 import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";

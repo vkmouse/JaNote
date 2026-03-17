@@ -23,11 +23,11 @@
       <div class="calendar-container">
         <div class="calendar-header">
           <button class="calendar-nav-btn" @click="previousMonth">
-            <span v-html="ArrowLeftIcon" class="arrow-icon"></span>
+            <span v-html="iconChevronLeft" class="arrow-icon"></span>
           </button>
           <span class="calendar-title">{{ calendarYearMonth }}</span>
           <button class="calendar-nav-btn" @click="nextMonth">
-            <span v-html="ArrowRightIcon" class="arrow-icon"></span>
+            <span v-html="iconChevronRight" class="arrow-icon"></span>
           </button>
         </div>
         <div class="calendar-weekdays">
@@ -71,8 +71,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import ArrowLeftIcon from "../assets/icons/icon-arrow-left.svg?raw";
-import ArrowRightIcon from "../assets/icons/icon-arrow-right.svg?raw";
+import { iconChevronLeft, iconChevronRight } from "../utils/icons";
 
 interface CalendarDay {
   day: number;

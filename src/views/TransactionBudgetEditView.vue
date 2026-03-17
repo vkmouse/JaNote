@@ -19,7 +19,7 @@
             class="page-badge budget-badge"
             @click="router.replace('/transactions/new')"
           >
-            <span class="page-badge-icon" v-html="PiggyBankIcon"></span>
+            <span class="page-badge-icon" v-html="iconPiggyBank"></span>
             <span class="page-badge-label">預算</span>
           </button>
         </div>
@@ -76,7 +76,7 @@ import type { Category, EntryType } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
-import PiggyBankIcon from "../assets/icons/new/icon-piggy-bank.svg?raw";
+import { iconPiggyBank } from "../utils/icons";
 import TypeToggle from "../components/TypeToggle.vue";
 import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";

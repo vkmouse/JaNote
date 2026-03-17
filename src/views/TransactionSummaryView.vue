@@ -13,7 +13,7 @@ import type { EntryType } from "../types";
 import ViewModeToggle from "../components/ViewModeToggle.vue";
 import TypeToggle from "../components/TypeToggle.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import iconSearch from "../assets/icons/icon-search.svg?raw";
+import { iconSearch } from "../utils/icons";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import BottomTabBar from "../components/BottomTabBar.vue";
