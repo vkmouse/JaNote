@@ -246,7 +246,7 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
     DB,
   );
 
-  // 同時拉取共享使用者的事件（僅 CAT 與 TXN）
+  // 同時拉取共享使用者的事件（CAT、TXN 與 BGT）
   // 包括：發送者分享給我的 + 我分享給接收者的
   const sharedPullResults = await getPullEventsForSharedUsers(
     sharedUserIds,
