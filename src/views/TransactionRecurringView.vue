@@ -29,8 +29,8 @@
           <div
             v-for="(item, index) in filteredRecurringTransactions"
             :key="item.id"
-            class="list-item"
-            @click="router.push(`/transactions/recurring/${item.id}/edit`)"
+            :class="['list-item', { 'list-item--readonly': isViewingShared }]"
+            @click="!isViewingShared && router.push(`/transactions/recurring/${item.id}/edit`)"
           >
             <div class="item-icon" v-html="getCategoryIconById(item.category_id)" />
             <div class="item-body">
@@ -47,7 +47,8 @@
                 <input
                   type="checkbox"
                   :checked="item.is_active === 1"
-                  @change="recurringStore.toggleRecurringTransactionActive(item.id)"
+                  :disabled="isViewingShared"
+                  @change="!isViewingShared && recurringStore.toggleRecurringTransactionActive(item.id)"
                 />
                 <span class="toggle-slider" />
               </label>
@@ -69,8 +70,8 @@
           <div
             v-for="(item, index) in filteredRecurringBudgets"
             :key="item.id"
-            class="list-item"
-            @click="router.push(`/transactions/budget/recurring/${item.id}/edit`)"
+            :class="['list-item', { 'list-item--readonly': isViewingShared }]"
+            @click="!isViewingShared && router.push(`/transactions/budget/recurring/${item.id}/edit`)"
           >
             <div class="item-icon" v-html="getBudgetIcon(item.category_ids)" />
             <div class="item-body">
@@ -85,7 +86,8 @@
                 <input
                   type="checkbox"
                   :checked="item.is_active === 1"
-                  @change="recurringStore.toggleRecurringBudgetActive(item.id)"
+                  :disabled="isViewingShared"
+                  @change="!isViewingShared && recurringStore.toggleRecurringBudgetActive(item.id)"
                 />
                 <span class="toggle-slider" />
               </label>
@@ -101,6 +103,7 @@
 
     <BottomTabBar
       :show-add-button="true"
+      :add-disabled="isViewingShared"
       @add="router.push(viewMode === 'BUDGET' ? '/transactions/budget/recurring/new' : '/transactions/recurring/new')"
     />
   </section>
@@ -118,11 +121,15 @@ import { getCategoryIcon } from "../utils/categoryIcons";
 import { formatRecurrence, parseRecurrenceDays } from "../utils/recurrence";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useRecurringStore } from "../stores/recurringStore";
+import { useUserStore } from "../stores/userStore";
 import type { EntryType } from "../types";
 
 const router = useRouter();
 const transactionStore = useTransactionStore();
 const recurringStore = useRecurringStore();
+const userStore = useUserStore();
+
+const isViewingShared = computed(() => userStore.isViewingShared);
 
 // ── State ──────────────────────────────────────────────────
 const viewMode = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
@@ -216,6 +223,10 @@ onMounted(async () => {
   padding: 12px 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.list-item--readonly {
+  cursor: default;
 }
 
 .item-icon {
@@ -334,6 +345,15 @@ onMounted(async () => {
 
 .toggle-switch input:checked + .toggle-slider::before {
   transform: translateY(-50%) translateX(20px);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-switch:has(input:disabled) {
+  cursor: not-allowed;
 }
 
 /* Empty state */

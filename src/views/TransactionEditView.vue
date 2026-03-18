@@ -105,6 +105,7 @@ import { formatRecurrence, parseRecurrenceDays } from "../utils/recurrence";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
 import { useRecurringStore } from "../stores/recurringStore";
+import { useUserStore } from "../stores/userStore";
 import { iconDollarCircle, iconPiggyBank, iconTag } from "../utils/icons";
 
 const router = useRouter();
@@ -112,6 +113,7 @@ const route = useRoute();
 const transactionStore = useTransactionStore();
 const budgetStore = useBudgetStore();
 const recurringStore = useRecurringStore();
+const userStore = useUserStore();
 
 // ── Mode detection ─────────────────────────────────────────
 const isBudget = computed(() => route.path.includes("/budget"));
@@ -429,6 +431,12 @@ async function loadRecurringBudget(id: string) {
 
 // ── Lifecycle ──────────────────────────────────────────────
 onMounted(async () => {
+  // Shared viewers cannot create or edit recurring items
+  if (userStore.isViewingShared && isRecurring.value) {
+    router.replace("/transactions/recurring");
+    return;
+  }
+
   await transactionStore.loadCategories();
 
   const id = route.params.id as string | undefined;
