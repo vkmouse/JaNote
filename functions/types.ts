@@ -34,8 +34,10 @@ export interface ServiceContext {
  * - TXN: Transaction
  * - SHR: User Share
  * - BGT: Budget
+ * - RTXN: Recurring Transaction
+ * - RBGT: Recurring Budget
  */
-export type EntityType = "CAT" | "TXN" | "SHR" | "BGT";
+export type EntityType = "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
 
 /**
  * Supported action types for sync operations
@@ -103,6 +105,32 @@ export interface Budget {
   goal: number;
   month_key: string;
   category_ids: string;
+  version: number;
+  is_deleted: number;
+}
+
+export interface RecurringTransaction {
+  id: string;
+  user_id: string;
+  category_id: string;
+  type: string;
+  amount: number;
+  note: string | null;
+  recurrence_type: "MONTHLY" | "WEEKLY";
+  recurrence_days: string;
+  is_active: number;
+  version: number;
+  is_deleted: number;
+}
+
+export interface RecurringBudget {
+  id: string;
+  user_id: string;
+  name: string;
+  type: string;
+  goal: number;
+  category_ids: string;
+  is_active: number;
   version: number;
   is_deleted: number;
 }

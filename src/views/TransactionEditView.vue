@@ -1,11 +1,24 @@
 <template>
-  <div class="transaction-edit-page">
+  <div class="edit-page">
     <!-- Header -->
     <TopNavigation>
       <template #left><NavBack /></template>
       <template #center>
-        <div class="date-display" @click="showCalendar = true">
+        <!-- Transaction (non-recurring): date picker -->
+        <div v-if="!isBudget && !isRecurring" class="date-display" @click="showCalendar = true">
           <span>{{ formattedDate }}</span>
+        </div>
+        <!-- Transaction recurring: recurrence picker -->
+        <div v-else-if="!isBudget && isRecurring" class="recurrence-display" @click="showRecurrencePicker = true">
+          <span>{{ formattedRecurrence }}</span>
+        </div>
+        <!-- Budget (non-recurring): month picker -->
+        <div v-else-if="isBudget && !isRecurring" class="month-display" @click="showMonthPicker = true">
+          <span>{{ selectedYear }}年{{ selectedMonth }}月</span>
+        </div>
+        <!-- Budget recurring: static -->
+        <div v-else class="recurrence-display">
+          <span>每月1日</span>
         </div>
       </template>
     </TopNavigation>
@@ -15,12 +28,21 @@
       <!-- Header Section -->
       <div class="header-section">
         <div class="left-controls">
+          <!-- Main mode badge: 記帳 / 預算 -->
           <button
-            class="page-badge transaction-badge"
-            @click="router.replace('/transactions/budget/new')"
+            :class="['page-badge', isBudget ? 'budget-badge' : 'transaction-badge']"
+            @click="toggleMode"
           >
-            <span class="page-badge-icon" v-html="iconDollarCircle"></span>
-            <span class="page-badge-label">記帳</span>
+            <span class="page-badge-icon" v-html="isBudget ? iconPiggyBank : iconDollarCircle"></span>
+            <span class="page-badge-label">{{ isBudget ? '預算' : '記帳' }}</span>
+          </button>
+          <!-- Fixed badge: active / inactive -->
+          <button
+            :class="['page-badge', isRecurring ? 'recurring-badge-active' : 'recurring-badge-inactive']"
+            @click="toggleRecurring"
+          >
+            <span class="page-badge-icon" v-html="iconTag"></span>
+            <span class="page-badge-label">固定</span>
           </button>
         </div>
         <div class="right-controls">
@@ -32,18 +54,21 @@
       <div class="categories-section">
         <CategoryGrid
           :categories="filteredCategories"
-          v-model="selectedCategoryId"
+          :multiple="isBudget"
+          :modelValue="isBudget ? selectedCategoryIds : selectedCategoryId"
+          @update:modelValue="handleCategoryUpdate"
           @select="onCategorySelect"
         />
       </div>
 
-      <!-- Amount and Notes Input -->
+      <!-- Amount and Notes / Budget Name Input -->
       <AmountInput
-        :icon="selectedCategoryIcon"
+        :icon="displayIcon"
         :formattedAmount="formattedAmount"
         :type="transactionType"
-        v-model="notes"
-        placeholder="備註"
+        :modelValue="isBudget ? budgetName : notes"
+        @update:modelValue="handleTextUpdate"
+        :placeholder="isBudget ? '預算名稱' : '備註'"
       />
 
       <!-- Calculator Panel -->
@@ -51,12 +76,14 @@
         <CalculatorPad
           v-model="amount"
           :canConfirm="canSave"
-          @confirm="saveTransaction"
+          @confirm="save"
         />
       </div>
     </div>
 
-    <CalendarPicker v-model:open="showCalendar" v-model="currentDate" />
+    <CalendarPicker v-if="!isBudget && !isRecurring" v-model:open="showCalendar" v-model="currentDate" />
+    <MonthPicker v-if="isBudget && !isRecurring" v-model:open="showMonthPicker" v-model:year="selectedYear" v-model:month="selectedMonth" />
+    <RecurrencePicker v-if="!isBudget && isRecurring" v-model:open="showRecurrencePicker" v-model:recurrenceType="recurrenceType" v-model:recurrenceDays="recurrenceDays" />
   </div>
 </template>
 
@@ -66,40 +93,61 @@ import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import CalendarPicker from "../components/CalendarPicker.vue";
+import MonthPicker from "../components/MonthPicker.vue";
+import RecurrencePicker from "../components/RecurrencePicker.vue";
 import CalculatorPad from "../components/CalculatorPad.vue";
-import type { Category, EntryType, Transaction } from "../types";
-import { getCategoryIcon } from "../utils/categoryIcons";
-import { useTransactionStore } from "../stores/transactionStore";
-import { iconDollarCircle } from "../utils/icons";
-import TypeToggle from "../components/TypeToggle.vue";
 import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";
+import TypeToggle from "../components/TypeToggle.vue";
+import type { Category, EntryType } from "../types";
+import { getCategoryIcon } from "../utils/categoryIcons";
+import { formatRecurrence, parseRecurrenceDays } from "../utils/recurrence";
+import { useTransactionStore } from "../stores/transactionStore";
+import { useBudgetStore } from "../stores/budgetStore";
+import { useRecurringStore } from "../stores/recurringStore";
+import { iconDollarCircle, iconPiggyBank, iconTag } from "../utils/icons";
 
 const router = useRouter();
 const route = useRoute();
 const transactionStore = useTransactionStore();
+const budgetStore = useBudgetStore();
+const recurringStore = useRecurringStore();
 
-// State
-const editingTransactionId = ref<string | null>(null);
-const editingTransaction = ref<Transaction | null>(null);
+// ── Mode detection ─────────────────────────────────────────
+const isBudget = computed(() => route.path.includes("/budget"));
+const isRecurring = computed(() => route.path.includes("/recurring"));
+
+// ── Shared state ───────────────────────────────────────────
+const editingId = ref<string | null>(null);
 const transactionType = ref<EntryType>("EXPENSE");
-const selectedCategoryId = ref<string>("");
 const amount = ref<string>("");
+
+// ── Transaction mode state ─────────────────────────────────
+const selectedCategoryId = ref<string>("");
 const notes = ref<string>("");
 const previousAutoNote = ref<string | null>(null);
 const currentDate = ref<number>(Date.now());
 const showCalendar = ref(false);
 
-// Computed properties
-const filteredCategories = computed(() => {
-  return transactionStore.visibleCategories.filter(
-    (cat) => cat.type === transactionType.value,
-  );
-});
+// ── Budget mode state ──────────────────────────────────────
+const selectedCategoryIds = ref<string[]>([]);
+const budgetName = ref<string>("");
+const selectedYear = ref(new Date().getFullYear());
+const selectedMonth = ref(new Date().getMonth() + 1);
+const showMonthPicker = ref(false);
+
+// ── Recurring mode state ───────────────────────────────────
+const recurrenceType = ref<"MONTHLY" | "WEEKLY">("MONTHLY");
+const recurrenceDays = ref<number[]>([1]);
+const showRecurrencePicker = ref(false);
+
+// ── Computed ───────────────────────────────────────────────
+const filteredCategories = computed(() =>
+  transactionStore.visibleCategories.filter((cat) => cat.type === transactionType.value),
+);
 
 const formattedAmount = computed(() => {
   const num = amount.value || "0";
-  // Add comma separators for numbers
   if (/^[0-9.]+$/.test(num)) {
     const parts = num.split(".");
     parts[0] = parts[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -109,18 +157,33 @@ const formattedAmount = computed(() => {
 });
 
 const canSave = computed(() => {
-  return !!(
-    selectedCategoryId.value &&
-    amount.value &&
-    parseFloat(amount.value) > 0
-  );
+  if (isBudget.value) {
+    const resolvedName =
+      selectedCategoryIds.value.length === 1
+        ? getCategoryNameById(selectedCategoryIds.value[0]!)
+        : budgetName.value.trim();
+    return !!(
+      selectedCategoryIds.value.length > 0 &&
+      resolvedName &&
+      amount.value &&
+      parseFloat(amount.value) > 0
+    );
+  }
+  return !!(selectedCategoryId.value && amount.value && parseFloat(amount.value) > 0);
 });
 
-const selectedCategoryIcon = computed(() => {
-  const category = transactionStore.visibleCategories.find(
-    (c) => c.id === selectedCategoryId.value,
-  );
-  return getCategoryIcon(category?.name || "其他");
+const displayIcon = computed(() => {
+  if (isBudget.value) {
+    if (selectedCategoryIds.value.length === 1) {
+      const cat = transactionStore.visibleCategories.find(
+        (c) => c.id === selectedCategoryIds.value[0],
+      );
+      return getCategoryIcon(cat?.name ?? "其他");
+    }
+    return getCategoryIcon("其他");
+  }
+  const cat = transactionStore.visibleCategories.find((c) => c.id === selectedCategoryId.value);
+  return getCategoryIcon(cat?.name || "其他");
 });
 
 const formattedDate = computed(() => {
@@ -133,41 +196,49 @@ const formattedDate = computed(() => {
   return `${year}年${month}月${day} 星期${weekDay}`;
 });
 
-// Methods
-const loadCategories = async () => {
-  await transactionStore.loadCategories();
-};
+const formattedRecurrence = computed(() =>
+  formatRecurrence(recurrenceType.value, recurrenceDays.value),
+);
 
-const loadTransaction = async (id: string) => {
-  const transaction = await transactionStore.getTransactionById(id);
-  if (transaction) {
-    editingTransactionId.value = id;
-    editingTransaction.value = transaction;
-    transactionType.value = transaction.type;
-    selectedCategoryId.value = transaction.category_id;
-    amount.value = String(transaction.amount);
-    notes.value = transaction.note || "";
-    currentDate.value = transaction.date;
+// ── Helpers ────────────────────────────────────────────────
+function getCategoryNameById(id: string): string {
+  return transactionStore.visibleCategories.find((c) => c.id === id)?.name ?? "未知分類";
+}
 
-    const category = transactionStore.visibleCategories.find(
-      (c) => c.id === transaction.category_id,
-    );
-    if (category) {
-      if (!transaction.note || transaction.note === category.name) {
-        previousAutoNote.value = category.name;
-      } else {
-        previousAutoNote.value = null;
-      }
-    }
-  }
-};
-
-const onCategorySelect = (category: Category) => {
-  if (!notes.value || notes.value === previousAutoNote.value) {
-    notes.value = category.name;
-    previousAutoNote.value = category.name;
+// ── Event handlers ─────────────────────────────────────────
+function handleCategoryUpdate(v: string | string[]) {
+  if (isBudget.value) {
+    selectedCategoryIds.value = v as string[];
   } else {
-    previousAutoNote.value = null;
+    selectedCategoryId.value = v as string;
+  }
+}
+
+function handleTextUpdate(v: string) {
+  if (isBudget.value) {
+    budgetName.value = v;
+  } else {
+    notes.value = v;
+  }
+}
+
+const onCategorySelect = (category: Category, _selected?: boolean) => {
+  if (isBudget.value) {
+    const ids = selectedCategoryIds.value;
+    if (ids.length === 0) {
+      budgetName.value = "";
+    } else if (ids.length === 1) {
+      budgetName.value = getCategoryNameById(ids[0]!);
+    } else {
+      budgetName.value = "";
+    }
+  } else {
+    if (!notes.value || notes.value === previousAutoNote.value) {
+      notes.value = category.name;
+      previousAutoNote.value = category.name;
+    } else {
+      previousAutoNote.value = null;
+    }
   }
 };
 
@@ -177,28 +248,51 @@ watch(notes, (newVal) => {
   }
 });
 
-const previousDate = () => {
-  const date = new Date(currentDate.value);
-  date.setDate(date.getDate() - 1);
-  date.setHours(0, 0, 0, 0);
-  currentDate.value = date.getTime();
-};
+// ── Badge navigation ───────────────────────────────────────
+// Clicking 記帳/預算 badge → toggle mode, keep recurring state
+function toggleMode() {
+  if (!isBudget.value && !isRecurring.value) {
+    router.replace("/transactions/budget/new");
+  } else if (!isBudget.value && isRecurring.value) {
+    router.replace("/transactions/budget/recurring/new");
+  } else if (isBudget.value && !isRecurring.value) {
+    router.replace("/transactions/new");
+  } else {
+    router.replace("/transactions/recurring/new");
+  }
+}
 
-const nextDate = () => {
-  const date = new Date(currentDate.value);
-  date.setDate(date.getDate() + 1);
-  date.setHours(0, 0, 0, 0);
-  currentDate.value = date.getTime();
-};
+// Clicking 固定 badge → toggle recurring, keep mode
+function toggleRecurring() {
+  if (!isBudget.value && !isRecurring.value) {
+    router.replace("/transactions/recurring/new");
+  } else if (!isBudget.value && isRecurring.value) {
+    router.replace("/transactions/new");
+  } else if (isBudget.value && !isRecurring.value) {
+    router.replace("/transactions/budget/recurring/new");
+  } else {
+    router.replace("/transactions/budget/new");
+  }
+}
 
-const saveTransaction = async () => {
+// ── Save ───────────────────────────────────────────────────
+async function save() {
   if (!canSave.value) return;
+  if (!isBudget.value && !isRecurring.value) {
+    await saveTransaction();
+  } else if (!isBudget.value && isRecurring.value) {
+    await saveRecurringTransaction();
+  } else if (isBudget.value && !isRecurring.value) {
+    await saveBudget();
+  } else {
+    await saveRecurringBudget();
+  }
+}
 
-  const isEditing = !!editingTransactionId.value;
-
-  if (isEditing) {
+async function saveTransaction() {
+  if (editingId.value) {
     await transactionStore.updateTransaction({
-      id: editingTransactionId.value!,
+      id: editingId.value,
       category_id: selectedCategoryId.value,
       type: transactionType.value,
       amount: parseFloat(amount.value),
@@ -214,24 +308,156 @@ const saveTransaction = async () => {
       date: currentDate.value,
     });
   }
-
   router.replace("/transactions");
-};
+}
 
-// Lifecycle
+async function saveBudget() {
+  const resolvedName =
+    selectedCategoryIds.value.length === 1
+      ? getCategoryNameById(selectedCategoryIds.value[0]!)
+      : budgetName.value.trim();
+  const payload = {
+    name: resolvedName,
+    type: transactionType.value,
+    goal: parseFloat(amount.value),
+    month_key: `${selectedYear.value}${String(selectedMonth.value).padStart(2, "0")}`,
+    category_ids: selectedCategoryIds.value.join(","),
+  };
+  if (editingId.value) {
+    await budgetStore.updateBudget({ id: editingId.value, ...payload });
+  } else {
+    await budgetStore.addBudget(payload);
+  }
+  router.replace("/transactions/budget");
+}
+
+async function saveRecurringTransaction() {
+  if (editingId.value) {
+    await recurringStore.updateRecurringTransaction({
+      id: editingId.value,
+      category_id: selectedCategoryId.value,
+      type: transactionType.value,
+      amount: parseFloat(amount.value),
+      note: notes.value,
+      recurrence_type: recurrenceType.value,
+      recurrence_days: recurrenceDays.value,
+    });
+  } else {
+    await recurringStore.addRecurringTransaction({
+      category_id: selectedCategoryId.value,
+      type: transactionType.value,
+      amount: parseFloat(amount.value),
+      note: notes.value,
+      recurrence_type: recurrenceType.value,
+      recurrence_days: recurrenceDays.value,
+    });
+  }
+  router.replace("/transactions/recurring");
+}
+
+async function saveRecurringBudget() {
+  const resolvedName =
+    selectedCategoryIds.value.length === 1
+      ? getCategoryNameById(selectedCategoryIds.value[0]!)
+      : budgetName.value.trim();
+  const payload = {
+    name: resolvedName,
+    type: transactionType.value,
+    goal: parseFloat(amount.value),
+    category_ids: selectedCategoryIds.value.join(","),
+  };
+  if (editingId.value) {
+    await recurringStore.updateRecurringBudget({ id: editingId.value, ...payload });
+  } else {
+    await recurringStore.addRecurringBudget(payload);
+  }
+  router.replace("/transactions/recurring");
+}
+
+// ── Load existing ──────────────────────────────────────────
+async function loadTransaction(id: string) {
+  const transaction = await transactionStore.getTransactionById(id);
+  if (!transaction) return;
+  editingId.value = id;
+  transactionType.value = transaction.type;
+  selectedCategoryId.value = transaction.category_id;
+  amount.value = String(transaction.amount);
+  notes.value = transaction.note || "";
+  currentDate.value = transaction.date;
+  const cat = transactionStore.visibleCategories.find((c) => c.id === transaction.category_id);
+  if (cat) {
+    previousAutoNote.value = !transaction.note || transaction.note === cat.name ? cat.name : null;
+  }
+}
+
+async function loadBudget(id: string) {
+  await budgetStore.loadBudgets();
+  const budget = budgetStore.visibleBudgets.find((b) => b.id === id);
+  if (!budget) return;
+  editingId.value = id;
+  transactionType.value = budget.type;
+  selectedCategoryIds.value = budget.category_ids.split(",").filter(Boolean);
+  budgetName.value = budget.name;
+  amount.value = String(budget.goal);
+  selectedYear.value = parseInt(budget.month_key.slice(0, 4) || String(new Date().getFullYear()));
+  selectedMonth.value = parseInt(budget.month_key.slice(4, 6) || String(new Date().getMonth() + 1));
+}
+
+async function loadRecurringTransaction(id: string) {
+  await recurringStore.loadRecurringTransactions();
+  const item = recurringStore.visibleRecurringTransactions.find((t) => t.id === id);
+  if (!item) return;
+  editingId.value = id;
+  transactionType.value = item.type;
+  selectedCategoryId.value = item.category_id;
+  amount.value = String(item.amount);
+  notes.value = item.note;
+  recurrenceType.value = item.recurrence_type;
+  recurrenceDays.value = parseRecurrenceDays(item.recurrence_days);
+}
+
+async function loadRecurringBudget(id: string) {
+  await recurringStore.loadRecurringBudgets();
+  const item = recurringStore.visibleRecurringBudgets.find((b) => b.id === id);
+  if (!item) return;
+  editingId.value = id;
+  transactionType.value = item.type;
+  selectedCategoryIds.value = item.category_ids.split(",").filter(Boolean);
+  budgetName.value = item.name;
+  amount.value = String(item.goal);
+}
+
+// ── Lifecycle ──────────────────────────────────────────────
 onMounted(async () => {
-  await loadCategories();
+  await transactionStore.loadCategories();
 
-  // Check if we're editing an existing transaction
-  const transactionId = route.params.id as string;
-  if (transactionId) {
-    await loadTransaction(transactionId);
+  const id = route.params.id as string | undefined;
+  if (id) {
+    if (!isBudget.value && !isRecurring.value) {
+      await loadTransaction(id);
+    } else if (!isBudget.value && isRecurring.value) {
+      await loadRecurringTransaction(id);
+    } else if (isBudget.value && !isRecurring.value) {
+      await loadBudget(id);
+    } else {
+      await loadRecurringBudget(id);
+    }
+  } else if (isBudget.value && !isRecurring.value) {
+    // Apply state passed from BudgetView via history.state
+    const state = window.history.state as
+      | { type?: string; year?: number; month?: number }
+      | undefined;
+    if (state?.type === "EXPENSE" || state?.type === "INCOME") {
+      transactionType.value = state.type as EntryType;
+    }
+    if (state?.year) selectedYear.value = state.year;
+    if (state?.month) selectedMonth.value = state.month;
   }
 });
 </script>
 
 <style scoped>
-.transaction-edit-page {
+.edit-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -239,7 +465,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* Main Content */
 .edit-content {
   flex: 1;
   display: flex;
@@ -248,7 +473,6 @@ onMounted(async () => {
   min-height: 0;
 }
 
-/* Categories Section */
 .categories-section {
   flex: 1 1 auto;
   min-height: 0;
@@ -257,7 +481,6 @@ onMounted(async () => {
   border-bottom: 2px solid var(--border-primary);
 }
 
-/* Input Panel */
 .input-panel {
   flex-shrink: 0;
   background: var(--janote-expense);
@@ -266,7 +489,6 @@ onMounted(async () => {
   padding: 16px;
 }
 
-/* Header Section */
 .header-section {
   display: flex;
   align-items: center;
@@ -277,7 +499,7 @@ onMounted(async () => {
 .left-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  gap: 6px;
 }
 
 .right-controls {
@@ -286,82 +508,29 @@ onMounted(async () => {
   justify-content: flex-end;
 }
 
-/* Date display in TopNav */
-.date-display {
+.date-display,
+.month-display,
+.recurrence-display {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
-  cursor: pointer;
   user-select: none;
 }
 
-/* Page badge */
-.page-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px 4px 6px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 13px;
-  border: 2px solid;
-  white-space: nowrap;
+.date-display,
+.month-display {
   cursor: pointer;
-  background: none;
 }
 
-.transaction-badge {
-  background: var(--janote-expense-light);
-  color: var(--text-primary);
-  border-color: var(--janote-expense);
+.recurrence-display {
+  cursor: pointer;
 }
 
-.page-badge-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-}
-
-.page-badge-icon :deep(svg) {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.page-badge-label {
-  line-height: 1;
-}
-
-.back-icon {
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Scrollbar styling */
-.categories-section::-webkit-scrollbar {
-  width: 4px;
-}
-
-.categories-section::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.categories-section::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 2px;
-}
-
-.categories-section::-webkit-scrollbar-thumb:hover {
-  background: var(--text-disabled);
-}
+.categories-section::-webkit-scrollbar { width: 4px; }
+.categories-section::-webkit-scrollbar-track { background: transparent; }
+.categories-section::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+.categories-section::-webkit-scrollbar-thumb:hover { background: var(--text-disabled); }
 </style>

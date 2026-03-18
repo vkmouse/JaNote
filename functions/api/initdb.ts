@@ -20,6 +20,14 @@ import {
   createBudgetsTable,
 } from "../repositories/budgetRepository";
 import {
+  dropRecurringTransactionsTable,
+  createRecurringTransactionsTable,
+} from "../repositories/recurringTransactionRepository";
+import {
+  dropRecurringBudgetsTable,
+  createRecurringBudgetsTable,
+} from "../repositories/recurringBudgetRepository";
+import {
   dropSyncEventsTable,
   createSyncEventsTable,
 } from "../repositories/syncEventRepository";
@@ -30,6 +38,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   try {
     // Drop existing tables to ensure clean state
     await dropSyncEventsTable(DB);
+    await dropRecurringBudgetsTable(DB);
+    await dropRecurringTransactionsTable(DB);
     await dropBudgetsTable(DB);
     await dropTransactionsTable(DB);
     await dropCategoriesTable(DB);
@@ -42,6 +52,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     await createTransactionsTable(DB);
     await createUserSharesTable(DB);
     await createBudgetsTable(DB);
+    await createRecurringTransactionsTable(DB);
+    await createRecurringBudgetsTable(DB);
     await createSyncEventsTable(DB);
 
     return new Response(

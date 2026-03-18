@@ -6,6 +6,8 @@ import { categoryRepository } from "../db/repositories/categoryRepository";
 import { transactionRepository } from "../db/repositories/transactionRepository";
 import { userShareRepository } from "../db/repositories/userShareRepository";
 import { budgetRepository } from "../db/repositories/budgetRepository";
+import { recurringTransactionRepository } from "../db/repositories/recurringTransactionRepository";
+import { recurringBudgetRepository } from "../db/repositories/recurringBudgetRepository";
 import { userRepository } from "../db/repositories/userRepository";
 import type {
   SyncQueueItem,
@@ -17,6 +19,8 @@ import type {
   TransactionPayload,
   UserSharePayload,
   BudgetPayload,
+  RecurringTransactionPayload,
+  RecurringBudgetPayload,
 } from "../types";
 
 // ── Private business logic helpers ────────────────────────────────────────────
@@ -28,6 +32,8 @@ function parsePayload(
   | TransactionPayload
   | UserSharePayload
   | BudgetPayload
+  | RecurringTransactionPayload
+  | RecurringBudgetPayload
   | null {
   if (!payload) return null;
   if (typeof payload === "string") {
@@ -157,10 +163,60 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
     });
     return;
   }
+
+  if (event.entity_type === "RTXN") {
+    if (event.action === "DELETE") {
+      await recurringTransactionRepository.update(event.entity_id, (record) => {
+        if (!record) return null;
+        return { ...record, version: event.version, is_deleted: 1 };
+      });
+      return;
+    }
+    if (!payload || typeof payload !== "object") return;
+    const rtxnPayload = payload as RecurringTransactionPayload;
+    await recurringTransactionRepository.upsert({
+      id: event.entity_id,
+      user_id: rtxnPayload.user_id || "",
+      category_id: rtxnPayload.category_id || "",
+      type: rtxnPayload.type || "EXPENSE",
+      amount: Number(rtxnPayload.amount) || 0,
+      note: rtxnPayload.note || "",
+      recurrence_type: rtxnPayload.recurrence_type || "MONTHLY",
+      recurrence_days: rtxnPayload.recurrence_days || "",
+      is_active: rtxnPayload.is_active ?? 1,
+      version: event.version,
+      is_deleted: 0,
+    });
+    return;
+  }
+
+  if (event.entity_type === "RBGT") {
+    if (event.action === "DELETE") {
+      await recurringBudgetRepository.update(event.entity_id, (record) => {
+        if (!record) return null;
+        return { ...record, version: event.version, is_deleted: 1 };
+      });
+      return;
+    }
+    if (!payload || typeof payload !== "object") return;
+    const rbgtPayload = payload as RecurringBudgetPayload;
+    await recurringBudgetRepository.upsert({
+      id: event.entity_id,
+      user_id: rbgtPayload.user_id || "",
+      name: rbgtPayload.name || "",
+      type: rbgtPayload.type || "EXPENSE",
+      goal: Number(rbgtPayload.goal) || 0,
+      category_ids: rbgtPayload.category_ids || "",
+      is_active: rbgtPayload.is_active ?? 1,
+      version: event.version,
+      is_deleted: 0,
+    });
+    return;
+  }
 }
 
 async function bumpLocalVersion(
-  entityType: "CAT" | "TXN" | "SHR" | "BGT",
+  entityType: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT",
   entityId: string,
   version: number,
   action: "PUT" | "DELETE" | "POST",
@@ -209,6 +265,28 @@ async function bumpLocalVersion(
     });
     return;
   }
+  if (entityType === "RTXN") {
+    await recurringTransactionRepository.update(entityId, (record) => {
+      if (!record) return null;
+      return {
+        ...record,
+        version,
+        is_deleted: action === "DELETE" ? 1 : record.is_deleted,
+      };
+    });
+    return;
+  }
+  if (entityType === "RBGT") {
+    await recurringBudgetRepository.update(entityId, (record) => {
+      if (!record) return null;
+      return {
+        ...record,
+        version,
+        is_deleted: action === "DELETE" ? 1 : record.is_deleted,
+      };
+    });
+    return;
+  }
 }
 
 async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
@@ -229,6 +307,16 @@ async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
           if (!record) return null;
           return { ...record, is_deleted: 1 };
         });
+      } else if (entry.entity_type === "RTXN") {
+        await recurringTransactionRepository.update(entry.entity_id, (record) => {
+          if (!record) return null;
+          return { ...record, is_deleted: 1 };
+        });
+      } else if (entry.entity_type === "RBGT") {
+        await recurringBudgetRepository.update(entry.entity_id, (record) => {
+          if (!record) return null;
+          return { ...record, is_deleted: 1 };
+        });
       }
     }
     return;
@@ -243,6 +331,10 @@ async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
       await userShareRepository.upsert(snapshot);
     } else if (entry.entity_type === "BGT") {
       await budgetRepository.upsert(snapshot);
+    } else if (entry.entity_type === "RTXN") {
+      await recurringTransactionRepository.upsert(snapshot);
+    } else if (entry.entity_type === "RBGT") {
+      await recurringBudgetRepository.upsert(snapshot);
     }
   } catch (error) {
     console.error(

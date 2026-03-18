@@ -51,6 +51,16 @@ import {
   putBudget,
   deleteBudget,
 } from "../services/budgetService";
+import {
+  postRecurringTransaction,
+  putRecurringTransaction,
+  deleteRecurringTransaction,
+} from "../services/recurringTransactionService";
+import {
+  postRecurringBudget,
+  putRecurringBudget,
+  deleteRecurringBudget,
+} from "../services/recurringBudgetService";
 
 /**
  * 根據使用者的 Email 取得 User ID。
@@ -95,6 +105,12 @@ const entityHandlers: Record<string, EntityHandler> = {
   "POST:SHR": postUserShare,
   "PUT:SHR": putUserShare,
   "DELETE:SHR": deleteUserShare,
+  "POST:RTXN": postRecurringTransaction,
+  "PUT:RTXN": putRecurringTransaction,
+  "DELETE:RTXN": deleteRecurringTransaction,
+  "POST:RBGT": postRecurringBudget,
+  "PUT:RBGT": putRecurringBudget,
+  "DELETE:RBGT": deleteRecurringBudget,
 };
 
 /**
@@ -319,7 +335,7 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
  * 這是為了確保外鍵關聯正確（交易通常會綁定分類）。
  */
 function sortPushCommands(commands: PushCommand[]): PushCommand[] {
-  const priority: Record<EntityType, number> = { CAT: 0, TXN: 1, BGT: 2, SHR: 3 };
+  const priority: Record<EntityType, number> = { CAT: 0, TXN: 1, BGT: 2, RTXN: 3, RBGT: 4, SHR: 5 };
   return [...commands].sort(
     (a, b) => priority[a.entity_type] - priority[b.entity_type],
   );

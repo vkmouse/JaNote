@@ -44,7 +44,7 @@
 import { inject } from "vue";
 import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { iconDollarCircle, iconPieChart, iconPiggyBank } from "../utils/icons";
+import { iconDollarCircle, iconPieChart, iconPiggyBank, iconTag } from "../utils/icons";
 
 defineProps<{
   showAddButton?: boolean;
@@ -76,6 +76,12 @@ const tabs = [
     label: "預算",
     route: "/transactions/budget",
     icon: iconPiggyBank,
+  },
+  {
+    key: "recurring",
+    label: "固定",
+    route: "/transactions/recurring",
+    icon: iconTag,
   },
 ];
 

@@ -4,6 +4,8 @@ import type {
   Category,
   Transaction,
   Budget,
+  RecurringTransaction,
+  RecurringBudget,
   SyncQueueItem,
   SyncMeta,
   UserShare,
@@ -15,6 +17,8 @@ export interface AppDB {
   categories: EntityTable<Category, "id">;
   transactions: EntityTable<Transaction, "id">;
   budgets: EntityTable<Budget, "id">;
+  recurring_transactions: EntityTable<RecurringTransaction, "id">;
+  recurring_budgets: EntityTable<RecurringBudget, "id">;
   sync_queue: EntityTable<SyncQueueItem, "mutation_id">;
   sync_meta: EntityTable<SyncMeta, "key">;
   user_shares: EntityTable<UserShare, "id">;
@@ -26,6 +30,8 @@ export const schema = {
   categories: "id",
   transactions: "id",
   budgets: "id",
+  recurring_transactions: "id",
+  recurring_budgets: "id",
   sync_queue: "mutation_id, created_at, entity_id",
   sync_meta: "key",
   user_shares: "id",

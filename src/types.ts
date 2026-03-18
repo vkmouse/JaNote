@@ -39,6 +39,32 @@ export interface Budget {
   is_deleted: number;
 }
 
+export interface RecurringTransaction {
+  id: string;
+  user_id: string;
+  category_id: string;
+  type: EntryType;
+  amount: number;
+  note: string;
+  recurrence_type: "MONTHLY" | "WEEKLY";
+  recurrence_days: string;
+  is_active: number;
+  version: number;
+  is_deleted: number;
+}
+
+export interface RecurringBudget {
+  id: string;
+  user_id: string;
+  name: string;
+  type: EntryType;
+  goal: number;
+  category_ids: string;
+  is_active: number;
+  version: number;
+  is_deleted: number;
+}
+
 export interface UserShare {
   id: string;
   sender_id: string;
@@ -52,7 +78,7 @@ export interface UserShare {
 
 export interface SyncQueueItem {
   mutation_id: string;
-  entity_type: "CAT" | "TXN" | "SHR" | "BGT";
+  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
   entity_id: string;
   action: "PUT" | "DELETE" | "POST";
   payload: string | null;
@@ -68,7 +94,7 @@ export interface SyncMeta {
 
 export interface PushCommand {
   mutation_id: string;
-  entity_type: "CAT" | "TXN" | "SHR" | "BGT";
+  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
   entity_id: string;
   action: "PUT" | "DELETE" | "POST";
   base_version: number;
@@ -77,6 +103,8 @@ export interface PushCommand {
     | TransactionPayload
     | UserSharePayload
     | BudgetPayload
+    | RecurringTransactionPayload
+    | RecurringBudgetPayload
     | null;
 }
 
@@ -90,7 +118,7 @@ export interface PushResult {
 
 export interface PullEvent {
   entity_id: string;
-  entity_type: "CAT" | "TXN" | "SHR" | "BGT";
+  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
   action: "PUT" | "DELETE";
   version: number;
   payload: string | null;
@@ -146,6 +174,28 @@ export interface BudgetPayload {
   category_ids: string;
 }
 
+export interface RecurringTransactionPayload {
+  id: string;
+  user_id: string;
+  category_id: string;
+  type: EntryType;
+  amount: number;
+  note: string;
+  recurrence_type: "MONTHLY" | "WEEKLY";
+  recurrence_days: string;
+  is_active: number;
+}
+
+export interface RecurringBudgetPayload {
+  id: string;
+  user_id: string;
+  name: string;
+  type: EntryType;
+  goal: number;
+  category_ids: string;
+  is_active: number;
+}
+
 export interface LogEntry {
   id: string;
   time: string;
@@ -162,7 +212,9 @@ export type StoreName =
   | "sync_meta"
   | "user"
   | "user_shares"
-  | "budgets";
+  | "budgets"
+  | "recurring_transactions"
+  | "recurring_budgets";
 export type StoreMode = "readonly" | "readwrite";
 export type StoreCallback<T = any> = (
   store: IDBObjectStore,

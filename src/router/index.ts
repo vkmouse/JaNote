@@ -5,7 +5,6 @@ import TransactionView from "../views/TransactionView.vue";
 import TransactionSearchView from "../views/TransactionSearchView.vue";
 import TransactionEditView from "../views/TransactionEditView.vue";
 import TransactionBudgetView from "../views/TransactionBudgetView.vue";
-import TransactionBudgetEditView from "../views/TransactionBudgetEditView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -45,12 +44,37 @@ const router = createRouter({
     {
       path: "/transactions/budget/new",
       name: "budget-new",
-      component: TransactionBudgetEditView,
+      component: TransactionEditView,
     },
     {
       path: "/transactions/budget/:id/edit",
       name: "budget-edit",
-      component: TransactionBudgetEditView,
+      component: TransactionEditView,
+    },
+    {
+      path: "/transactions/recurring",
+      name: "recurring",
+      component: () => import("../views/TransactionRecurringView.vue"),
+    },
+    {
+      path: "/transactions/recurring/new",
+      name: "recurring-new",
+      component: TransactionEditView,
+    },
+    {
+      path: "/transactions/recurring/:id/edit",
+      name: "recurring-edit",
+      component: TransactionEditView,
+    },
+    {
+      path: "/transactions/budget/recurring/new",
+      name: "budget-recurring-new",
+      component: TransactionEditView,
+    },
+    {
+      path: "/transactions/budget/recurring/:id/edit",
+      name: "budget-recurring-edit",
+      component: TransactionEditView,
     },
   ],
 });

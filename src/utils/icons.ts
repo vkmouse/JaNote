@@ -29,6 +29,7 @@ import iconShoppingBag from "../assets/icons/new/icon-shopping-bag.svg?raw";
 import iconShoppingCart from "../assets/icons/new/icon-shopping-cart.svg?raw";
 import iconSocial from "../assets/icons/icon-social.svg?raw";
 import iconSquaresFour from "../assets/icons/new/icon-squares-four.svg?raw";
+import iconTag from "../assets/icons/new/icon-tag.svg?raw";
 import iconUtensils from "../assets/icons/new/icon-utensils.svg?raw";
 import iconWine from "../assets/icons/new/icon-wine.svg?raw";
 
@@ -61,6 +62,7 @@ export {
   iconShoppingCart,
   iconSocial,
   iconSquaresFour,
+  iconTag,
   iconUtensils,
   iconWine,
 };

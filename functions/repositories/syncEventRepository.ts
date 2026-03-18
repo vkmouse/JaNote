@@ -68,7 +68,7 @@ export async function getPullEventsForSharedUsers(
   if (sharedUserIds.length === 0) return [];
 
   const userPlaceholders = sharedUserIds.map(() => "?").join(", ");
-  let query = `SELECT id, mutation_id, entity_type, entity_id, payload FROM sync_events WHERE user_id IN (${userPlaceholders}) AND id > ? AND entity_type IN ('CAT', 'TXN', 'BGT')`;
+  let query = `SELECT id, mutation_id, entity_type, entity_id, payload FROM sync_events WHERE user_id IN (${userPlaceholders}) AND id > ? AND entity_type IN ('CAT', 'TXN', 'BGT', 'RTXN', 'RBGT')`;
   const binds: unknown[] = [...sharedUserIds, lastCursor];
 
   if (excludeMutationIds.length > 0) {

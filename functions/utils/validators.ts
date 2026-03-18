@@ -18,7 +18,7 @@ export function isNumber(value: unknown): value is number {
  * 檢查值是否為有效的實體類型
  */
 export function isValidEntityType(value: unknown): value is EntityType {
-  return value === "CAT" || value === "TXN" || value === "SHR" || value === "BGT";
+  return value === "CAT" || value === "TXN" || value === "SHR" || value === "BGT" || value === "RTXN" || value === "RBGT";
 }
 
 /**
