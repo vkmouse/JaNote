@@ -5,13 +5,7 @@
       <template #left>
         <NavMenu />
         <NavSearch />
-        <button
-          class="nav-delete-btn"
-          :class="{ 'nav-delete-btn--active': deleteMode }"
-          @click="toggleDeleteMode"
-          aria-label="刪除模式"
-          v-html="iconTrash"
-        ></button>
+        <NavDelete :active="deleteMode" @click="toggleDeleteMode" />
       </template>
       <template #right><NavSync /><NavAvatar /></template>
     </TopNavigation>
@@ -164,9 +158,9 @@ import TypeToggle from "../components/TypeToggle.vue";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { formatRecurrence, parseRecurrenceDays } from "../utils/recurrence";
-import { iconTrash } from "../utils/icons";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
+import NavDelete from "../components/NavDelete.vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useRecurringStore } from "../stores/recurringStore";
 import { useUserStore } from "../stores/userStore";
@@ -275,24 +269,6 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
-}
-
-.nav-delete-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  margin-left: 4px;
-}
-
-.nav-delete-btn--active {
-  color: #ef4444;
 }
 
 .page-content {

@@ -5,13 +5,7 @@
       <template #left>
         <NavMenu />
         <NavSearch />
-        <button
-          class="nav-delete-btn"
-          :class="{ 'nav-delete-btn--active': deleteMode }"
-          @click="toggleDeleteMode"
-          aria-label="刪除模式"
-          v-html="iconTrash"
-        ></button>
+        <NavDelete :active="deleteMode" @click="toggleDeleteMode" />
       </template>
       <template #center>
         <div class="month-display" @click="showMonthPicker = true">
@@ -153,9 +147,9 @@ import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
 import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import { iconTrash } from "../utils/icons";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
+import NavDelete from "../components/NavDelete.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import BottomTabBar from "../components/BottomTabBar.vue";
@@ -356,24 +350,6 @@ onMounted(async () => {
   color: var(--text-primary);
   cursor: pointer;
   user-select: none;
-}
-
-.nav-delete-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  margin-left: 4px;
-}
-
-.nav-delete-btn--active {
-  color: #ef4444;
 }
 
 .page-content {

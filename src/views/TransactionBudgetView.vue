@@ -5,13 +5,7 @@
       <template #left>
         <NavMenu />
         <NavSearch />
-        <button
-          class="nav-delete-btn"
-          :class="{ 'nav-delete-btn--active': deleteMode }"
-          @click="toggleDeleteMode"
-          aria-label="刪除模式"
-          v-html="iconTrash"
-        ></button>
+        <NavDelete :active="deleteMode" @click="toggleDeleteMode" />
       </template>
       <template #center>
         <div class="month-display" @click="openPicker">
@@ -230,9 +224,9 @@ import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import { iconTrash } from "../utils/icons";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
+import NavDelete from "../components/NavDelete.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
@@ -495,24 +489,6 @@ watch(
   padding: 6px 10px;
   border-radius: 10px;
   transition: opacity 0.15s;
-}
-
-.nav-delete-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  margin-left: 4px;
-}
-
-.nav-delete-btn--active {
-  color: #ef4444;
 }
 
 /* ── Page content ── */
