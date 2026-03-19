@@ -325,6 +325,7 @@ onMounted(async () => {
 .item-icon :deep(svg) {
   width: 20px;
   height: 20px;
+  color: #333;
 }
 
 .item-body {

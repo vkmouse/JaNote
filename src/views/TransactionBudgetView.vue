@@ -734,10 +734,7 @@ watch(
 .category-icon :deep(svg) {
   width: 24px;
   height: 24px;
-  stroke: var(--text-primary);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  color: #333;
 }
 
 .category-info {

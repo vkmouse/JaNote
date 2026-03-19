@@ -471,10 +471,7 @@ watch(
 .category-icon :deep(svg) {
   width: 22px;
   height: 22px;
-  stroke: var(--text-primary);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  color: #333;
 }
 
 /* 分類名稱 + 進度條 */
