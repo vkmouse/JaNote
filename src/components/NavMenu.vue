@@ -22,8 +22,8 @@ const handleMenuClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   background: transparent;
   border: none;
   border-radius: 8px;

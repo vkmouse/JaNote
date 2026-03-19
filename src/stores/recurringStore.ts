@@ -347,6 +347,66 @@ export const useRecurringStore = defineStore("recurring", () => {
     await loadRecurringBudgets();
   }
 
+  /** 軟刪除固定記賬並加入同步佇列 */
+  async function deleteRecurringTransaction(id: string): Promise<void> {
+    const existing = await recurringTransactionRepository.getById(id);
+    if (!existing) return;
+
+    const snapshot = JSON.stringify(existing);
+
+    await recurringTransactionRepository.update(id, (current) => {
+      if (!current) return null;
+      return { ...current, is_deleted: 1, version: current.version + 1 };
+    });
+
+    try {
+      await syncQueueRepository.add({
+        mutation_id: crypto.randomUUID(),
+        entity_type: "RTXN",
+        entity_id: id,
+        action: "DELETE",
+        payload: null,
+        base_version: existing.version,
+        snapshot_before: snapshot,
+        created_at: Date.now(),
+      });
+    } catch (e) {
+      console.error("Failed to enqueue sync operation", e);
+    }
+
+    await loadRecurringTransactions();
+  }
+
+  /** 軟刪除固定預算並加入同步佇列 */
+  async function deleteRecurringBudget(id: string): Promise<void> {
+    const existing = await recurringBudgetRepository.getById(id);
+    if (!existing) return;
+
+    const snapshot = JSON.stringify(existing);
+
+    await recurringBudgetRepository.update(id, (current) => {
+      if (!current) return null;
+      return { ...current, is_deleted: 1, version: current.version + 1 };
+    });
+
+    try {
+      await syncQueueRepository.add({
+        mutation_id: crypto.randomUUID(),
+        entity_type: "RBGT",
+        entity_id: id,
+        action: "DELETE",
+        payload: null,
+        base_version: existing.version,
+        snapshot_before: snapshot,
+        created_at: Date.now(),
+      });
+    } catch (e) {
+      console.error("Failed to enqueue sync operation", e);
+    }
+
+    await loadRecurringBudgets();
+  }
+
   return {
     recurringTransactions,
     recurringBudgets,
@@ -360,5 +420,7 @@ export const useRecurringStore = defineStore("recurring", () => {
     addRecurringBudget,
     updateRecurringBudget,
     toggleRecurringBudgetActive,
+    deleteRecurringTransaction,
+    deleteRecurringBudget,
   };
 });

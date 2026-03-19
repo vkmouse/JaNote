@@ -2,9 +2,18 @@
   <section class="recurring-page">
     <!-- Top Navigation -->
     <TopNavigation>
-      <template #left><NavMenu /></template>
-      <template #center><span class="page-title">固定</span></template>
-      <template #right><NavAvatar /></template>
+      <template #left>
+        <NavMenu />
+        <NavSearch />
+        <button
+          class="nav-delete-btn"
+          :class="{ 'nav-delete-btn--active': deleteMode }"
+          @click="toggleDeleteMode"
+          aria-label="刪除模式"
+          v-html="iconTrash"
+        ></button>
+      </template>
+      <template #right><NavSync /><NavAvatar /></template>
     </TopNavigation>
 
     <div class="page-content page">
@@ -22,7 +31,10 @@
 
       <!-- Recurring Transactions List -->
       <div v-if="viewMode === 'TRANSACTION'" class="recurring-list">
-        <div v-if="filteredRecurringTransactions.length === 0" class="empty-state">
+        <div
+          v-if="filteredRecurringTransactions.length === 0"
+          class="empty-state"
+        >
           <p>暫無固定記帳</p>
         </div>
         <div v-else class="list-items">
@@ -30,13 +42,23 @@
             v-for="(item, index) in filteredRecurringTransactions"
             :key="item.id"
             :class="['list-item', { 'list-item--readonly': isViewingShared }]"
-            @click="!isViewingShared && router.push(`/transactions/recurring/${item.id}/edit`)"
+            @click="!isViewingShared && onItemClick('TRANSACTION', item.id)"
           >
-            <div class="item-icon" v-html="getCategoryIconById(item.category_id)" />
+            <div
+              class="item-icon"
+              v-html="getCategoryIconById(item.category_id)"
+            />
             <div class="item-body">
-              <span class="item-name">{{ item.note || getCategoryNameById(item.category_id) }}</span>
+              <span class="item-name">{{
+                item.note || getCategoryNameById(item.category_id)
+              }}</span>
               <span class="item-recurrence">
-                {{ formatRecurrence(item.recurrence_type, parseRecurrenceDays(item.recurrence_days)) }}
+                {{
+                  formatRecurrence(
+                    item.recurrence_type,
+                    parseRecurrenceDays(item.recurrence_days),
+                  )
+                }}
               </span>
             </div>
             <div class="item-right">
@@ -48,7 +70,10 @@
                   type="checkbox"
                   :checked="item.is_active === 1"
                   :disabled="isViewingShared"
-                  @change="!isViewingShared && recurringStore.toggleRecurringTransactionActive(item.id)"
+                  @change="
+                    !isViewingShared &&
+                    recurringStore.toggleRecurringTransactionActive(item.id)
+                  "
                 />
                 <span class="toggle-slider" />
               </label>
@@ -71,7 +96,7 @@
             v-for="(item, index) in filteredRecurringBudgets"
             :key="item.id"
             :class="['list-item', { 'list-item--readonly': isViewingShared }]"
-            @click="!isViewingShared && router.push(`/transactions/budget/recurring/${item.id}/edit`)"
+            @click="!isViewingShared && onItemClick('BUDGET', item.id)"
           >
             <div class="item-icon" v-html="getBudgetIcon(item.category_ids)" />
             <div class="item-body">
@@ -87,7 +112,10 @@
                   type="checkbox"
                   :checked="item.is_active === 1"
                   :disabled="isViewingShared"
-                  @change="!isViewingShared && recurringStore.toggleRecurringBudgetActive(item.id)"
+                  @change="
+                    !isViewingShared &&
+                    recurringStore.toggleRecurringBudgetActive(item.id)
+                  "
                 />
                 <span class="toggle-slider" />
               </label>
@@ -104,7 +132,24 @@
     <BottomTabBar
       :show-add-button="true"
       :add-disabled="isViewingShared"
-      @add="router.push(viewMode === 'BUDGET' ? '/transactions/budget/recurring/new' : '/transactions/recurring/new')"
+      @add="
+        router.push(
+          viewMode === 'BUDGET'
+            ? '/transactions/budget/recurring/new'
+            : '/transactions/recurring/new',
+        )
+      "
+    />
+
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="刪除固定"
+      message="確定要刪除這筆固定嗎？此操作無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      variant="danger"
+      @confirm="confirmItemDelete"
+      @cancel="cancelItemDelete"
     />
   </section>
 </template>
@@ -119,9 +164,13 @@ import TypeToggle from "../components/TypeToggle.vue";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
 import { formatRecurrence, parseRecurrenceDays } from "../utils/recurrence";
+import { iconTrash } from "../utils/icons";
+import NavSearch from "../components/NavSearch.vue";
+import NavSync from "../components/NavSync.vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useRecurringStore } from "../stores/recurringStore";
 import { useUserStore } from "../stores/userStore";
+import ConfirmModal from "../components/ConfirmModal.vue";
 import type { EntryType } from "../types";
 
 const router = useRouter();
@@ -134,6 +183,10 @@ const isViewingShared = computed(() => userStore.isViewingShared);
 // ── State ──────────────────────────────────────────────────
 const viewMode = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
 const filterType = ref<EntryType>("EXPENSE");
+const deleteMode = ref(false);
+const showDeleteConfirm = ref(false);
+const deletingItemId = ref<string | null>(null);
+const deletingItemType = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
 
 // ── Computed ───────────────────────────────────────────────
 const filteredRecurringTransactions = computed(() =>
@@ -166,6 +219,40 @@ function getBudgetIcon(categoryIds: string): string {
   return getCategoryIcon("其他");
 }
 
+function toggleDeleteMode(): void {
+  deleteMode.value = !deleteMode.value;
+}
+
+function onItemClick(type: "TRANSACTION" | "BUDGET", id: string): void {
+  if (deleteMode.value) {
+    deletingItemType.value = type;
+    deletingItemId.value = id;
+    showDeleteConfirm.value = true;
+  } else if (type === "TRANSACTION") {
+    router.push(`/transactions/recurring/${id}/edit`);
+  } else {
+    router.push(`/transactions/budget/recurring/${id}/edit`);
+  }
+}
+
+async function confirmItemDelete(): Promise<void> {
+  showDeleteConfirm.value = false;
+  const id = deletingItemId.value;
+  const type = deletingItemType.value;
+  deletingItemId.value = null;
+  if (!id || isViewingShared.value) return;
+  if (type === "TRANSACTION") {
+    await recurringStore.deleteRecurringTransaction(id);
+  } else {
+    await recurringStore.deleteRecurringBudget(id);
+  }
+}
+
+function cancelItemDelete(): void {
+  showDeleteConfirm.value = false;
+  deletingItemId.value = null;
+}
+
 // ── Lifecycle ──────────────────────────────────────────────
 onMounted(async () => {
   await Promise.all([
@@ -188,6 +275,24 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.nav-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.nav-delete-btn--active {
+  color: #ef4444;
 }
 
 .page-content {

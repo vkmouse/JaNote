@@ -4,11 +4,13 @@
     <TopNavigation>
       <template #left>
         <NavMenu />
+        <NavSearch />
         <button
-          class="nav-search-btn"
-          @click="router.push('/transactions/search')"
-          aria-label="搜尋"
-          v-html="iconSearch"
+          class="nav-delete-btn"
+          :class="{ 'nav-delete-btn--active': deleteMode }"
+          @click="toggleDeleteMode"
+          aria-label="刪除模式"
+          v-html="iconTrash"
         ></button>
       </template>
       <template #center>
@@ -16,7 +18,7 @@
           <span>{{ currentMonthDisplay }}</span>
         </div>
       </template>
-      <template #right><NavAvatar /></template>
+      <template #right><NavSync /><NavAvatar /></template>
     </TopNavigation>
 
     <MonthPicker
@@ -85,23 +87,14 @@
                 v-for="(transaction, index) in group.transactions"
                 :key="transaction.id"
                 class="transaction-item-wrapper"
-                @touchstart="handleTouchStart($event, transaction.id)"
-                @touchmove="handleTouchMove($event, transaction.id)"
-                @touchend="handleTouchEnd($event, transaction.id)"
-                @mousedown="handleMouseDown($event, transaction.id)"
-                @mousemove="handleMouseMove($event, transaction.id)"
-                @mouseup="handleMouseUp(transaction.id)"
-                @mouseleave="handleMouseLeave(transaction.id)"
               >
                 <div
                   class="transaction-item"
-                  :style="{
-                    transform: `translateX(${swipeState[transaction.id]?.offset || 0}px)`,
+                  :class="{
+                    'transaction-item--delete': deleteMode && !isViewingShared,
                   }"
                   @click="
-                    !swipeState[transaction.id]?.hasSwipped &&
-                    !isViewingShared &&
-                    editTransaction(transaction.id)
+                    !isViewingShared && onTransactionClick(transaction.id)
                   "
                 >
                   <div class="item-left">
@@ -122,32 +115,6 @@
                     class="item-divider"
                   ></div>
                 </div>
-                <button
-                  class="delete-btn"
-                  @click.stop="deleteTransaction(transaction.id)"
-                  :disabled="isViewingShared"
-                  :style="{
-                    opacity: swipeState[transaction.id]?.showDelete ? 1 : 0,
-                    pointerEvents:
-                      swipeState[transaction.id]?.showDelete && !isViewingShared
-                        ? 'auto'
-                        : 'none',
-                  }"
-                >
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    stroke-width="2"
-                  >
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path
-                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                    ></path>
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
@@ -159,6 +126,18 @@
       :show-add-button="true"
       :add-disabled="isViewingShared"
       @add="goToNewTransaction"
+    />
+
+    <!-- Delete Confirm Modal -->
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="刪除交易"
+      message="確定要刪除這筆交易嗎？此操作無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      variant="danger"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
     />
   </section>
 </template>
@@ -174,10 +153,13 @@ import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
 import type { Transaction } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import { iconSearch } from "../utils/icons";
+import { iconTrash } from "../utils/icons";
+import NavSearch from "../components/NavSearch.vue";
+import NavSync from "../components/NavSync.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import BottomTabBar from "../components/BottomTabBar.vue";
+import ConfirmModal from "../components/ConfirmModal.vue";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -186,21 +168,10 @@ const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth() + 1);
 const showMonthPicker = ref(false);
 
-// Swipe-to-delete state
-const swipeState = ref<
-  Record<
-    string,
-    {
-      offset: number;
-      startX: number;
-      startY: number;
-      showDelete: boolean;
-      isDragging: boolean;
-      hasSwipped: boolean;
-      isHorizontal: boolean | null;
-    }
-  >
->({});
+// Delete mode
+const deleteMode = ref(false);
+const showDeleteConfirm = ref(false);
+const deletingTransactionId = ref<string | null>(null);
 
 interface DailyGroup {
   date: string;
@@ -337,157 +308,30 @@ const editTransaction = (id: string) => {
   router.push(`/transaction/${id}/edit`);
 };
 
-// Swipe-to-delete handlers (Touch)
-const handleTouchStart = (event: TouchEvent, id: string) => {
-  const touch = event.touches[0];
-  if (!touch) return;
-
-  Object.keys(swipeState.value).forEach((key) => {
-    if (key !== id && swipeState.value[key]) {
-      swipeState.value[key].offset = 0;
-      swipeState.value[key].showDelete = false;
-      swipeState.value[key].hasSwipped = false;
-    }
-  });
-
-  swipeState.value[id] = {
-    offset: swipeState.value[id]?.offset || 0,
-    startX: touch.clientX,
-    startY: touch.clientY,
-    showDelete: swipeState.value[id]?.showDelete || false,
-    isDragging: true,
-    hasSwipped: false,
-    isHorizontal: swipeState.value[id]?.offset !== 0 ? true : null,
-  };
+const toggleDeleteMode = () => {
+  deleteMode.value = !deleteMode.value;
 };
 
-const handleTouchMove = (event: TouchEvent, id: string) => {
-  if (!swipeState.value[id] || !swipeState.value[id].isDragging) return;
-
-  const touch = event.touches[0];
-  if (!touch) return;
-  const currentX = touch.clientX;
-  const currentY = touch.clientY;
-  const startX = swipeState.value[id].startX;
-  const startY = swipeState.value[id].startY;
-  const diff = currentX - startX;
-
-  if (swipeState.value[id].isHorizontal === null) {
-    const dx = Math.abs(currentX - startX);
-    const dy = Math.abs(currentY - startY);
-    if (dx < 3 && dy < 3) return;
-    swipeState.value[id].isHorizontal = dx >= dy;
-  }
-
-  if (!swipeState.value[id].isHorizontal) return;
-
-  (event.currentTarget as HTMLElement).style.touchAction = "none";
-
-  if (Math.abs(diff) > 5) {
-    swipeState.value[id].hasSwipped = true;
-  }
-
-  const currentOffset = swipeState.value[id].offset;
-  let newOffset = currentOffset + diff;
-  newOffset = Math.min(0, Math.max(newOffset, -80));
-
-  swipeState.value[id].offset = newOffset;
-  swipeState.value[id].showDelete = newOffset < -40;
-  swipeState.value[id].startX = currentX;
-};
-
-const handleTouchEnd = (event: TouchEvent, id: string) => {
-  (event.currentTarget as HTMLElement).style.touchAction = "pan-y";
-
-  if (!swipeState.value[id]) return;
-
-  swipeState.value[id].isDragging = false;
-
-  if (swipeState.value[id].offset < -40) {
-    swipeState.value[id].offset = -80;
-    swipeState.value[id].showDelete = true;
+const onTransactionClick = (id: string) => {
+  if (deleteMode.value) {
+    deletingTransactionId.value = id;
+    showDeleteConfirm.value = true;
   } else {
-    swipeState.value[id].offset = 0;
-    swipeState.value[id].showDelete = false;
+    editTransaction(id);
   }
 };
 
-// Mouse handlers for desktop
-const handleMouseDown = (event: MouseEvent, id: string) => {
-  Object.keys(swipeState.value).forEach((key) => {
-    if (key !== id && swipeState.value[key]) {
-      swipeState.value[key].offset = 0;
-      swipeState.value[key].showDelete = false;
-      swipeState.value[key].hasSwipped = false;
-    }
-  });
-
-  swipeState.value[id] = {
-    offset: swipeState.value[id]?.offset || 0,
-    startX: event.clientX,
-    startY: event.clientY,
-    showDelete: swipeState.value[id]?.showDelete || false,
-    isDragging: true,
-    hasSwipped: false,
-    isHorizontal: swipeState.value[id]?.offset !== 0 ? true : null,
-  };
+const confirmDelete = async () => {
+  showDeleteConfirm.value = false;
+  const id = deletingTransactionId.value;
+  deletingTransactionId.value = null;
+  if (!id || isViewingShared.value) return;
+  await transactionStore.deleteTransaction(id);
 };
 
-const handleMouseMove = (event: MouseEvent, id: string) => {
-  if (!swipeState.value[id] || !swipeState.value[id].isDragging) return;
-
-  const currentX = event.clientX;
-  const startX = swipeState.value[id].startX;
-  const diff = currentX - startX;
-
-  if (Math.abs(diff) > 5) {
-    swipeState.value[id].hasSwipped = true;
-  }
-
-  const currentOffset = swipeState.value[id].offset;
-  let newOffset = currentOffset + diff;
-  newOffset = Math.min(0, Math.max(newOffset, -80));
-
-  swipeState.value[id].offset = newOffset;
-  swipeState.value[id].showDelete = newOffset < -40;
-  swipeState.value[id].startX = currentX;
-};
-
-const handleMouseUp = (id: string) => {
-  if (!swipeState.value[id]) return;
-
-  swipeState.value[id].isDragging = false;
-
-  if (swipeState.value[id].offset < -40) {
-    swipeState.value[id].offset = -80;
-    swipeState.value[id].showDelete = true;
-  } else {
-    swipeState.value[id].offset = 0;
-    swipeState.value[id].showDelete = false;
-  }
-};
-
-const handleMouseLeave = (id: string) => {
-  if (!swipeState.value[id] || !swipeState.value[id].isDragging) return;
-  handleMouseUp(id);
-};
-
-const deleteTransaction = async (id: string) => {
-  if (isViewingShared.value) return;
-
-  if (confirm("確定要刪除這筆交易嗎？")) {
-    const transaction = transactionStore.transactions.find((t) => t.id === id);
-    if (transaction) {
-      await transactionStore.deleteTransaction(id);
-      delete swipeState.value[id];
-    }
-  } else {
-    if (swipeState.value[id]) {
-      swipeState.value[id].offset = 0;
-      swipeState.value[id].showDelete = false;
-      swipeState.value[id].hasSwipped = false;
-    }
-  }
+const cancelDelete = () => {
+  showDeleteConfirm.value = false;
+  deletingTransactionId.value = null;
 };
 
 onMounted(async () => {
@@ -514,28 +358,22 @@ onMounted(async () => {
   user-select: none;
 }
 
-.nav-search-btn {
+.nav-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   border: none;
   border-radius: 50%;
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
-  transition: background 0.15s;
   margin-left: 4px;
 }
 
-.nav-search-btn :deep(svg) {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.nav-delete-btn--active {
+  color: #ef4444;
 }
 
 .page-content {
@@ -657,10 +495,6 @@ onMounted(async () => {
 
 .transaction-item-wrapper {
   position: relative;
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: pan-y;
 }
 
 .transaction-item {
@@ -669,28 +503,22 @@ onMounted(async () => {
   justify-content: space-between;
   padding: 16px;
   cursor: pointer;
-  transition: transform 0.3s ease-out;
-  position: relative;
   background: var(--bg-page);
-  z-index: 1;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  gap: 8px;
 }
 
-.delete-btn {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  background: var(--janote-action);
-  border: none;
-  color: var(--text-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.transaction-item:active {
+  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.transaction-item--delete {
   cursor: pointer;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  z-index: 0;
+}
+
+.transaction-item--delete:active {
+  background: rgba(239, 68, 68, 0.08);
 }
 
 .item-left {
@@ -733,7 +561,6 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
-  margin-left: 16px;
   color: var(--text-primary);
 }
 

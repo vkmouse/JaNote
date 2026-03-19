@@ -11,7 +11,7 @@
 		"type-check": "vue-tsc --build",
 		"deploy": "npm run build && wrangler deploy",
 		"cf-typegen": "wrangler types",
-		"dev:full": "npm run dev -- --host 0.0.0.0 & wait-on tcp:5173 && wrangler pages dev --proxy 5173 --port 8888 --local --ip 0.0.0.0"
+		"dev:full": "fuser -k 5173/tcp || true && npm run dev -- --host 0.0.0.0 & wait-on tcp:5173 && wrangler pages dev --proxy 5173 --port 8888 --local --ip 0.0.0.0"
 	},
 	"dependencies": {
 		"dexie": "^4.3.0",

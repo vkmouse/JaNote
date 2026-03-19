@@ -14,7 +14,6 @@ const userShareStore = useUserShareStore();
 const transactionStore = useTransactionStore();
 
 const apiBase = ref("/api");
-const isResetting = ref(false);
 
 // 共享邀請相關 UI 狀態
 const inviteEmail = ref("");
@@ -59,40 +58,6 @@ async function clearAllData() {
   } catch (error) {
     alert("清空資料失敗");
     console.error(error);
-  }
-}
-
-async function resetServerData() {
-  if (
-    !confirm(
-      "確定要重置伺服器資料嗎？此操作會清空伺服器上的所有資料並重新初始化。",
-    )
-  ) {
-    return;
-  }
-
-  isResetting.value = true;
-
-  try {
-    const response = await fetch(`${apiBase.value}/initdb`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    alert("伺服器資料已重置");
-    console.log("重置結果:", data);
-  } catch (error) {
-    alert("重置失敗");
-    console.error("重置失敗:", error);
-  } finally {
-    isResetting.value = false;
   }
 }
 
@@ -242,13 +207,6 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
         <div class="control actions">
           <button class="btn-primary" :disabled="isSyncing" @click="syncNow">
             {{ isSyncing ? "同步中..." : "立即同步" }}
-          </button>
-          <button
-            class="btn-primary btn-danger"
-            :disabled="isResetting"
-            @click="resetServerData"
-          >
-            {{ isResetting ? "清空中..." : "清空伺服器資料" }}
           </button>
           <button class="btn-primary btn-danger" @click="clearAllData">
             清空本機資料

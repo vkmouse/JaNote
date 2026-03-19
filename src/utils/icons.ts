@@ -1,6 +1,10 @@
 // Centralized SVG icon imports
 // All svg?raw imports should live here and be re-exported for use in components/views.
 
+import iconCloud from "../assets/icons/new/icon-cloud.svg?raw";
+import iconCloudCheck from "../assets/icons/new/icon-cloud-check.svg?raw";
+import iconCloudUpload from "../assets/icons/new/icon-cloud-upload.svg?raw";
+import iconCloudAlert from "../assets/icons/new/icon-cloud-alert.svg?raw";
 import iconBowlSteam from "../assets/icons/new/icon-bowl-steam.svg?raw";
 import iconBread from "../assets/icons/new/icon-bread.svg?raw";
 import iconBus from "../assets/icons/new/icon-bus.svg?raw";
@@ -30,10 +34,15 @@ import iconShoppingCart from "../assets/icons/new/icon-shopping-cart.svg?raw";
 import iconSocial from "../assets/icons/icon-social.svg?raw";
 import iconSquaresFour from "../assets/icons/new/icon-squares-four.svg?raw";
 import iconTag from "../assets/icons/new/icon-tag.svg?raw";
+import iconTrash from "../assets/icons/new/icon-trash.svg?raw";
 import iconUtensils from "../assets/icons/new/icon-utensils.svg?raw";
 import iconWine from "../assets/icons/new/icon-wine.svg?raw";
 
 export {
+  iconCloud,
+  iconCloudCheck,
+  iconCloudUpload,
+  iconCloudAlert,
   iconBowlSteam,
   iconBread,
   iconBus,
@@ -63,6 +72,7 @@ export {
   iconSocial,
   iconSquaresFour,
   iconTag,
+  iconTrash,
   iconUtensils,
   iconWine,
 };

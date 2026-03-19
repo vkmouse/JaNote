@@ -4,11 +4,13 @@
     <TopNavigation>
       <template #left>
         <NavMenu />
+        <NavSearch />
         <button
-          class="nav-search-btn"
-          @click="router.push('/transactions/search')"
-          aria-label="搜尋"
-          v-html="iconSearch"
+          class="nav-delete-btn"
+          :class="{ 'nav-delete-btn--active': deleteMode }"
+          @click="toggleDeleteMode"
+          aria-label="刪除模式"
+          v-html="iconTrash"
         ></button>
       </template>
       <template #center>
@@ -16,7 +18,7 @@
           <span>{{ currentMonthDisplay }}</span>
         </div>
       </template>
-      <template #right><NavAvatar /></template>
+      <template #right><NavSync /><NavAvatar /></template>
     </TopNavigation>
 
     <MonthPicker
@@ -143,7 +145,7 @@
             v-for="(budget, index) in currentBudgets"
             :key="budget.id"
             class="budget-item"
-            @click="openEditModal(budget)"
+            @click="!isViewingShared && onBudgetClick(budget)"
           >
             <div class="item-left">
               <div class="category-icon" v-html="getBudgetIcon(budget)"></div>
@@ -204,6 +206,17 @@
       :add-disabled="isViewingShared"
       @add="openAddModal"
     />
+
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="刪除預算"
+      message="確定要刪除這個預算嗎？此操作無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      variant="danger"
+      @confirm="confirmBudgetDelete"
+      @cancel="cancelBudgetDelete"
+    />
   </section>
 </template>
 
@@ -217,7 +230,9 @@ import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import { iconSearch } from "../utils/icons";
+import { iconTrash } from "../utils/icons";
+import NavSearch from "../components/NavSearch.vue";
+import NavSync from "../components/NavSync.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
@@ -225,6 +240,7 @@ import type { EntryType, Budget } from "../types";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import ViewModeToggle from "../components/ViewModeToggle.vue";
 import TypeToggle from "../components/TypeToggle.vue";
+import ConfirmModal from "../components/ConfirmModal.vue";
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -250,6 +266,12 @@ const showDateRangePicker = ref(false);
 const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
 const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
 const transactionType = ref<EntryType>("EXPENSE");
+
+// ── Delete mode ────────────────────────────────────────────
+
+const deleteMode = ref(false);
+const showDeleteConfirm = ref(false);
+const deletingBudgetId = ref<string | null>(null);
 
 // ── Date display & picker ──────────────────────────────────
 
@@ -408,6 +430,32 @@ function openEditModal(budget: Budget): void {
   router.push({ name: "budget-edit", params: { id: budget.id } });
 }
 
+function toggleDeleteMode(): void {
+  deleteMode.value = !deleteMode.value;
+}
+
+function onBudgetClick(budget: Budget): void {
+  if (deleteMode.value) {
+    deletingBudgetId.value = budget.id;
+    showDeleteConfirm.value = true;
+  } else {
+    openEditModal(budget);
+  }
+}
+
+async function confirmBudgetDelete(): Promise<void> {
+  showDeleteConfirm.value = false;
+  const id = deletingBudgetId.value;
+  deletingBudgetId.value = null;
+  if (!id) return;
+  await budgetStore.deleteBudget(id);
+}
+
+function cancelBudgetDelete(): void {
+  showDeleteConfirm.value = false;
+  deletingBudgetId.value = null;
+}
+
 // ── Lifecycle ──────────────────────────────────────────────
 
 onMounted(async () => {
@@ -449,28 +497,22 @@ watch(
   transition: opacity 0.15s;
 }
 
-.nav-search-btn {
+.nav-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   border: none;
   border-radius: 50%;
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
-  transition: background 0.15s;
   margin-left: 4px;
 }
 
-.nav-search-btn :deep(svg) {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.nav-delete-btn--active {
+  color: #ef4444;
 }
 
 /* ── Page content ── */

@@ -2,7 +2,7 @@
 import { ref, provide, onMounted } from "vue";
 import SideNavigation from "./components/SideNavigation.vue";
 import BottomNavigation from "./components/BottomNavigation.vue";
-import UpdateModal from "./components/UpdateModal.vue";
+import ConfirmModal from "./components/ConfirmModal.vue";
 import { useServiceWorkerUpdate } from "./utils/serviceWorkerUpdate";
 import { useUserStore } from "./stores/userStore";
 
@@ -51,10 +51,14 @@ const handleClose = () => {
     <!-- <BottomNavigation /> -->
 
     <!-- PWA 更新提示 Modal -->
-    <UpdateModal
+    <ConfirmModal
       :show="needRefresh"
-      @update="handleUpdate"
-      @close="handleClose"
+      title="🎉 新版本可用"
+      message="我們已經準備好新版本，包含功能改進和錯誤修正。是否立即更新？"
+      confirm-text="立即更新"
+      cancel-text="稍後再說"
+      @confirm="handleUpdate"
+      @cancel="handleClose"
     />
   </div>
 </template>

@@ -1,24 +1,17 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import { iconChevronLeft } from "../utils/icons";
+import { iconSearch } from "../utils/icons";
 
-interface Props {
-  onBack?: () => void;
-}
-
-const props = defineProps<Props>();
 const router = useRouter();
-
-// ── Handlers ───────────────────────────────────────────────
-const handleBackClick = () => {
-  if (props.onBack) props.onBack();
-  else router.back();
-};
 </script>
 
 <template>
-  <button class="nav-btn" @click="handleBackClick" aria-label="返回">
-    <span v-html="iconChevronLeft" class="icon"></span>
+  <button
+    class="nav-btn"
+    @click="router.push('/transactions/search')"
+    aria-label="搜尋"
+  >
+    <span v-html="iconSearch" class="icon"></span>
   </button>
 </template>
 
