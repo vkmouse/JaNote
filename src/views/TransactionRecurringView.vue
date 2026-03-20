@@ -13,14 +13,18 @@
     <div class="page-content page">
       <!-- Header Section -->
       <div class="header-section">
-        <TypeToggle
-          v-model="viewMode"
-          leftLabel="記帳"
-          rightLabel="預算"
-          leftValue="TRANSACTION"
-          rightValue="BUDGET"
-        />
-        <TypeToggle v-model="filterType" />
+        <div class="left-controls">
+          <button
+            :class="['page-badge', viewMode === 'TRANSACTION' ? 'transaction-badge' : 'budget-badge']"
+            @click="viewMode = viewMode === 'TRANSACTION' ? 'BUDGET' : 'TRANSACTION'"
+          >
+            <span class="page-badge-icon" v-html="viewMode === 'TRANSACTION' ? iconDollarCircle : iconPiggyBank"></span>
+            <span class="page-badge-label">{{ viewMode === 'TRANSACTION' ? '記帳' : '預算' }}</span>
+          </button>
+        </div>
+        <div class="right-controls">
+          <TypeToggle v-model="filterType" />
+        </div>
       </div>
 
       <!-- Recurring Transactions List -->
@@ -166,6 +170,7 @@ import { useRecurringStore } from "../stores/recurringStore";
 import { useUserStore } from "../stores/userStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import type { EntryType } from "../types";
+import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
 
 const router = useRouter();
 const transactionStore = useTransactionStore();
@@ -283,6 +288,18 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
+}
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.right-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* List */

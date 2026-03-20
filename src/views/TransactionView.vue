@@ -91,6 +91,10 @@
                     !isViewingShared && onTransactionClick(transaction.id)
                   "
                 >
+                  <div
+                    class="type-dot"
+                    :class="transaction.type === 'INCOME' ? 'dot-income' : 'dot-expense'"
+                  ></div>
                   <div class="item-left">
                     <div
                       class="category-icon"
@@ -497,11 +501,27 @@ onMounted(async () => {
   background: rgba(239, 68, 68, 0.08);
 }
 
+.type-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-expense {
+  background-color: var(--janote-expense);
+}
+
+.dot-income {
+  background-color: var(--janote-income);
+}
+
 .item-left {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
+  min-width: 0;
 }
 
 .category-icon {
