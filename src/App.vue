@@ -5,6 +5,7 @@ import BottomNavigation from "./components/BottomNavigation.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 import { useServiceWorkerUpdate } from "./utils/serviceWorkerUpdate";
 import { useUserStore } from "./stores/userStore";
+import { useSyncStatusStore } from "./stores/syncStatusStore";
 
 // 側邊欄狀態管理
 const sideDrawerOpen = ref(false);
@@ -23,8 +24,12 @@ provide("sideDrawerOpen", sideDrawerOpen);
 
 // 初始化使用者狀態（全域，所有頁面共用）
 const userStore = useUserStore();
-onMounted(() => {
-  userStore.loadUser();
+const syncStatusStore = useSyncStatusStore();
+
+onMounted(async () => {
+  await userStore.loadUser();
+  // PWA 啟動時自動執行一次同步
+  syncStatusStore.triggerSync();
 });
 
 // 初始化 Service Worker 更新邏輯

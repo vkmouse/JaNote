@@ -85,7 +85,6 @@ const openPicker = () => {
 };
 
 // 從 Pinia Store 取得使用者狀態
-const isViewingShared = computed(() => userStore.isViewingShared);
 
 const filteredTransactions = computed(() => {
   return transactionStore.visibleTransactions.filter((t) => {
@@ -170,7 +169,6 @@ const centerBalance = computed(() => {
 });
 
 const goToSearch = () => router.push("/transactions/search");
-const goToNewTransaction = () => router.push("/transactions/new");
 
 const getCategoryIconSvg = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find(
@@ -327,11 +325,7 @@ watch(
       </div>
     </div>
 
-    <BottomTabBar
-      :show-add-button="true"
-      :add-disabled="isViewingShared"
-      @add="goToNewTransaction"
-    />
+    <BottomTabBar />
   </section>
 </template>
 

@@ -195,11 +195,7 @@
       </div>
     </div>
 
-    <BottomTabBar
-      :show-add-button="true"
-      :add-disabled="isViewingShared"
-      @add="openAddModal"
-    />
+    <BottomTabBar />
 
     <ConfirmModal
       :show="showDeleteConfirm"
@@ -408,17 +404,6 @@ const overallPercentage = computed(() =>
 );
 
 // ── Navigation to edit view ────────────────────────────────
-
-function openAddModal(): void {
-  router.push({
-    name: "budget-new",
-    state: {
-      type: transactionType.value,
-      year: selectedYear.value,
-      month: selectedMonth.value,
-    },
-  });
-}
 
 function openEditModal(budget: Budget): void {
   router.push({ name: "budget-edit", params: { id: budget.id } });

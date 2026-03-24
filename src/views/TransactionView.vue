@@ -120,11 +120,7 @@
       </div>
     </div>
 
-    <BottomTabBar
-      :show-add-button="true"
-      :add-disabled="isViewingShared"
-      @add="goToNewTransaction"
-    />
+    <BottomTabBar />
 
     <!-- Delete Confirm Modal -->
     <ConfirmModal
@@ -295,10 +291,6 @@ const getCategoryIconSvg = (categoryId: string): string => {
     (c) => c.id === categoryId,
   );
   return getCategoryIcon(category?.name || "其他");
-};
-
-const goToNewTransaction = () => {
-  router.push("/transactions/new");
 };
 
 const editTransaction = (id: string) => {

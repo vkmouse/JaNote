@@ -15,11 +15,11 @@
         </template>
       </div>
 
-      <div v-if="showAddButton" class="add-capsule">
+      <div class="add-capsule">
         <button
           class="add-btn"
-          :disabled="addDisabled"
-          @click="emit('add')"
+          :disabled="isViewingShared"
+          @click="router.push('/transactions/new')"
           aria-label="新增"
         >
           <svg
@@ -41,17 +41,14 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from "vue";
+import { inject, computed } from "vue";
 import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { iconDollarCircle, iconPieChart, iconPiggyBank, iconTag } from "../utils/icons";
+import { useUserStore } from "../stores/userStore";
 
-defineProps<{
-  showAddButton?: boolean;
-  addDisabled?: boolean;
-}>();
-
-const emit = defineEmits<{ add: [] }>();
+const userStore = useUserStore();
+const isViewingShared = computed(() => userStore.isViewingShared);
 
 const drawerOpen = inject<Ref<boolean>>("sideDrawerOpen");
 
@@ -95,7 +92,7 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
   left: 0;
   right: 0;
   z-index: 1000;
-  pointer-events: none;
+  pointer-events: auto;
   background: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0) 0%,
@@ -116,7 +113,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
 .tab-capsule {
   display: flex;
   align-items: center;
-  pointer-events: auto;
   background: var(--bg-page);
   border: 2px solid var(--border-primary);
   border-radius: 999px;
@@ -190,7 +186,6 @@ const isActive = (tabRoute: string) => route.path === tabRoute;
 .add-capsule {
   display: flex;
   align-items: center;
-  pointer-events: auto;
   background: var(--bg-page);
   border: 2px solid var(--border-primary);
   border-radius: 999px;

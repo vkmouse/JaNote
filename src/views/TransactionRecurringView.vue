@@ -127,17 +127,7 @@
       </div>
     </div>
 
-    <BottomTabBar
-      :show-add-button="true"
-      :add-disabled="isViewingShared"
-      @add="
-        router.push(
-          viewMode === 'BUDGET'
-            ? '/transactions/budget/recurring/new'
-            : '/transactions/recurring/new',
-        )
-      "
-    />
+    <BottomTabBar />
 
     <ConfirmModal
       :show="showDeleteConfirm"
