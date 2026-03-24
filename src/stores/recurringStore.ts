@@ -47,19 +47,18 @@ export const useRecurringStore = defineStore("recurring", () => {
     amount,
     note,
     recurrence_type,
-    recurrence_days,
+    recurrence_day,
   }: {
     category_id: string;
     type: EntryType;
     amount: number;
     note: string;
     recurrence_type: "MONTHLY" | "WEEKLY";
-    recurrence_days: number[];
+    recurrence_day: number;
   }): Promise<void> {
     const user = await userRepository.get();
     const user_id = user?.id || "";
     const id = crypto.randomUUID();
-    const recurrence_days_str = JSON.stringify(recurrence_days);
 
     const item: RecurringTransaction = {
       id,
@@ -69,7 +68,7 @@ export const useRecurringStore = defineStore("recurring", () => {
       amount,
       note,
       recurrence_type,
-      recurrence_days: recurrence_days_str,
+      recurrence_day,
       is_active: 1,
       version: 1,
       is_deleted: 0,
@@ -91,7 +90,7 @@ export const useRecurringStore = defineStore("recurring", () => {
           amount,
           note,
           recurrence_type,
-          recurrence_days: recurrence_days_str,
+          recurrence_day,
         }),
         base_version: 0,
         snapshot_before: null,
@@ -112,7 +111,7 @@ export const useRecurringStore = defineStore("recurring", () => {
     amount,
     note,
     recurrence_type,
-    recurrence_days,
+    recurrence_day,
   }: {
     id: string;
     category_id: string;
@@ -120,7 +119,7 @@ export const useRecurringStore = defineStore("recurring", () => {
     amount: number;
     note: string;
     recurrence_type: "MONTHLY" | "WEEKLY";
-    recurrence_days: number[];
+    recurrence_day: number;
   }): Promise<void> {
     const user = await userRepository.get();
     const user_id = user?.id || "";
@@ -128,7 +127,6 @@ export const useRecurringStore = defineStore("recurring", () => {
     if (!existing) throw new Error("RecurringTransaction not found");
 
     const snapshot = JSON.stringify(existing);
-    const recurrence_days_str = JSON.stringify(recurrence_days);
 
     const updated: RecurringTransaction = {
       ...existing,
@@ -138,7 +136,7 @@ export const useRecurringStore = defineStore("recurring", () => {
       amount,
       note,
       recurrence_type,
-      recurrence_days: recurrence_days_str,
+      recurrence_day,
       version: existing.version + 1,
     };
 
@@ -158,7 +156,7 @@ export const useRecurringStore = defineStore("recurring", () => {
           amount,
           note,
           recurrence_type,
-          recurrence_days: recurrence_days_str,
+          recurrence_day,
         }),
         base_version: existing.version,
         snapshot_before: snapshot,
@@ -227,6 +225,8 @@ export const useRecurringStore = defineStore("recurring", () => {
       goal,
       category_ids,
       is_active: 1,
+      recurrence_type: "MONTHLY",
+      recurrence_day: 1,
       version: 1,
       is_deleted: 0,
     };
@@ -246,6 +246,8 @@ export const useRecurringStore = defineStore("recurring", () => {
           type,
           goal,
           category_ids,
+          recurrence_type: "MONTHLY",
+          recurrence_day: 1,
         }),
         base_version: 0,
         snapshot_before: null,
@@ -285,6 +287,8 @@ export const useRecurringStore = defineStore("recurring", () => {
       type,
       goal,
       category_ids,
+      recurrence_type: existing.recurrence_type ?? "MONTHLY",
+      recurrence_day: existing.recurrence_day ?? 1,
       version: existing.version + 1,
     };
 
@@ -303,6 +307,8 @@ export const useRecurringStore = defineStore("recurring", () => {
           type,
           goal,
           category_ids,
+          recurrence_type: updated.recurrence_type,
+          recurrence_day: updated.recurrence_day,
         }),
         base_version: existing.version,
         snapshot_before: snapshot,

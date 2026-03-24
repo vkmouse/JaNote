@@ -19,7 +19,7 @@ export async function postRecurringTransaction(
   const amount = payloadObject?.amount;
   const note = payloadObject?.note ?? null;
   const recurrenceType = payloadObject?.recurrence_type;
-  const recurrenceDays = payloadObject?.recurrence_days;
+  const recurrenceDay = payloadObject?.recurrence_day;
   const isActive = payloadObject?.is_active ?? 1;
   const payloadUserId = payloadObject?.user_id;
 
@@ -29,8 +29,8 @@ export async function postRecurringTransaction(
   if (payloadUserId && payloadUserId !== userId) {
     return { mutation_id: event.mutation_id, status: "ERROR", error_code: "USER_ID_MISMATCH", error_message: "Payload user_id does not match authenticated user" };
   }
-  if (!isNonEmptyString(categoryId) || !isNonEmptyString(type) || !isNumber(amount) || !isNonEmptyString(recurrenceType) || !isNonEmptyString(recurrenceDays)) {
-    return { mutation_id: event.mutation_id, status: "ERROR", error_code: "INVALID_PAYLOAD", error_message: "RecurringTransaction requires category_id, type, amount, recurrence_type, and recurrence_days" };
+  if (!isNonEmptyString(categoryId) || !isNonEmptyString(type) || !isNumber(amount) || !isNonEmptyString(recurrenceType) || !isNumber(recurrenceDay)) {
+    return { mutation_id: event.mutation_id, status: "ERROR", error_code: "INVALID_PAYLOAD", error_message: "RecurringTransaction requires category_id, type, amount, recurrence_type, and recurrence_day" };
   }
   if (recurrenceType !== "MONTHLY" && recurrenceType !== "WEEKLY") {
     return { mutation_id: event.mutation_id, status: "ERROR", error_code: "INVALID_RECURRENCE_TYPE", error_message: "recurrence_type must be MONTHLY or WEEKLY" };
@@ -42,12 +42,12 @@ export async function postRecurringTransaction(
   }
 
   const newVersion = 1;
-  await createRecurringTransaction(event.entity_id, userId, categoryId, type, amount, note, recurrenceType, recurrenceDays, isActive, newVersion, DB);
+  await createRecurringTransaction(event.entity_id, userId, categoryId, type, amount, note, recurrenceType, recurrenceDay, isActive, newVersion, DB);
 
   const syncPayload = JSON.stringify({
     action: event.action,
     version: newVersion,
-    payload: JSON.stringify({ id: event.entity_id, user_id: userId, category_id: categoryId, type, amount, note, recurrence_type: recurrenceType, recurrence_days: recurrenceDays, is_active: isActive }),
+    payload: JSON.stringify({ id: event.entity_id, user_id: userId, category_id: categoryId, type, amount, note, recurrence_type: recurrenceType, recurrence_day: recurrenceDay, is_active: isActive }),
   });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 
@@ -65,15 +65,15 @@ export async function putRecurringTransaction(
   const amount = payloadObject?.amount;
   const note = payloadObject?.note ?? null;
   const recurrenceType = payloadObject?.recurrence_type;
-  const recurrenceDays = payloadObject?.recurrence_days;
+  const recurrenceDay = payloadObject?.recurrence_day;
   const isActive = payloadObject?.is_active ?? 1;
   const payloadUserId = payloadObject?.user_id;
 
   if (payloadUserId && payloadUserId !== userId) {
     return { mutation_id: event.mutation_id, status: "ERROR", error_code: "USER_ID_MISMATCH", error_message: "Payload user_id does not match authenticated user" };
   }
-  if (!isNonEmptyString(categoryId) || !isNonEmptyString(type) || !isNumber(amount) || !isNonEmptyString(recurrenceType) || !isNonEmptyString(recurrenceDays)) {
-    return { mutation_id: event.mutation_id, status: "ERROR", error_code: "INVALID_PAYLOAD", error_message: "RecurringTransaction requires category_id, type, amount, recurrence_type, and recurrence_days" };
+  if (!isNonEmptyString(categoryId) || !isNonEmptyString(type) || !isNumber(amount) || !isNonEmptyString(recurrenceType) || !isNumber(recurrenceDay)) {
+    return { mutation_id: event.mutation_id, status: "ERROR", error_code: "INVALID_PAYLOAD", error_message: "RecurringTransaction requires category_id, type, amount, recurrence_type, and recurrence_day" };
   }
   if (recurrenceType !== "MONTHLY" && recurrenceType !== "WEEKLY") {
     return { mutation_id: event.mutation_id, status: "ERROR", error_code: "INVALID_RECURRENCE_TYPE", error_message: "recurrence_type must be MONTHLY or WEEKLY" };
@@ -88,12 +88,12 @@ export async function putRecurringTransaction(
   }
 
   const newVersion = currentVersion + 1;
-  await updateRecurringTransaction(event.entity_id, userId, categoryId, type, amount, note, recurrenceType, recurrenceDays, isActive, newVersion, DB);
+  await updateRecurringTransaction(event.entity_id, userId, categoryId, type, amount, note, recurrenceType, recurrenceDay, isActive, newVersion, DB);
 
   const syncPayload = JSON.stringify({
     action: event.action,
     version: newVersion,
-    payload: JSON.stringify({ id: event.entity_id, user_id: userId, category_id: categoryId, type, amount, note, recurrence_type: recurrenceType, recurrence_days: recurrenceDays, is_active: isActive }),
+    payload: JSON.stringify({ id: event.entity_id, user_id: userId, category_id: categoryId, type, amount, note, recurrence_type: recurrenceType, recurrence_day: recurrenceDay, is_active: isActive }),
   });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 

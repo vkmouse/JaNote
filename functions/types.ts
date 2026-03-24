@@ -117,8 +117,9 @@ export interface RecurringTransaction {
   amount: number;
   note: string | null;
   recurrence_type: "MONTHLY" | "WEEKLY";
-  recurrence_days: string;
+  recurrence_day: number;
   is_active: number;
+  last_executed_at: string | null;
   version: number;
   is_deleted: number;
 }
@@ -131,6 +132,9 @@ export interface RecurringBudget {
   goal: number;
   category_ids: string;
   is_active: number;
+  recurrence_type: string;
+  recurrence_day: number;
+  last_executed_at: string | null;
   version: number;
   is_deleted: number;
 }

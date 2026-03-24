@@ -61,6 +61,7 @@ import {
   putRecurringBudget,
   deleteRecurringBudget,
 } from "../services/recurringBudgetService";
+import { executeRecurringSchedules } from "../services/recurringExecutionService";
 
 /**
  * 根據使用者的 Email 取得 User ID。
@@ -232,6 +233,16 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
 
   // 紀錄本次請求成功處理的 mutation_ids，在拉取新資料時要排除這些自己剛送出的變更，避免浪費頻寬
   const processedMutationIds = pushResults.map((r) => r.mutation_id);
+
+  // ==========================================
+  // 階段 1.5：自動執行固定排程（固定交易 / 固定預算）
+  // ==========================================
+  try {
+    await executeRecurringSchedules(userId, DB);
+  } catch (error: any) {
+    console.error("Recurring schedule execution failed:", error);
+    // 不阻斷同步流程，僅記錄錯誤
+  }
 
   // ==========================================
   // 階段二：處理 Pull (將伺服器上的新變更回傳給客戶端)

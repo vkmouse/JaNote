@@ -54,7 +54,7 @@
                 {{
                   formatRecurrence(
                     item.recurrence_type,
-                    parseRecurrenceDays(item.recurrence_days),
+                    item.recurrence_day ?? 1,
                   )
                 }}
               </span>
@@ -151,7 +151,7 @@ import NavAvatar from "../components/NavAvatar.vue";
 import TypeToggle from "../components/TypeToggle.vue";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import { formatRecurrence, parseRecurrenceDays } from "../utils/recurrence";
+import { formatRecurrence } from "../utils/recurrence";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
 import NavDelete from "../components/NavDelete.vue";

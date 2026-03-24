@@ -65,24 +65,24 @@ import { WEEK_DAY_LABELS } from "../utils/recurrence";
 const props = defineProps<{
   open: boolean;
   recurrenceType: "MONTHLY" | "WEEKLY";
-  recurrenceDays: number[];
+  recurrenceDay: number;
 }>();
 
 const emit = defineEmits<{
   "update:open": [value: boolean];
   "update:recurrenceType": [value: "MONTHLY" | "WEEKLY"];
-  "update:recurrenceDays": [value: number[]];
+  "update:recurrenceDay": [value: number];
 }>();
 
 const localType = ref<"MONTHLY" | "WEEKLY">(props.recurrenceType);
-const localDay = ref<number>(props.recurrenceDays[0] ?? 1);
+const localDay = ref<number>(props.recurrenceDay ?? 1);
 
 watch(
   () => props.open,
   (val) => {
     if (val) {
       localType.value = props.recurrenceType;
-      localDay.value = props.recurrenceDays[0] ?? (props.recurrenceType === "MONTHLY" ? 1 : 0);
+      localDay.value = props.recurrenceDay ?? (props.recurrenceType === "MONTHLY" ? 1 : 0);
     }
   },
 );
@@ -94,7 +94,7 @@ function switchType(type: "MONTHLY" | "WEEKLY") {
 
 function confirm() {
   emit("update:recurrenceType", localType.value);
-  emit("update:recurrenceDays", [localDay.value]);
+  emit("update:recurrenceDay", localDay.value);
   emit("update:open", false);
 }
 

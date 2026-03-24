@@ -182,8 +182,9 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
       amount: Number(rtxnPayload.amount) || 0,
       note: rtxnPayload.note || "",
       recurrence_type: rtxnPayload.recurrence_type || "MONTHLY",
-      recurrence_days: rtxnPayload.recurrence_days || "",
+      recurrence_day: Number(rtxnPayload.recurrence_day) || 1,
       is_active: rtxnPayload.is_active ?? 1,
+      last_executed_at: rtxnPayload.last_executed_at ?? null,
       version: event.version,
       is_deleted: 0,
     });
@@ -208,6 +209,9 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
       goal: Number(rbgtPayload.goal) || 0,
       category_ids: rbgtPayload.category_ids || "",
       is_active: rbgtPayload.is_active ?? 1,
+      recurrence_type: rbgtPayload.recurrence_type ?? "MONTHLY",
+      recurrence_day: Number(rbgtPayload.recurrence_day) || 1,
+      last_executed_at: rbgtPayload.last_executed_at ?? null,
       version: event.version,
       is_deleted: 0,
     });

@@ -19,6 +19,8 @@ export async function postRecurringBudget(
   const goal = payloadObject?.goal;
   const categoryIds = payloadObject?.category_ids;
   const isActive = payloadObject?.is_active ?? 1;
+  const recurrenceType = payloadObject?.recurrence_type ?? "MONTHLY";
+  const recurrenceDay = payloadObject?.recurrence_day ?? 1;
   const payloadUserId = payloadObject?.user_id;
 
   if (event.base_version !== 0) {
@@ -37,12 +39,12 @@ export async function postRecurringBudget(
   }
 
   const newVersion = 1;
-  await createRecurringBudget(event.entity_id, userId, name, type, goal, categoryIds, isActive, newVersion, DB);
+  await createRecurringBudget(event.entity_id, userId, name, type, goal, categoryIds, isActive, recurrenceType, recurrenceDay, newVersion, DB);
 
   const syncPayload = JSON.stringify({
     action: event.action,
     version: newVersion,
-    payload: JSON.stringify({ id: event.entity_id, user_id: userId, name, type, goal, category_ids: categoryIds, is_active: isActive }),
+    payload: JSON.stringify({ id: event.entity_id, user_id: userId, name, type, goal, category_ids: categoryIds, is_active: isActive, recurrence_type: recurrenceType, recurrence_day: recurrenceDay }),
   });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 
@@ -60,6 +62,8 @@ export async function putRecurringBudget(
   const goal = payloadObject?.goal;
   const categoryIds = payloadObject?.category_ids;
   const isActive = payloadObject?.is_active ?? 1;
+  const recurrenceType = payloadObject?.recurrence_type ?? "MONTHLY";
+  const recurrenceDay = payloadObject?.recurrence_day ?? 1;
   const payloadUserId = payloadObject?.user_id;
 
   if (payloadUserId && payloadUserId !== userId) {
@@ -78,12 +82,12 @@ export async function putRecurringBudget(
   }
 
   const newVersion = currentVersion + 1;
-  await updateRecurringBudget(event.entity_id, userId, name, type, goal, categoryIds, isActive, newVersion, DB);
+  await updateRecurringBudget(event.entity_id, userId, name, type, goal, categoryIds, isActive, recurrenceType, recurrenceDay, newVersion, DB);
 
   const syncPayload = JSON.stringify({
     action: event.action,
     version: newVersion,
-    payload: JSON.stringify({ id: event.entity_id, user_id: userId, name, type, goal, category_ids: categoryIds, is_active: isActive }),
+    payload: JSON.stringify({ id: event.entity_id, user_id: userId, name, type, goal, category_ids: categoryIds, is_active: isActive, recurrence_type: recurrenceType, recurrence_day: recurrenceDay }),
   });
   await insertSyncEvent(userId, event.mutation_id, event.entity_type, event.entity_id, syncPayload, DB);
 

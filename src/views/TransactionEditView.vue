@@ -83,7 +83,7 @@
 
     <CalendarPicker v-if="!isBudget && !isRecurring" v-model:open="showCalendar" v-model="currentDate" />
     <MonthPicker v-if="isBudget && !isRecurring" v-model:open="showMonthPicker" v-model:year="selectedYear" v-model:month="selectedMonth" />
-    <RecurrencePicker v-if="!isBudget && isRecurring" v-model:open="showRecurrencePicker" v-model:recurrenceType="recurrenceType" v-model:recurrenceDays="recurrenceDays" />
+    <RecurrencePicker v-if="!isBudget && isRecurring" v-model:open="showRecurrencePicker" v-model:recurrenceType="recurrenceType" v-model:recurrenceDay="recurrenceDay" />
   </div>
 </template>
 
@@ -101,7 +101,7 @@ import AmountInput from "../components/AmountInput.vue";
 import TypeToggle from "../components/TypeToggle.vue";
 import type { Category, EntryType } from "../types";
 import { getCategoryIcon } from "../utils/categoryIcons";
-import { formatRecurrence, parseRecurrenceDays } from "../utils/recurrence";
+import { formatRecurrence } from "../utils/recurrence";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
 import { useRecurringStore } from "../stores/recurringStore";
@@ -140,7 +140,7 @@ const showMonthPicker = ref(false);
 
 // ── Recurring mode state ───────────────────────────────────
 const recurrenceType = ref<"MONTHLY" | "WEEKLY">("MONTHLY");
-const recurrenceDays = ref<number[]>([1]);
+const recurrenceDay = ref<number>(1);
 const showRecurrencePicker = ref(false);
 
 // ── Computed ───────────────────────────────────────────────
@@ -199,7 +199,7 @@ const formattedDate = computed(() => {
 });
 
 const formattedRecurrence = computed(() =>
-  formatRecurrence(recurrenceType.value, recurrenceDays.value),
+  formatRecurrence(recurrenceType.value, recurrenceDay.value),
 );
 
 // ── Helpers ────────────────────────────────────────────────
@@ -342,7 +342,7 @@ async function saveRecurringTransaction() {
       amount: parseFloat(amount.value),
       note: notes.value,
       recurrence_type: recurrenceType.value,
-      recurrence_days: recurrenceDays.value,
+      recurrence_day: recurrenceDay.value,
     });
   } else {
     await recurringStore.addRecurringTransaction({
@@ -351,7 +351,7 @@ async function saveRecurringTransaction() {
       amount: parseFloat(amount.value),
       note: notes.value,
       recurrence_type: recurrenceType.value,
-      recurrence_days: recurrenceDays.value,
+      recurrence_day: recurrenceDay.value,
     });
   }
   router.replace("/transactions/recurring");
@@ -415,7 +415,7 @@ async function loadRecurringTransaction(id: string) {
   amount.value = String(item.amount);
   notes.value = item.note;
   recurrenceType.value = item.recurrence_type;
-  recurrenceDays.value = parseRecurrenceDays(item.recurrence_days);
+  recurrenceDay.value = item.recurrence_day ?? 1;
 }
 
 async function loadRecurringBudget(id: string) {
