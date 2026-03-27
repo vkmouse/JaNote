@@ -35,6 +35,13 @@ export async function createUser(
     .run();
 }
 
+export async function getAllUsers(DB: D1Database): Promise<User[]> {
+  const results = await DB.prepare(
+    "SELECT id, email, created_at, updated_at FROM users",
+  ).all<User>();
+  return results.results || [];
+}
+
 export async function getUserIdByEmail(
   email: string,
   DB: D1Database,

@@ -94,7 +94,7 @@ export async function initializeDefaultCategories(
     "旅行",
     "其他",
   ];
-  const incomeCategories = ["薪水", "獎金", "交易", "投資", "股息", "利息"];
+  const incomeCategories = ["薪水", "獎金", "交易", "投資", "股息", "利息", "其他"];
 
   // Import syncEventRepository to avoid circular dependency
   const { insertSyncEvent } = await import("./syncEventRepository");
