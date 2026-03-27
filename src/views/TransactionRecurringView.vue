@@ -29,59 +29,59 @@
 
       <!-- Recurring Transactions List -->
       <div v-if="viewMode === 'TRANSACTION'" class="recurring-list">
-        <div
-          v-if="filteredRecurringTransactions.length === 0"
-          class="empty-state"
-        >
+        <div v-if="filteredRecurringTransactions.length === 0" class="empty-state">
           <p>暫無固定記帳</p>
         </div>
-        <div v-else class="list-items">
-          <div
-            v-for="(item, index) in filteredRecurringTransactions"
+        <ListGroup v-else>
+          <template #header-left>
+            <span class="group-title">固定記帳</span>
+          </template>
+          <template #header-right />
+          <ListItem
+            v-for="item in filteredRecurringTransactions"
             :key="item.id"
-            :class="['list-item', { 'list-item--readonly': isViewingShared }]"
-            @click="!isViewingShared && onItemClick('TRANSACTION', item.id)"
           >
             <div
-              class="item-icon"
-              v-html="getCategoryIconById(item.category_id)"
-            />
-            <div class="item-body">
-              <span class="item-name">{{
-                item.note || getCategoryNameById(item.category_id)
-              }}</span>
-              <span class="item-recurrence">
-                {{
-                  formatRecurrence(
-                    item.recurrence_type,
-                    item.recurrence_day ?? 1,
-                  )
-                }}
-              </span>
+              class="recurring-item"
+              :class="{ 'recurring-item--readonly': isViewingShared }"
+              @click="!isViewingShared && onItemClick('TRANSACTION', item.id)"
+            >
+              <div class="item-icon">
+                <CategoryIcon :category-name="getCategoryNameById(item.category_id)" color-mode="type" :entry-type="item.type" />
+              </div>
+              <div class="item-body">
+                <span class="item-name">{{
+                  item.note || getCategoryNameById(item.category_id)
+                }}</span>
+                <span class="item-recurrence">
+                  {{
+                    formatRecurrence(
+                      item.recurrence_type,
+                      item.recurrence_day ?? 1,
+                    )
+                  }}
+                </span>
+              </div>
+              <div class="item-right">
+                <span :class="['item-amount', item.type.toLowerCase()]">
+                  ${{ item.amount.toLocaleString() }}
+                </span>
+                <label class="toggle-switch" @click.stop>
+                  <input
+                    type="checkbox"
+                    :checked="item.is_active === 1"
+                    :disabled="isViewingShared"
+                    @change="
+                      !isViewingShared &&
+                      recurringStore.toggleRecurringTransactionActive(item.id)
+                    "
+                  />
+                  <span class="toggle-slider" />
+                </label>
+              </div>
             </div>
-            <div class="item-right">
-              <span :class="['item-amount', item.type.toLowerCase()]">
-                ${{ item.amount.toLocaleString() }}
-              </span>
-              <label class="toggle-switch" @click.stop>
-                <input
-                  type="checkbox"
-                  :checked="item.is_active === 1"
-                  :disabled="isViewingShared"
-                  @change="
-                    !isViewingShared &&
-                    recurringStore.toggleRecurringTransactionActive(item.id)
-                  "
-                />
-                <span class="toggle-slider" />
-              </label>
-            </div>
-            <div
-              v-if="index < filteredRecurringTransactions.length - 1"
-              class="item-divider"
-            />
-          </div>
-        </div>
+          </ListItem>
+        </ListGroup>
       </div>
 
       <!-- Recurring Budgets List -->
@@ -89,41 +89,47 @@
         <div v-if="filteredRecurringBudgets.length === 0" class="empty-state">
           <p>暫無固定預算</p>
         </div>
-        <div v-else class="list-items">
-          <div
-            v-for="(item, index) in filteredRecurringBudgets"
+        <ListGroup v-else>
+          <template #header-left>
+            <span class="group-title">固定預算</span>
+          </template>
+          <template #header-right />
+          <ListItem
+            v-for="item in filteredRecurringBudgets"
             :key="item.id"
-            :class="['list-item', { 'list-item--readonly': isViewingShared }]"
-            @click="!isViewingShared && onItemClick('BUDGET', item.id)"
           >
-            <div class="item-icon" v-html="getBudgetIcon(item.category_ids)" />
-            <div class="item-body">
-              <span class="item-name">{{ item.name }}</span>
-              <span class="item-recurrence">每月</span>
-            </div>
-            <div class="item-right">
-              <span :class="['item-amount', item.type.toLowerCase()]">
-                ${{ item.goal.toLocaleString() }}
-              </span>
-              <label class="toggle-switch" @click.stop>
-                <input
-                  type="checkbox"
-                  :checked="item.is_active === 1"
-                  :disabled="isViewingShared"
-                  @change="
-                    !isViewingShared &&
-                    recurringStore.toggleRecurringBudgetActive(item.id)
-                  "
-                />
-                <span class="toggle-slider" />
-              </label>
-            </div>
             <div
-              v-if="index < filteredRecurringBudgets.length - 1"
-              class="item-divider"
-            />
-          </div>
-        </div>
+              class="recurring-item"
+              :class="{ 'recurring-item--readonly': isViewingShared }"
+              @click="!isViewingShared && onItemClick('BUDGET', item.id)"
+            >
+              <div class="item-icon">
+                <CategoryIcon :category-name="getBudgetCategoryName(item.category_ids)" color-mode="type" :entry-type="item.type" />
+              </div>
+              <div class="item-body">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-recurrence">每月</span>
+              </div>
+              <div class="item-right">
+                <span :class="['item-amount', item.type.toLowerCase()]">
+                  ${{ item.goal.toLocaleString() }}
+                </span>
+                <label class="toggle-switch" @click.stop>
+                  <input
+                    type="checkbox"
+                    :checked="item.is_active === 1"
+                    :disabled="isViewingShared"
+                    @change="
+                      !isViewingShared &&
+                      recurringStore.toggleRecurringBudgetActive(item.id)
+                    "
+                  />
+                  <span class="toggle-slider" />
+                </label>
+              </div>
+            </div>
+          </ListItem>
+        </ListGroup>
       </div>
     </div>
 
@@ -150,7 +156,7 @@ import NavMenu from "../components/NavMenu.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import TypeToggle from "../components/TypeToggle.vue";
 import BottomTabBar from "../components/BottomTabBar.vue";
-import { getCategoryIcon } from "../utils/categoryIcons";
+import CategoryIcon from "../components/CategoryIcon.vue";
 import { formatRecurrence } from "../utils/recurrence";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
@@ -159,6 +165,8 @@ import { useTransactionStore } from "../stores/transactionStore";
 import { useRecurringStore } from "../stores/recurringStore";
 import { useUserStore } from "../stores/userStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
+import ListGroup from "../components/ListGroup.vue";
+import ListItem from "../components/ListItem.vue";
 import type { EntryType } from "../types";
 import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
 
@@ -197,15 +205,10 @@ function getCategoryNameById(id: string): string {
   );
 }
 
-function getCategoryIconById(id: string): string {
-  const name = getCategoryNameById(id);
-  return getCategoryIcon(name);
-}
-
-function getBudgetIcon(categoryIds: string): string {
+function getBudgetCategoryName(categoryIds: string): string {
   const ids = categoryIds.split(",").filter(Boolean);
-  if (ids.length === 1) return getCategoryIconById(ids[0]!);
-  return getCategoryIcon("其他");
+  if (ids.length === 1) return getCategoryNameById(ids[0]!);
+  return "其他";
 }
 
 function toggleDeleteMode(): void {
@@ -277,7 +280,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 13px 12px;
 }
 
 .left-controls {
@@ -295,44 +298,35 @@ onMounted(async () => {
 /* List */
 .recurring-list {
   flex: 1;
-}
-
-.list-items {
-  display: flex;
-  flex-direction: column;
   padding: 8px 16px;
 }
 
-.list-item {
-  position: relative;
+.group-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.recurring-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
+  padding: 12px 16px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.list-item--readonly {
+.recurring-item--readonly {
   cursor: default;
 }
 
 .item-icon {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background: var(--janote-expense-light);
-  border: 2px solid var(--border-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.item-icon :deep(svg) {
-  width: 20px;
-  height: 20px;
-  color: #333;
 }
 
 .item-body {
@@ -345,7 +339,7 @@ onMounted(async () => {
 
 .item-name {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -375,16 +369,6 @@ onMounted(async () => {
 
 .item-amount.income {
   color: var(--text-primary);
-}
-
-.item-divider {
-  position: absolute;
-  bottom: 0;
-  left: 52px;
-  right: 0;
-  height: 1px;
-  background: var(--border-primary);
-  opacity: 0.15;
 }
 
 /* Toggle switch */

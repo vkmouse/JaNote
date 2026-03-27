@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Category } from "../types";
-import { getCategoryIcon } from "../utils/categoryIcons";
+import CategoryIcon from "./CategoryIcon.vue";
 
 const props = defineProps<{
   categories: Category[];
@@ -45,10 +45,9 @@ function handleClick(category: Category): void {
       :class="['category-item', { selected: isSelected(category.id) }]"
       @click="handleClick(category)"
     >
-      <div
-        class="category-icon-wrapper"
-        v-html="getCategoryIcon(category.name)"
-      ></div>
+      <div class="category-icon-wrapper">
+          <CategoryIcon :category-name="category.name" />
+        </div>
       <span class="category-label">{{ category.name }}</span>
     </button>
   </div>
@@ -97,18 +96,10 @@ function handleClick(category: Category): void {
 }
 
 .category-icon-wrapper {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 40px;
+  height: 40px;
+  position: relative;
   flex-shrink: 0;
-}
-
-.category-icon-wrapper :deep(svg) {
-  width: 24px;
-  height: 24px;
-  color: #333;
 }
 
 .category-label {

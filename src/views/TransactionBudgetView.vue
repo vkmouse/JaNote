@@ -38,72 +38,27 @@
         </div>
       </div>
 
-      <!-- Professional Summary Card -->
-      <div
-        v-if="currentBudgets.length > 0"
-        class="summary-card"
-        :class="transactionType.toLowerCase()"
-      >
-        <div class="summary-header">
-          <span class="summary-title">{{
-            transactionType === "EXPENSE" ? "支出預算" : "收入目標"
-          }}</span>
-          <span class="summary-badge">{{ currentBudgets.length }} 項目</span>
+      <!-- Summary Section -->
+      <div v-if="currentBudgets.length > 0" class="budget-summary">
+        <div class="summary-donut">
+          <DonutChart
+            :slices="summaryDonutSlices"
+            :center-label="summaryCenterLabel"
+            :center-balance="summaryCenterBalance"
+          />
         </div>
-        <div class="summary-amounts">
-          <div class="amount-block">
-            <div class="amount-label">本期目標</div>
-            <div class="amount-goal">${{ totalGoal.toLocaleString() }}</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">本期目標</div>
+            <div class="stat-value">${{ totalGoal.toLocaleString() }}</div>
           </div>
-          <div class="amount-block amount-block-right">
-            <div class="amount-label">
-              實際{{ transactionType === "EXPENSE" ? "支出" : "收入" }}
-            </div>
-            <div class="amount-actual">${{ totalActual.toLocaleString() }}</div>
+          <div class="stat-card">
+            <div class="stat-label">實際{{ transactionType === 'EXPENSE' ? '支出' : '收入' }}</div>
+            <div class="stat-value">${{ totalActual.toLocaleString() }}</div>
           </div>
-        </div>
-        <div class="summary-progress-row">
-          <div class="summary-pg-track">
-            <div
-              class="summary-pg-fill"
-              :style="{
-                width: `${Math.min(overallPercentage, 100)}%`,
-                background:
-                  overallPercentage > 100 ? '#EF4444' : 'rgba(0,0,0,0.28)',
-              }"
-            ></div>
-          </div>
-          <span class="summary-pct">{{ overallPercentage.toFixed(1) }}%</span>
-        </div>
-        <div class="summary-footer">
-          <div class="footer-stat">
-            <div class="footer-stat-label">
-              {{
-                transactionType === "EXPENSE"
-                  ? overallPercentage > 100
-                    ? "超出預算"
-                    : "剩餘預算"
-                  : overallPercentage >= 100
-                    ? "超出目標"
-                    : "距目標差"
-              }}
-            </div>
-            <div
-              class="footer-stat-value"
-              :class="{
-                'value-warn':
-                  transactionType === 'EXPENSE' && overallPercentage > 100,
-              }"
-            >
-              ${{ Math.abs(totalGoal - totalActual).toLocaleString() }}
-            </div>
-          </div>
-          <div class="footer-sep"></div>
-          <div class="footer-stat footer-stat-right">
-            <div class="footer-stat-label">執行率</div>
-            <div class="footer-stat-value">
-              {{ overallPercentage.toFixed(1) }}%
-            </div>
+          <div class="stat-card">
+            <div class="stat-label">執行率</div>
+            <div class="stat-value" :class="summaryValueClass">{{ overallPercentage.toFixed(1) }}%</div>
           </div>
         </div>
       </div>
@@ -130,24 +85,28 @@
           </p>
         </div>
 
-        <div v-else class="budget-group">
-          <div class="group-header">
-            <span class="group-header-label">分類</span>
-            <span class="group-header-label">實際 / 目標</span>
-          </div>
-          <div
-            v-for="(budget, index) in currentBudgets"
+        <ListGroup
+          v-for="group in groupedBudgets"
+          :key="group.monthKey"
+        >
+          <template #header-left>
+            <span class="header-label">{{ formatMonthKey(group.monthKey) }}</span>
+          </template>
+          <template #header-right />
+          <ListItem
+            v-for="budget in group.budgets"
             :key="budget.id"
             class="budget-item"
             @click="!isViewingShared && onBudgetClick(budget)"
           >
             <div class="item-left">
-              <div class="category-icon" v-html="getBudgetIcon(budget)"></div>
+              <CategoryIcon
+                :category-name="getBudgetCategoryName(budget)"
+                color-mode="type"
+                :entry-type="transactionType"
+              />
               <div class="category-info">
                 <div class="category-name">{{ budget.name }}</div>
-                <div class="month-key-label">
-                  {{ formatMonthKey(budget.month_key) }}
-                </div>
                 <div class="progress-row">
                   <div class="progress-bar-track">
                     <div
@@ -186,12 +145,8 @@
               </div>
               <div class="item-goal">/ ${{ budget.goal.toLocaleString() }}</div>
             </div>
-            <div
-              v-if="index < currentBudgets.length - 1"
-              class="item-divider"
-            ></div>
-          </div>
-        </div>
+          </ListItem>
+        </ListGroup>
       </div>
     </div>
 
@@ -219,7 +174,7 @@ import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
-import { getCategoryIcon } from "../utils/categoryIcons";
+import CategoryIcon from "../components/CategoryIcon.vue";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
 import NavDelete from "../components/NavDelete.vue";
@@ -231,6 +186,10 @@ import BottomTabBar from "../components/BottomTabBar.vue";
 import ViewModeToggle from "../components/ViewModeToggle.vue";
 import TypeToggle from "../components/TypeToggle.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
+import DonutChart from "../components/DonutChart.vue";
+import type { DonutSlice } from "../components/DonutChart.vue";
+import ListGroup from "../components/ListGroup.vue";
+import ListItem from "../components/ListItem.vue";
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -318,13 +277,13 @@ const budgetKeyRange = computed(() => {
 
 // ── Category helpers ───────────────────────────────────────
 
-function getBudgetIcon(budget: Budget): string {
+function getBudgetCategoryName(budget: Budget): string {
   const ids = budget.category_ids.split(",").filter(Boolean);
   if (ids.length === 1) {
     const cat = transactionStore.visibleCategories.find((c) => c.id === ids[0]);
-    return getCategoryIcon(cat?.name ?? "其他");
+    return cat?.name ?? "其他";
   }
-  return getCategoryIcon("其他");
+  return "其他";
 }
 
 function getActualForBudget(budget: Budget): number {
@@ -393,6 +352,17 @@ const currentBudgets = computed(() => {
     });
 });
 
+const groupedBudgets = computed(() => {
+  const map = new Map<string, (typeof currentBudgets.value)[number][]>();
+  for (const budget of currentBudgets.value) {
+    if (!map.has(budget.month_key)) map.set(budget.month_key, []);
+    map.get(budget.month_key)!.push(budget);
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([monthKey, budgets]) => ({ monthKey, budgets }));
+});
+
 const totalGoal = computed(() =>
   currentBudgets.value.reduce((s, b) => s + b.goal, 0),
 );
@@ -402,6 +372,43 @@ const totalActual = computed(() =>
 const overallPercentage = computed(() =>
   totalGoal.value > 0 ? (totalActual.value / totalGoal.value) * 100 : 0,
 );
+
+const summaryDonutSlices = computed<DonutSlice[]>(() => {
+  if (transactionType.value === "EXPENSE") {
+    if (overallPercentage.value > 100) {
+      return [{ sliceLabel: "超出預算", sliceValue: 1, sliceColor: "#EF4444" }];
+    }
+    return [
+      { sliceLabel: "已使用", sliceValue: totalActual.value, sliceColor: "#FFC952" },
+      { sliceLabel: "剩餘", sliceValue: totalGoal.value - totalActual.value, sliceColor: "#E0E0E0" },
+    ];
+  } else {
+    if (overallPercentage.value >= 100) {
+      return [{ sliceLabel: "超出目標", sliceValue: 1, sliceColor: "#47B8E0" }];
+    }
+    return [
+      { sliceLabel: "已達成", sliceValue: totalActual.value, sliceColor: "#47B8E0" },
+      { sliceLabel: "距目標", sliceValue: totalGoal.value - totalActual.value, sliceColor: "#E0E0E0" },
+    ];
+  }
+});
+
+const summaryCenterLabel = computed(() => {
+  if (transactionType.value === "EXPENSE") {
+    return overallPercentage.value > 100 ? "超出預算" : "剩餘預算";
+  }
+  return overallPercentage.value >= 100 ? "超出目標" : "距離目標";
+});
+
+const summaryCenterBalance = computed(() =>
+  `$${Math.abs(totalGoal.value - totalActual.value).toLocaleString()}`
+);
+
+const summaryValueClass = computed(() => {
+  if (transactionType.value === "EXPENSE" && overallPercentage.value > 100) return "warn";
+  if (transactionType.value === "INCOME" && overallPercentage.value >= 100) return "success";
+  return "";
+});
 
 // ── Navigation to edit view ────────────────────────────────
 
@@ -488,7 +495,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 13px 12px;
 }
 
 .left-controls,
@@ -497,159 +504,60 @@ watch(
   align-items: center;
 }
 
-/* ── Professional Summary Card ── */
-.summary-card {
-  margin: 0 16px 16px;
-  border-radius: 20px;
-  padding: 20px;
+/* ── Budget Summary (DonutChart + Stats) ── */
+.budget-summary {
+  padding: 0 16px 8px;
 }
 
-.summary-card.expense {
-  background: var(--janote-expense);
-  color: var(--text-primary);
-}
-
-.summary-card.income {
-  background: var(--janote-income);
-  color: var(--text-light);
-}
-
-.summary-header {
+.summary-donut {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  justify-content: center;
 }
 
-.summary-title {
-  font-size: 13px;
-  font-weight: 700;
-  opacity: 0.85;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
 }
 
-.summary-badge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.summary-amounts {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 16px;
-}
-
-.amount-block {
+.stat-card {
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.amount-block-right {
-  text-align: right;
-}
-
-.amount-label {
+.stat-label {
   font-size: 11px;
-  font-weight: 500;
-  opacity: 0.72;
-  letter-spacing: 0.04em;
-}
-
-.amount-goal {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.5px;
-}
-
-.amount-actual {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.summary-progress-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.summary-pg-track {
-  flex: 1;
-  height: 8px;
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.summary-pg-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s ease;
-  min-width: 4px;
-}
-
-.summary-pct {
-  font-size: 13px;
-  font-weight: 700;
-  min-width: 48px;
-  text-align: right;
-  opacity: 0.9;
-}
-
-.summary-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.footer-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.footer-stat-right {
-  text-align: right;
-  margin-left: auto;
-}
-
-.footer-stat-label {
-  font-size: 10px;
-  font-weight: 600;
-  opacity: 0.65;
+  color: var(--text-primary);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
 
-.footer-stat-value {
-  font-size: 17px;
+.stat-value {
+  font-size: 18px;
   font-weight: 700;
+  color: var(--text-primary);
 }
 
-.footer-sep {
-  width: 1px;
-  height: 30px;
-  background: rgba(0, 0, 0, 0.15);
-  flex-shrink: 0;
+.stat-value.warn {
+  color: #ef4444;
 }
 
-.value-warn {
-  color: #dc2626;
+.stat-value.success {
+  color: #47B8E0;
 }
 
 /* ── Budget list ── */
 .budget-list {
   padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .empty-state {
@@ -663,24 +571,9 @@ watch(
   font-size: 14px;
 }
 
-.budget-group {
-  background: var(--bg-page);
-  border: 2px solid var(--border-primary);
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.group-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 16px;
-  border-bottom: 2px solid var(--border-primary);
-}
-
-.group-header-label {
+.header-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-disabled);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -705,23 +598,6 @@ watch(
   min-width: 0;
 }
 
-.category-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #f5f5f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.category-icon :deep(svg) {
-  width: 24px;
-  height: 24px;
-  color: #333;
-}
-
 .category-info {
   flex: 1;
   min-width: 0;
@@ -730,23 +606,23 @@ watch(
   gap: 6px;
 }
 
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .category-name {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.month-key-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-disabled);
-  letter-spacing: 0.03em;
-}
-
-.progress-row {
+/* ── Budget item ── */
+.budget-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -807,12 +683,4 @@ watch(
   color: var(--text-disabled);
 }
 
-.item-divider {
-  position: absolute;
-  bottom: 0;
-  left: 72px;
-  right: 16px;
-  height: 1px;
-  background: #f0f0f0;
-}
 </style>

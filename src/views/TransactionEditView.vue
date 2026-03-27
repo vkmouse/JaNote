@@ -63,7 +63,7 @@
 
       <!-- Amount and Notes / Budget Name Input -->
       <AmountInput
-        :icon="displayIcon"
+        :categoryName="displayCategoryName"
         :formattedAmount="formattedAmount"
         :type="transactionType"
         :modelValue="isBudget ? budgetName : notes"
@@ -100,7 +100,6 @@ import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";
 import TypeToggle from "../components/TypeToggle.vue";
 import type { Category, EntryType } from "../types";
-import { getCategoryIcon } from "../utils/categoryIcons";
 import { formatRecurrence } from "../utils/recurrence";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
@@ -174,18 +173,18 @@ const canSave = computed(() => {
   return !!(selectedCategoryId.value && amount.value && parseFloat(amount.value) > 0);
 });
 
-const displayIcon = computed(() => {
+const displayCategoryName = computed(() => {
   if (isBudget.value) {
     if (selectedCategoryIds.value.length === 1) {
       const cat = transactionStore.visibleCategories.find(
         (c) => c.id === selectedCategoryIds.value[0],
       );
-      return getCategoryIcon(cat?.name ?? "其他");
+      return cat?.name ?? "其他";
     }
-    return getCategoryIcon("其他");
+    return "其他";
   }
   const cat = transactionStore.visibleCategories.find((c) => c.id === selectedCategoryId.value);
-  return getCategoryIcon(cat?.name || "其他");
+  return cat?.name || "其他";
 });
 
 const formattedDate = computed(() => {
@@ -501,7 +500,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 13px 12px;
 }
 
 .left-controls {

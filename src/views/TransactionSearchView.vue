@@ -60,14 +60,14 @@
         </div>
 
         <div v-else class="daily-groups">
-          <div
+          <ListGroup
             v-for="group in groupedResults"
             :key="group.date"
-            class="daily-group"
           >
-            <!-- Date Header -->
-            <div class="date-header">
+            <template #header-left>
               <span class="date-title">{{ group.dateDisplay }}</span>
+            </template>
+            <template #header-right>
               <span
                 class="daily-total"
                 :class="group.total >= 0 ? 'income' : 'expense'"
@@ -79,42 +79,35 @@
                   ).toLocaleString()
                 }}
               </span>
-            </div>
-
-            <!-- Transaction Items -->
-            <div class="transaction-items">
-              <div
-                v-for="(transaction, index) in group.transactions"
-                :key="transaction.id"
-                class="transaction-item"
-                @click="!isViewingShared && editTransaction(transaction.id)"
-              >
-                <div class="item-left">
-                  <div
-                    class="category-icon"
-                    v-html="getCategoryIconSvg(transaction.category_id)"
-                  ></div>
-                  <span class="category-name">
-                    <span
-                      v-for="(part, i) in highlightNote(transaction.note)"
-                      :key="i"
-                      :class="{ highlight: part.match }"
-                      >{{ part.text }}</span
-                    >
-                    <span v-if="!transaction.note" class="no-note">無備註</span>
-                  </span>
-                </div>
-                <div :class="['item-amount', transaction.type.toLowerCase()]">
-                  ${{ transaction.type === "EXPENSE" ? "-" : ""
-                  }}{{ transaction.amount.toLocaleString() }}
-                </div>
-                <div
-                  v-if="index < group.transactions.length - 1"
-                  class="item-divider"
-                ></div>
+            </template>
+            <ListItem
+              v-for="transaction in group.transactions"
+              :key="transaction.id"
+              class="transaction-item"
+              @click="!isViewingShared && editTransaction(transaction.id)"
+            >
+              <div class="item-left">
+                <CategoryIcon
+                  :category-name="getCategoryName(transaction.category_id)"
+                  color-mode="type"
+                  :entry-type="transaction.type"
+                />
+                <span class="category-name">
+                  <span
+                    v-for="(part, i) in highlightNote(transaction.note)"
+                    :key="i"
+                    :class="{ highlight: part.match }"
+                    >{{ part.text }}</span
+                  >
+                  <span v-if="!transaction.note" class="no-note">無備註</span>
+                </span>
               </div>
-            </div>
-          </div>
+              <div :class="['item-amount', transaction.type.toLowerCase()]">
+                ${{ transaction.type === "EXPENSE" ? "-" : ""
+                }}{{ transaction.amount.toLocaleString() }}
+              </div>
+            </ListItem>
+          </ListGroup>
         </div>
       </div>
     </div>
@@ -128,7 +121,9 @@ import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import type { Transaction } from "../types";
-import { getCategoryIcon } from "../utils/categoryIcons";
+import CategoryIcon from "../components/CategoryIcon.vue";
+import ListGroup from "../components/ListGroup.vue";
+import ListItem from "../components/ListItem.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 
@@ -156,11 +151,11 @@ const editTransaction = (id: string) => {
   router.push(`/transaction/${id}/edit`);
 };
 
-const getCategoryIconSvg = (categoryId: string): string => {
+const getCategoryName = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find(
     (c) => c.id === categoryId,
   );
-  return getCategoryIcon(category?.name || "其他");
+  return category?.name || "其他";
 };
 
 const searchResults = computed(() => {
@@ -355,23 +350,6 @@ onMounted(async () => {
   padding-top: 16px;
 }
 
-.daily-group {
-  background: var(--bg-page);
-  border: 2px solid var(--border-primary);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* Date Header */
-.date-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--bg-page);
-  border-bottom: 2px solid var(--border-primary);
-}
-
 .date-title {
   font-size: 14px;
   font-weight: 600;
@@ -392,10 +370,6 @@ onMounted(async () => {
 }
 
 /* Transaction Items */
-.transaction-items {
-  background: var(--bg-page);
-}
-
 .transaction-item {
   display: flex;
   align-items: center;
@@ -411,22 +385,6 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   flex: 1;
-}
-
-.category-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.category-icon :deep(svg) {
-  width: 24px;
-  height: 24px;
-  color: #333;
 }
 
 .category-name {
@@ -456,12 +414,4 @@ onMounted(async () => {
   color: var(--text-primary);
 }
 
-.item-divider {
-  position: absolute;
-  bottom: 0;
-  left: 72px;
-  right: 16px;
-  height: 1px;
-  background: #f0f0f0;
-}
 </style>

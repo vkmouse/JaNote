@@ -12,12 +12,14 @@ import type { DonutSlice } from "../components/DonutChart.vue";
 import type { EntryType } from "../types";
 import ViewModeToggle from "../components/ViewModeToggle.vue";
 import TypeToggle from "../components/TypeToggle.vue";
-import { getCategoryIcon } from "../utils/categoryIcons";
+import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import BottomTabBar from "../components/BottomTabBar.vue";
+import ListGroup from "../components/ListGroup.vue";
+import ListItem from "../components/ListItem.vue";
 
 type ViewMode = "monthly" | "yearly" | "custom";
 
@@ -25,7 +27,6 @@ interface CategorySummary {
   category_id: string;
   category_name: string;
   total_amount: number;
-  color: string;
 }
 
 const router = useRouter();
@@ -40,24 +41,6 @@ const showDateRangePicker = ref(false);
 const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
 const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
 const transactionType = ref<EntryType>("EXPENSE");
-
-const categoryColors = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#45B7D1",
-  "#FFA07A",
-  "#98D8C8",
-  "#F7DC6F",
-  "#BB8FCE",
-  "#85C1E2",
-  "#F8B88B",
-  "#AED6F1",
-  "#F1948A",
-  "#82E0AA",
-  "#FAD7A0",
-  "#D7BDE2",
-  "#A3E4D7",
-];
 
 const currentMonthDisplay = computed(() => {
   if (viewMode.value === "monthly") {
@@ -131,8 +114,6 @@ const categorySummaries = computed<CategorySummary[]>(() => {
         category_id: transaction.category_id,
         category_name: categoryName,
         total_amount: 0,
-        color:
-          categoryColors[categoryMap.size % categoryColors.length] || "#FF6B6B",
       });
     }
 
@@ -156,7 +137,7 @@ const donutSlices = computed<DonutSlice[]>(() => {
   return categorySummaries.value.map((summary) => ({
     sliceLabel: summary.category_name,
     sliceValue: summary.total_amount,
-    sliceColor: summary.color,
+    sliceColor: getCategoryColor(summary.category_name),
   }));
 });
 
@@ -170,11 +151,11 @@ const centerBalance = computed(() => {
 
 const goToSearch = () => router.push("/transactions/search");
 
-const getCategoryIconSvg = (categoryId: string): string => {
+const getCategoryName = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find(
     (c) => c.id === categoryId,
   );
-  return getCategoryIcon(category?.name || "其他");
+  return category?.name || "其他";
 };
 
 const loadTransactions = async () => {
@@ -268,60 +249,48 @@ watch(
           <p>暫無資料</p>
         </div>
 
-        <div v-else class="category-group">
-          <!-- 列表標頭 -->
-          <div class="list-header">
-            <span class="list-header-label">分類</span>
-            <span class="list-header-label">金額</span>
-          </div>
-
-          <div class="category-items">
-            <div
-              v-for="(summary, index) in categorySummaries"
-              :key="summary.category_id"
-              class="category-item"
-            >
-              <div class="item-left">
-                <div
-                  class="color-indicator"
-                  :style="{ backgroundColor: summary.color }"
-                ></div>
-                <div
-                  class="category-icon"
-                  v-html="getCategoryIconSvg(summary.category_id)"
-                ></div>
-                <div class="category-info">
-                  <span class="category-name">{{ summary.category_name }}</span>
-                  <!-- 百分比進度條 -->
-                  <div class="progress-bar-track">
-                    <div
-                      class="progress-bar-fill"
-                      :style="{
-                        width:
-                          totalAmount > 0
-                            ? (summary.total_amount / totalAmount) * 100 + '%'
-                            : '0%',
-                        backgroundColor: summary.color,
-                      }"
-                    ></div>
-                  </div>
+        <ListGroup>
+          <template #header-left>
+            <span class="header-label">{{ transactionType === 'EXPENSE' ? '支出明細' : '收入明細' }}</span>
+          </template>
+          <template #header-right />
+          <ListItem
+            v-for="summary in categorySummaries"
+            :key="summary.category_id"
+            class="category-item"
+          >
+            <div class="item-left">
+              <CategoryIcon
+                :category-name="summary.category_name"
+                color-mode="category"
+              />
+              <div class="category-info">
+                <span class="category-name">{{ summary.category_name }}</span>
+                <!-- 百分比進度條 -->
+                <div class="progress-bar-track">
+                  <div
+                    class="progress-bar-fill"
+                    :style="{
+                      width:
+                        totalAmount > 0
+                          ? (summary.total_amount / totalAmount) * 100 + '%'
+                          : '0%',
+                      backgroundColor: getCategoryColor(summary.category_name),
+                    }"
+                  ></div>
                 </div>
               </div>
-              <div class="item-right">
-                <span class="item-amount"
-                  >${{ summary.total_amount.toLocaleString() }}</span
-                >
-                <span class="item-percentage" v-if="totalAmount > 0">
-                  {{ ((summary.total_amount / totalAmount) * 100).toFixed(1) }}%
-                </span>
-              </div>
-              <div
-                v-if="index < categorySummaries.length - 1"
-                class="item-divider"
-              ></div>
             </div>
-          </div>
-        </div>
+            <div class="item-right">
+              <span class="item-amount"
+                >${{ summary.total_amount.toLocaleString() }}</span
+              >
+              <span class="item-percentage" v-if="totalAmount > 0">
+                {{ ((summary.total_amount / totalAmount) * 100).toFixed(1) }}%
+              </span>
+            </div>
+          </ListItem>
+        </ListGroup>
       </div>
     </div>
 
@@ -362,7 +331,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 13px 12px;
 }
 
 .left-controls {
@@ -397,34 +366,11 @@ watch(
   font-size: 14px;
 }
 
-.category-group {
-  background: var(--bg-page);
-  border: 2px solid var(--border-primary);
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-/* 列表標頭 */
-.list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  border-bottom: 2px solid var(--border-primary);
-  background: var(--bg-page);
-}
-
-.list-header-label {
+.header-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-disabled);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-/* 分類項目 */
-.category-items {
-  background: var(--bg-page);
 }
 
 .category-item {
@@ -444,31 +390,6 @@ watch(
   min-width: 0;
 }
 
-.color-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.category-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: #f5f5f5;
-  border-radius: 10px;
-}
-
-.category-icon :deep(svg) {
-  width: 22px;
-  height: 22px;
-  color: #333;
-}
-
-/* 分類名稱 + 進度條 */
 .category-info {
   display: flex;
   flex-direction: column;
@@ -478,8 +399,8 @@ watch(
 }
 
 .category-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -521,12 +442,4 @@ watch(
   color: var(--text-disabled);
 }
 
-.item-divider {
-  position: absolute;
-  bottom: 0;
-  left: 76px;
-  right: 16px;
-  height: 1px;
-  background: #f0f0f0;
-}
 </style>

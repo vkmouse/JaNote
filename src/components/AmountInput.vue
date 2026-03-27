@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { EntryType } from "../types";
+import CategoryIcon from "./CategoryIcon.vue";
 
 defineProps<{
-  icon: string;
+  categoryName: string;
   formattedAmount: string;
   type: EntryType;
   modelValue: string;
@@ -18,7 +19,7 @@ defineEmits<{
   <div class="input-section">
     <div class="input-group">
       <label class="label">
-        <div class="category-icon-display" v-html="icon"></div>
+        <CategoryIcon :category-name="categoryName" />
         <span
           :class="[
             'amount-display',
@@ -63,21 +64,6 @@ defineEmits<{
   gap: 12px;
   flex: 0 0 auto;
   min-width: 150px;
-}
-
-.category-icon-display {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.category-icon-display :deep(svg) {
-  width: 24px;
-  height: 24px;
-  color: #333;
 }
 
 .amount-display {
