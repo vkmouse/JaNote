@@ -22,6 +22,233 @@ const operatingShareId = ref<string | null>(null);
 
 const isSyncing = computed(() => syncStore.syncStatus === "syncing");
 
+// CSV 匯出匯入相關狀態
+const csvFileInput = ref<HTMLInputElement | null>(null);
+const isImporting = ref(false);
+
+// ── CSV 工具函式 ────────────────────────────────────────────
+
+/** 解析單行 CSV，處理引號內含逗號的欄位 */
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        result.push(cur);
+        cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+/** 將欄位值包裝為 CSV 安全字串 */
+function escapeCsvField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return '"' + value.replace(/"/g, '""') + '"';
+  }
+  return value;
+}
+
+/** Unix ms → YYYY/MM/DD */
+function msToDateStr(ms: number): string {
+  const d = new Date(ms);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}/${m}/${day}`;
+}
+
+/** YYYY/MM/DD → Unix ms（中午 12:00，避免時區偏移到前一天）*/
+function dateStrToMs(str: string): number {
+  const parts = str.trim().split(/[/\-]/);
+  if (parts.length !== 3) return NaN;
+  const y = parseInt(parts[0], 10);
+  const mo = parseInt(parts[1], 10) - 1;
+  const d = parseInt(parts[2], 10);
+  return new Date(y, mo, d, 12, 0, 0).getTime();
+}
+
+// ── 匯出 ────────────────────────────────────────────────────
+
+async function exportCsv() {
+  const myTransactions = [...transactionStore.visibleTransactions].sort(
+    (a, b) => a.date - b.date,
+  );
+  const categoryMap = new Map(
+    transactionStore.visibleCategories.map((c) => [c.id, c]),
+  );
+
+  const rows: string[] = ["記帳日期,分類,子分類,金額,更新日期,備註"];
+
+  for (const t of myTransactions) {
+    const cat = categoryMap.get(t.category_id);
+    const catName = cat ? cat.name : "";
+    const typeLabel = t.type === "EXPENSE" ? "支出" : "收入";
+    const dateStr = msToDateStr(t.date);
+    rows.push(
+      [
+        dateStr,
+        typeLabel,
+        escapeCsvField(catName),
+        String(t.amount),
+        dateStr,
+        escapeCsvField(t.note),
+      ].join(","),
+    );
+  }
+
+  const csvContent = "\uFEFF" + rows.join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `janote_transactions_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── 匯入 ────────────────────────────────────────────────────
+
+const REQUIRED_COLUMNS = ["記帳日期", "分類", "子分類", "金額", "更新日期", "備註"];
+
+function triggerCsvImport() {
+  csvFileInput.value?.click();
+}
+
+async function handleCsvImport(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = ""; // 重置 input 以允許重複選同一檔案
+  if (!file) return;
+  await importCsv(file);
+}
+
+async function importCsv(file: File) {
+  isImporting.value = true;
+  try {
+    let text = await file.text();
+    // 去除 UTF-8 BOM
+    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+
+    const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
+    if (lines.length < 2) {
+      alert("匯入失敗：CSV 內容為空");
+      return;
+    }
+
+    // 確認必要欄位都存在
+    const headers = parseCsvLine(lines[0]).map((h) => h.trim());
+    const missingCols = REQUIRED_COLUMNS.filter((col) => !headers.includes(col));
+    if (missingCols.length > 0) {
+      alert(`匯入失敗：缺少必要欄位 [${missingCols.join("、")}]`);
+      return;
+    }
+
+    // 建立欄位索引（多餘欄位自動忽略）
+    const idx: Record<string, number> = {};
+    for (const col of REQUIRED_COLUMNS) {
+      idx[col] = headers.indexOf(col);
+    }
+
+    const myCategories = transactionStore.visibleCategories;
+
+    interface ImportRow {
+      category_id: string;
+      type: "EXPENSE" | "INCOME";
+      amount: number;
+      note: string;
+      date: number;
+    }
+    const validRows: ImportRow[] = [];
+    const skippedRows: number[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const fields = parseCsvLine(lines[i]);
+      const dateStr = fields[idx["記帳日期"]]?.trim() ?? "";
+      const typeStr = fields[idx["分類"]]?.trim() ?? "";
+      const catName = fields[idx["子分類"]]?.trim() ?? "";
+      const amountStr = fields[idx["金額"]]?.trim() ?? "";
+      const note = fields[idx["備註"]]?.trim() ?? "";
+
+      const date = dateStrToMs(dateStr);
+      if (isNaN(date)) {
+        skippedRows.push(i + 1);
+        continue;
+      }
+
+      const type: "EXPENSE" | "INCOME" = typeStr === "收入" ? "INCOME" : "EXPENSE";
+
+      const amount = parseFloat(amountStr);
+      if (isNaN(amount) || amount < 0) {
+        skippedRows.push(i + 1);
+        continue;
+      }
+
+      // 比對子分類：name + type 完全相符，fallback「其他」同類型
+      let cat = myCategories.find((c) => c.name === catName && c.type === type);
+      if (!cat) {
+        cat = myCategories.find((c) => c.name === "其他" && c.type === type);
+      }
+      if (!cat) {
+        skippedRows.push(i + 1);
+        continue;
+      }
+
+      validRows.push({ category_id: cat.id, type, amount, note, date });
+    }
+
+    if (validRows.length === 0) {
+      const reason =
+        skippedRows.length > 0
+          ? `所有資料列都無法對應分類（第 ${skippedRows.join("、")} 行）`
+          : "沒有可匯入的資料";
+      alert(`匯入失敗：${reason}`);
+      return;
+    }
+
+    const skipMsg =
+      skippedRows.length > 0
+        ? `\n（第 ${skippedRows.join("、")} 行因分類不符將被跳過）`
+        : "";
+    if (!confirm(`本次將新增 ${validRows.length} 筆交易，確認匯入？${skipMsg}`)) {
+      return;
+    }
+
+    for (const row of validRows) {
+      await transactionStore.addTransaction(row);
+    }
+
+    alert(`已成功匯入 ${validRows.length} 筆交易，請執行同步以上傳資料`);
+  } catch (err) {
+    alert("匯入失敗：讀取 CSV 發生錯誤");
+    console.error("CSV 匯入錯誤:", err);
+  } finally {
+    isImporting.value = false;
+  }
+}
+
 onMounted(() => {
   refreshLocalState();
 });
@@ -30,6 +257,8 @@ async function refreshLocalState() {
   await syncStore.refreshSyncState();
   await userStore.loadUser();
   await userShareStore.loadShares(userStore.currentUserId);
+  await transactionStore.loadTransactions();
+  await transactionStore.loadCategories();
 }
 
 async function syncNow() {
@@ -198,6 +427,30 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
           </div>
         </div>
       </header>
+
+      <section class="csv-section" v-if="!userStore.isViewingShared">
+        <h2>資料匯出 / 匯入</h2>
+        <p class="csv-desc">匯出或匯入本機交易記錄（CSV 格式）。匯入後請執行同步以上傳資料。</p>
+        <div class="csv-actions">
+          <button class="btn-primary" :disabled="isImporting" @click="exportCsv">
+            匯出 CSV
+          </button>
+          <button
+            class="btn-primary btn-import"
+            :disabled="isImporting"
+            @click="triggerCsvImport"
+          >
+            {{ isImporting ? "匯入中..." : "匯入 CSV" }}
+          </button>
+        </div>
+        <input
+          ref="csvFileInput"
+          type="file"
+          accept=".csv,text/csv"
+          style="display: none"
+          @change="handleCsvImport"
+        />
+      </section>
 
       <section class="controls">
         <div class="control">
@@ -520,6 +773,39 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   flex-direction: column;
   gap: 10px;
   justify-content: flex-end;
+}
+
+.csv-section {
+  background: var(--bg-page);
+  border: 2px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 28px;
+}
+
+.csv-section h2 {
+  font-size: 20px;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.csv-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 14px 0;
+  line-height: 1.5;
+}
+
+.csv-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-import {
+  background: var(--janote-income);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(71, 184, 224, 0.3);
 }
 
 .share-section {
