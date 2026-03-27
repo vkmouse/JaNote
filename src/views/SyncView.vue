@@ -37,7 +37,7 @@ function parseCsvLine(line: string): string[] {
     const ch = line[i];
     if (inQuotes) {
       if (ch === '"') {
-        if (line[i + 1] === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') {
           cur += '"';
           i++;
         } else {
@@ -82,9 +82,10 @@ function msToDateStr(ms: number): string {
 function dateStrToMs(str: string): number {
   const parts = str.trim().split(/[/\-]/);
   if (parts.length !== 3) return NaN;
-  const y = parseInt(parts[0], 10);
-  const mo = parseInt(parts[1], 10) - 1;
-  const d = parseInt(parts[2], 10);
+  const [yStr, mStr, dStr] = parts as [string, string, string];
+  const y = parseInt(yStr, 10);
+  const mo = parseInt(mStr, 10) - 1;
+  const d = parseInt(dStr, 10);
   return new Date(y, mo, d, 12, 0, 0).getTime();
 }
 
@@ -131,7 +132,8 @@ async function exportCsv() {
 
 // ── 匯入 ────────────────────────────────────────────────────
 
-const REQUIRED_COLUMNS = ["記帳日期", "分類", "子分類", "金額", "更新日期", "備註"];
+const REQUIRED_COLUMNS = ["記帳日期", "分類", "子分類", "金額", "更新日期", "備註"] as const;
+type CsvColKey = (typeof REQUIRED_COLUMNS)[number];
 
 function triggerCsvImport() {
   csvFileInput.value?.click();
@@ -159,7 +161,7 @@ async function importCsv(file: File) {
     }
 
     // 確認必要欄位都存在
-    const headers = parseCsvLine(lines[0]).map((h) => h.trim());
+    const headers = parseCsvLine(lines[0]!).map((h) => h.trim());
     const missingCols = REQUIRED_COLUMNS.filter((col) => !headers.includes(col));
     if (missingCols.length > 0) {
       alert(`匯入失敗：缺少必要欄位 [${missingCols.join("、")}]`);
@@ -167,7 +169,7 @@ async function importCsv(file: File) {
     }
 
     // 建立欄位索引（多餘欄位自動忽略）
-    const idx: Record<string, number> = {};
+    const idx = {} as Record<CsvColKey, number>;
     for (const col of REQUIRED_COLUMNS) {
       idx[col] = headers.indexOf(col);
     }
@@ -185,7 +187,7 @@ async function importCsv(file: File) {
     const skippedRows: number[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const fields = parseCsvLine(lines[i]);
+      const fields = parseCsvLine(lines[i]!);
       const dateStr = fields[idx["記帳日期"]]?.trim() ?? "";
       const typeStr = fields[idx["分類"]]?.trim() ?? "";
       const catName = fields[idx["子分類"]]?.trim() ?? "";

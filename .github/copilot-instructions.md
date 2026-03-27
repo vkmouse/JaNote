@@ -222,3 +222,7 @@ views / components
 ```
 
 > **重要**：views 與 components **不得**直接 import `src/db/repositories/` 或 `src/db/index.ts`。所有資料存取一律透過對應的 Pinia store。
+
+### 修改完成標準
+
+每次修改前端程式碼後，**必須執行 `npm run type-check` 並確認通過**，才算修改完成。
