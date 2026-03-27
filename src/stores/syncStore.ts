@@ -382,91 +382,109 @@ async function handleError(
   });
 }
 
+const SYNC_BATCH_SIZE = 100;
+
 /** 同步核心邏輯 */
 async function runSync(apiBase: string): Promise<SyncResponse> {
-  const lastCursor = await syncMetaRepository.getLastCursor();
+  let currentCursor = await syncMetaRepository.getLastCursor();
   const queue = await syncQueueRepository.getAllOrdered();
   const localUser = await userRepository.get();
 
-  const pushCommands: PushCommand[] = queue.map((item) => ({
-    mutation_id: item.mutation_id,
-    entity_type: item.entity_type,
-    entity_id: item.entity_id,
-    action: item.action,
-    base_version: item.base_version,
-    payload: parsePayload(item.payload),
-  }));
+  // 將佇列切分為每批 SYNC_BATCH_SIZE 筆的批次；佇列為空時仍送一次空請求以觸發 pull
+  const batches: SyncQueueItem[][] =
+    queue.length === 0
+      ? [[]]
+      : Array.from({ length: Math.ceil(queue.length / SYNC_BATCH_SIZE) }, (_, i) =>
+          queue.slice(i * SYNC_BATCH_SIZE, (i + 1) * SYNC_BATCH_SIZE),
+        );
 
-  const mutationMap = new Map<string, SyncQueueItem>(
-    queue.map((item) => [item.mutation_id, item]),
-  );
+  let lastResponseData: SyncResponse | null = null;
 
-  const response = await fetch(`${apiBase}/sync`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      last_cursor: lastCursor,
-      push_commands: pushCommands,
-      user: localUser,
-    }),
-  });
+  for (const batch of batches) {
+    const pushCommands: PushCommand[] = batch.map((item) => ({
+      mutation_id: item.mutation_id,
+      entity_type: item.entity_type,
+      entity_id: item.entity_id,
+      action: item.action,
+      base_version: item.base_version,
+      payload: parsePayload(item.payload),
+    }));
 
-  if (!response.ok) {
-    throw new Error(`Sync failed with status ${response.status}`);
-  }
+    const mutationMap = new Map<string, SyncQueueItem>(
+      batch.map((item) => [item.mutation_id, item]),
+    );
 
-  const responseData: SyncResponse = await response.json();
-  const pushResultsList: PushResult[] = responseData.push_results || [];
-  const pullEvents = responseData.pull_events || [];
-  const pullEntityIds = new Set(pullEvents.map((event) => event.entity_id));
+    const response = await fetch(`${apiBase}/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        last_cursor: currentCursor,
+        push_commands: pushCommands,
+        user: localUser,
+      }),
+    });
 
-  // 步驟 1：先套用伺服器傳來的新資料
-  for (const event of pullEvents) {
-    await applyPullEvent(event);
-  }
+    if (!response.ok) {
+      throw new Error(`Sync failed with status ${response.status}`);
+    }
 
-  // 步驟 2：處理推播結果
-  for (const result of pushResultsList) {
-    const entry = mutationMap.get(result.mutation_id);
-    if (!entry) continue;
+    const responseData: SyncResponse = await response.json();
+    const pushResultsList: PushResult[] = responseData.push_results || [];
+    const pullEvents = responseData.pull_events || [];
+    const pullEntityIds = new Set(pullEvents.map((event) => event.entity_id));
 
-    if (result.status === "OK") {
-      if (result.version == null) continue;
-      if (!pullEntityIds.has(entry.entity_id)) {
-        const action = entry.action as "PUT" | "DELETE" | "POST";
-        await bumpLocalVersion(
-          entry.entity_type,
-          entry.entity_id,
-          result.version,
-          action,
+    // 步驟 1：先套用伺服器傳來的新資料
+    for (const event of pullEvents) {
+      await applyPullEvent(event);
+    }
+
+    // 步驟 2：處理推播結果
+    for (const result of pushResultsList) {
+      const entry = mutationMap.get(result.mutation_id);
+      if (!entry) continue;
+
+      if (result.status === "OK") {
+        if (result.version == null) continue;
+        if (!pullEntityIds.has(entry.entity_id)) {
+          const action = entry.action as "PUT" | "DELETE" | "POST";
+          await bumpLocalVersion(
+            entry.entity_type,
+            entry.entity_id,
+            result.version,
+            action,
+          );
+        }
+        await syncQueueRepository.removeByMutationIds([result.mutation_id]);
+      } else if (result.status === "SKIPPED") {
+        await syncQueueRepository.removeByMutationIds([result.mutation_id]);
+      } else if (result.status === "ERROR") {
+        await handleError(
+          result,
+          entry,
+          mutationMap,
+          pushResultsList,
+          pullEntityIds,
         );
       }
-      await syncQueueRepository.removeByMutationIds([result.mutation_id]);
-    } else if (result.status === "SKIPPED") {
-      await syncQueueRepository.removeByMutationIds([result.mutation_id]);
-    } else if (result.status === "ERROR") {
-      await handleError(
-        result,
-        entry,
-        mutationMap,
-        pushResultsList,
-        pullEntityIds,
-      );
     }
+
+    // 步驟 3：清理被 Pull 覆蓋的佇列項目
+    for (const entityId of pullEntityIds) {
+      await syncQueueRepository.removeByEntityId(entityId);
+    }
+
+    // 每批次結束後立即持久化 cursor，確保失敗時下次能從斷點繼續
+    currentCursor = responseData.new_cursor || currentCursor;
+    await syncMetaRepository.setLastCursor(currentCursor);
+
+    if (responseData.user) {
+      await userRepository.set(responseData.user);
+    }
+
+    lastResponseData = responseData;
   }
 
-  // 步驟 3：清理被 Pull 覆蓋的佇列項目
-  for (const entityId of pullEntityIds) {
-    await syncQueueRepository.removeByEntityId(entityId);
-  }
-
-  await syncMetaRepository.setLastCursor(responseData.new_cursor || lastCursor);
-
-  if (responseData.user) {
-    await userRepository.set(responseData.user);
-  }
-
-  return responseData;
+  return lastResponseData!;
 }
 
 // ── Pinia Store ────────────────────────────────────────────────────────────────
