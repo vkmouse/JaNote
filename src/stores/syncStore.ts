@@ -382,7 +382,7 @@ async function handleError(
   });
 }
 
-const SYNC_BATCH_SIZE = 100;
+const SYNC_BATCH_SIZE = 50;
 
 /** 同步核心邏輯 */
 async function runSync(apiBase: string): Promise<SyncResponse> {
