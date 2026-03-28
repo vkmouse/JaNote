@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject, watch } from "vue";
 import { listGroupKey } from "./ListGroup.vue";
-import { iconTrash } from "../utils/icons";
+import { iconTrash, iconDefault } from "../utils/icons";
 
 const props = withDefaults(
   defineProps<{
@@ -12,6 +12,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "delete"): void;
+  (e: "edit"): void;
 }>();
 
 // ── Exclusive state via ListGroup ────────────────────────────────────────────
@@ -19,8 +20,8 @@ const groupContext = inject(listGroupKey, null);
 const itemId = Symbol();
 
 // ── Swipe state ──────────────────────────────────────────────────────────────
-const BUTTON_WIDTH = 72;
-const SNAP_THRESHOLD = BUTTON_WIDTH / 3; // 24 px
+const BUTTON_WIDTH = 144; // 72px edit + 72px delete
+const SNAP_THRESHOLD = 48;
 const DIRECTION_LOCK_THRESHOLD = 8;
 
 const translateX = ref(0);
@@ -123,6 +124,14 @@ function onContentClick() {
   }
 }
 
+// ── Edit button ──────────────────────────────────────────────────────────────
+function onEditClick() {
+  emit("edit");
+  translateX.value = 0;
+  isOpen.value = false;
+  groupContext?.closeAll();
+}
+
 // ── Delete button ─────────────────────────────────────────────────────────────
 function onDeleteClick() {
   emit("delete");
@@ -135,8 +144,13 @@ function onDeleteClick() {
 <template>
   <div :class="['list-item', { 'list-item--swipeable': swipeable }]">
     <template v-if="swipeable">
-      <div class="swipe-action" @click.stop="onDeleteClick">
-        <span v-html="iconTrash" class="delete-icon" />
+      <div class="swipe-actions">
+        <div class="swipe-action swipe-action--edit" @click.stop="onEditClick">
+          <span v-html="iconDefault" class="action-icon" />
+        </div>
+        <div class="swipe-action swipe-action--delete" @click.stop="onDeleteClick">
+          <span v-html="iconTrash" class="action-icon" />
+        </div>
       </div>
       <div
         class="swipe-content"
@@ -175,14 +189,18 @@ function onDeleteClick() {
   right: 0;
 }
 
-/* ── Delete action (revealed on swipe) ─────────────────────── */
-.swipe-action {
+/* ── Action buttons (revealed on swipe) ────────────────────── */
+.swipe-actions {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 72px;
-  background: var(--janote-action, #F87171);
+  width: 144px;
+  display: flex;
+}
+
+.swipe-action {
+  flex: 0 0 72px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -190,7 +208,15 @@ function onDeleteClick() {
   cursor: pointer;
 }
 
-.delete-icon {
+.swipe-action--edit {
+  background: #6EBB85;
+}
+
+.swipe-action--delete {
+  background: var(--janote-action, #F87171);
+}
+
+.action-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,7 +224,7 @@ function onDeleteClick() {
   height: 22px;
 }
 
-.delete-icon :deep(svg) {
+.action-icon :deep(svg) {
   width: 22px;
   height: 22px;
   stroke: #fff;

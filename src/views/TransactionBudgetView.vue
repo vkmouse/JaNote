@@ -97,11 +97,9 @@
             :key="budget.id"
             :swipeable="!isViewingShared"
             @delete="onBudgetSwipeDelete(budget)"
+            @edit="openEditModal(budget)"
           >
-            <div
-              class="budget-item"
-              @click="!isViewingShared && openEditModal(budget)"
-            >
+            <div class="budget-item">
             <div class="item-left">
               <CategoryIcon
                 :category-name="getBudgetCategoryName(budget)"
@@ -193,6 +191,7 @@ import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
+import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -204,6 +203,8 @@ const router = useRouter();
 const userStore = useUserStore();
 const transactionStore = useTransactionStore();
 const budgetStore = useBudgetStore();
+
+useSharedSwipeContext();
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 

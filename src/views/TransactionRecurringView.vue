@@ -41,11 +41,11 @@
             :key="item.id"
             :swipeable="!isViewingShared"
             @delete="onItemSwipeDelete('TRANSACTION', item.id)"
+            @edit="onItemClick('TRANSACTION', item.id)"
           >
             <div
               class="recurring-item"
               :class="{ 'recurring-item--readonly': isViewingShared }"
-              @click="!isViewingShared && onItemClick('TRANSACTION', item.id)"
             >
               <div class="item-icon">
                 <CategoryIcon :category-name="getCategoryNameById(item.category_id)" color-mode="type" :entry-type="item.type" />
@@ -100,11 +100,11 @@
             :key="item.id"
             :swipeable="!isViewingShared"
             @delete="onItemSwipeDelete('BUDGET', item.id)"
+            @edit="onItemClick('BUDGET', item.id)"
           >
             <div
               class="recurring-item"
               :class="{ 'recurring-item--readonly': isViewingShared }"
-              @click="!isViewingShared && onItemClick('BUDGET', item.id)"
             >
               <div class="item-icon">
                 <CategoryIcon :category-name="getBudgetCategoryName(item.category_ids)" color-mode="type" :entry-type="item.type" />
@@ -171,11 +171,14 @@ import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import type { EntryType } from "../types";
 import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
+import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
 const router = useRouter();
 const transactionStore = useTransactionStore();
 const recurringStore = useRecurringStore();
 const userStore = useUserStore();
+
+useSharedSwipeContext();
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 

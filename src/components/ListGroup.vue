@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { InjectionKey, Ref } from "vue";
+import { ref, readonly, provide, inject } from "vue";
 
 export type ListGroupContext = {
   openItemId: Readonly<Ref<symbol | null>>;
@@ -8,22 +9,37 @@ export type ListGroupContext = {
 };
 
 export const listGroupKey: InjectionKey<ListGroupContext> = Symbol("listGroup");
+
+/**
+ * Call this once at the page (view) setup level to create a single shared
+ * swipe context that spans all ListGroups on the page — ensuring only one
+ * ListItem is open at a time across all groups (exclusive drawer).
+ */
+export function useSharedSwipeContext(): ListGroupContext {
+  const openItemId = ref<symbol | null>(null);
+  const ctx: ListGroupContext = {
+    openItemId: readonly(openItemId),
+    setOpen: (id: symbol) => { openItemId.value = id; },
+    closeAll: () => { openItemId.value = null; },
+  };
+  provide(listGroupKey, ctx);
+  return ctx;
+}
 </script>
 
 <script setup lang="ts">
-import { ref, readonly, provide } from "vue";
+// If a parent (e.g. the page) already provided a shared context, reuse it.
+// Otherwise create an isolated context scoped to this group only.
+const parentCtx = inject(listGroupKey, null);
 
-const openItemId = ref<symbol | null>(null);
-
-provide(listGroupKey, {
-  openItemId: readonly(openItemId),
-  setOpen: (id: symbol) => {
-    openItemId.value = id;
-  },
-  closeAll: () => {
-    openItemId.value = null;
-  },
-});
+if (!parentCtx) {
+  const openItemId = ref<symbol | null>(null);
+  provide(listGroupKey, {
+    openItemId: readonly(openItemId),
+    setOpen: (id: symbol) => { openItemId.value = id; },
+    closeAll: () => { openItemId.value = null; },
+  });
+}
 </script>
 
 <template>

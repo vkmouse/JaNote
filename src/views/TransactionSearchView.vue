@@ -84,11 +84,10 @@
               v-for="transaction in group.transactions"
               :key="transaction.id"
               :swipeable="!isViewingShared"
+              @delete="onSwipeDelete(transaction.id)"
+              @edit="editTransaction(transaction.id)"
             >
-              <div
-                class="transaction-item"
-                @click="!isViewingShared && editTransaction(transaction.id)"
-              >
+              <div class="transaction-item">
               <div class="item-left">
                 <CategoryIcon
                   :category-name="getCategoryName(transaction.category_id)"
@@ -115,6 +114,17 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="刪除交易"
+      message="確定要刪除這筆交易嗎？此操作無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      variant="danger"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </section>
 </template>
 
@@ -130,6 +140,8 @@ import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import ConfirmModal from "../components/ConfirmModal.vue";
+import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
 interface DailyGroup {
   date: string;
@@ -144,7 +156,12 @@ const transactionStore = useTransactionStore();
 const searchQuery = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
 
+useSharedSwipeContext();
+
 const isViewingShared = computed(() => userStore.isViewingShared);
+
+const showDeleteConfirm = ref(false);
+const deletingTransactionId = ref<string | null>(null);
 
 const clearSearch = () => {
   searchQuery.value = "";
@@ -152,7 +169,26 @@ const clearSearch = () => {
 };
 
 const editTransaction = (id: string) => {
+  if (isViewingShared.value) return;
   router.push(`/transaction/${id}/edit`);
+};
+
+const onSwipeDelete = (id: string) => {
+  deletingTransactionId.value = id;
+  showDeleteConfirm.value = true;
+};
+
+const confirmDelete = async () => {
+  showDeleteConfirm.value = false;
+  const id = deletingTransactionId.value;
+  deletingTransactionId.value = null;
+  if (!id || isViewingShared.value) return;
+  await transactionStore.deleteTransaction(id);
+};
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false;
+  deletingTransactionId.value = null;
 };
 
 const getCategoryName = (categoryId: string): string => {

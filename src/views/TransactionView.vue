@@ -78,11 +78,9 @@
               :key="transaction.id"
               :swipeable="!isViewingShared"
               @delete="onSwipeDelete(transaction.id)"
+              @edit="editTransaction(transaction.id)"
             >
-              <div
-                class="transaction-item"
-                @click="!isViewingShared && editTransaction(transaction.id)"
-              >
+              <div class="transaction-item">
               <div class="item-left">
                 <CategoryIcon
                   :category-name="getCategoryName(transaction.category_id)"
@@ -139,6 +137,7 @@ import BottomTabBar from "../components/BottomTabBar.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
+import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -146,6 +145,8 @@ const transactionStore = useTransactionStore();
 const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth() + 1);
 const showMonthPicker = ref(false);
+
+useSharedSwipeContext();
 
 const showDeleteConfirm = ref(false);
 const deletingTransactionId = ref<string | null>(null);

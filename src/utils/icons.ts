@@ -1,6 +1,7 @@
 // Centralized SVG icon imports
 // All svg?raw imports should live here and be re-exported for use in components/views.
 
+import iconDefault from "../assets/icons/icon-default.svg?raw";
 import iconCloud from "../assets/icons/new/icon-cloud.svg?raw";
 import iconCloudCheck from "../assets/icons/new/icon-cloud-check.svg?raw";
 import iconCloudUpload from "../assets/icons/new/icon-cloud-upload.svg?raw";
@@ -39,6 +40,7 @@ import iconUtensils from "../assets/icons/new/icon-utensils.svg?raw";
 import iconWine from "../assets/icons/new/icon-wine.svg?raw";
 
 export {
+  iconDefault,
   iconCloud,
   iconCloudCheck,
   iconCloudUpload,
