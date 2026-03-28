@@ -527,7 +527,8 @@ watch(
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -567,8 +568,8 @@ watch(
 }
 
 .header-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -608,7 +609,7 @@ watch(
 }
 
 .category-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
@@ -667,7 +668,7 @@ watch(
 }
 
 .item-actual {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }

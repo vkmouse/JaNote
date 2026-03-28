@@ -369,8 +369,8 @@ watch(
 }
 
 .header-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -401,7 +401,7 @@ watch(
 }
 
 .category-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
@@ -433,7 +433,7 @@ watch(
 }
 
 .item-amount {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }

@@ -304,8 +304,8 @@ onMounted(async () => {
 }
 
 .group-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -340,7 +340,7 @@ onMounted(async () => {
 }
 
 .item-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
@@ -361,7 +361,7 @@ onMounted(async () => {
 }
 
 .item-amount {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
 }
 

@@ -60,18 +60,18 @@ JaNote 是一個**離線優先 (Offline-first) 個人記帳管理 PWA**，部署
 
 ## 技術棧
 
-| 層級 | 技術 |
-|------|------|
-| 前端框架 | Vue 3.5、TypeScript 5 |
-| 狀態管理 | Pinia 3 |
-| 路由 | Vue Router 5 |
-| 本地資料庫 | Dexie 4（IndexedDB ORM） |
-| PWA | vite-plugin-pwa（Workbox，manual SW control） |
-| 建置工具 | Vite 7 |
-| 後端平台 | Cloudflare Pages Functions（TypeScript） |
-| 雲端資料庫 | Cloudflare D1（SQLite） |
-| 認證 | Cloudflare Access（JWT via `jose`） |
-| 部署 | `wrangler deploy`（Cloudflare Pages） |
+| 層級       | 技術                                          |
+| ---------- | --------------------------------------------- |
+| 前端框架   | Vue 3.5、TypeScript 5                         |
+| 狀態管理   | Pinia 3                                       |
+| 路由       | Vue Router 5                                  |
+| 本地資料庫 | Dexie 4（IndexedDB ORM）                      |
+| PWA        | vite-plugin-pwa（Workbox，manual SW control） |
+| 建置工具   | Vite 7                                        |
+| 後端平台   | Cloudflare Pages Functions（TypeScript）      |
+| 雲端資料庫 | Cloudflare D1（SQLite）                       |
+| 認證       | Cloudflare Access（JWT via `jose`）           |
+| 部署       | `wrangler deploy`（Cloudflare Pages）         |
 
 ---
 
@@ -153,14 +153,14 @@ syncStore.performSync()
 
 ### 實體類型
 
-| EntityType | 說明 |
-|------------|------|
-| `CAT` | 類別（Category） |
-| `TXN` | 交易（Transaction） |
-| `BGT` | 預算（Budget） |
-| `SHR` | 使用者分享（UserShare） |
-| `RTXN` | 週期交易（RecurringTransaction） |
-| `RBGT` | 週期預算（RecurringBudget） |
+| EntityType | 說明                             |
+| ---------- | -------------------------------- |
+| `CAT`      | 類別（Category）                 |
+| `TXN`      | 交易（Transaction）              |
+| `BGT`      | 預算（Budget）                   |
+| `SHR`      | 使用者分享（UserShare）          |
+| `RTXN`     | 週期交易（RecurringTransaction） |
+| `RBGT`     | 週期預算（RecurringBudget）      |
 
 **處理順序**：`CAT > TXN/BGT/RTXN/RBGT > SHR`（確保外鍵約束正確）
 

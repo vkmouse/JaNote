@@ -109,12 +109,29 @@ const bgColor = computed<string | undefined>(() => {
   }
   return undefined;
 });
+
+const borderStyle = computed<string | undefined>(() => {
+  if (props.colorMode === "type") {
+    return props.entryType === "INCOME"
+      ? "2px solid var(--janote-income)"
+      : "2px solid var(--janote-expense)";
+  }
+  if (props.colorMode === "category") {
+    const color = categoryColorMap[props.categoryName];
+    if (!color) return undefined;
+    return `2px solid ${color}`;
+  }
+  return undefined;
+});
 </script>
 
 <template>
   <div
     class="category-icon-root"
-    :style="bgColor ? { backgroundColor: bgColor } : {}"
+    :style="{
+      ...(bgColor ? { backgroundColor: bgColor } : {}),
+      ...(borderStyle ? { border: borderStyle } : {}),
+    }"
     v-html="iconSvg"
   ></div>
 </template>
