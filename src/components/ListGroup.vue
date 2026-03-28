@@ -1,3 +1,31 @@
+<script lang="ts">
+import type { InjectionKey, Ref } from "vue";
+
+export type ListGroupContext = {
+  openItemId: Readonly<Ref<symbol | null>>;
+  setOpen: (id: symbol) => void;
+  closeAll: () => void;
+};
+
+export const listGroupKey: InjectionKey<ListGroupContext> = Symbol("listGroup");
+</script>
+
+<script setup lang="ts">
+import { ref, readonly, provide } from "vue";
+
+const openItemId = ref<symbol | null>(null);
+
+provide(listGroupKey, {
+  openItemId: readonly(openItemId),
+  setOpen: (id: symbol) => {
+    openItemId.value = id;
+  },
+  closeAll: () => {
+    openItemId.value = null;
+  },
+});
+</script>
+
 <template>
   <div class="list-group">
     <div class="list-group-header">
