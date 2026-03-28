@@ -83,9 +83,12 @@
             <ListItem
               v-for="transaction in group.transactions"
               :key="transaction.id"
-              class="transaction-item"
-              @click="!isViewingShared && editTransaction(transaction.id)"
+              :swipeable="!isViewingShared"
             >
+              <div
+                class="transaction-item"
+                @click="!isViewingShared && editTransaction(transaction.id)"
+              >
               <div class="item-left">
                 <CategoryIcon
                   :category-name="getCategoryName(transaction.category_id)"
@@ -105,6 +108,7 @@
               <div :class="['item-amount', transaction.type.toLowerCase()]">
                 ${{ transaction.type === "EXPENSE" ? "-" : ""
                 }}{{ transaction.amount.toLocaleString() }}
+              </div>
               </div>
             </ListItem>
           </ListGroup>

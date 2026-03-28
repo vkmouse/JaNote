@@ -5,7 +5,6 @@
       <template #left>
         <NavMenu />
         <NavSearch />
-        <NavDelete :active="deleteMode" @click="toggleDeleteMode" />
       </template>
       <template #center>
         <div class="month-display" @click="openPicker">
@@ -96,9 +95,13 @@
           <ListItem
             v-for="budget in group.budgets"
             :key="budget.id"
-            class="budget-item"
-            @click="!isViewingShared && onBudgetClick(budget)"
+            :swipeable="!isViewingShared"
+            @delete="onBudgetSwipeDelete(budget)"
           >
+            <div
+              class="budget-item"
+              @click="!isViewingShared && openEditModal(budget)"
+            >
             <div class="item-left">
               <CategoryIcon
                 :category-name="getBudgetCategoryName(budget)"
@@ -145,6 +148,7 @@
               </div>
               <div class="item-goal">/ ${{ budget.goal.toLocaleString() }}</div>
             </div>
+            </div>
           </ListItem>
         </ListGroup>
       </div>
@@ -177,7 +181,6 @@ import DateRangePicker from "../components/DateRangePicker.vue";
 import CategoryIcon from "../components/CategoryIcon.vue";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
-import NavDelete from "../components/NavDelete.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
@@ -218,7 +221,6 @@ const transactionType = ref<EntryType>("EXPENSE");
 
 // ── Delete mode ────────────────────────────────────────────
 
-const deleteMode = ref(false);
 const showDeleteConfirm = ref(false);
 const deletingBudgetId = ref<string | null>(null);
 
@@ -416,17 +418,9 @@ function openEditModal(budget: Budget): void {
   router.push({ name: "budget-edit", params: { id: budget.id } });
 }
 
-function toggleDeleteMode(): void {
-  deleteMode.value = !deleteMode.value;
-}
-
-function onBudgetClick(budget: Budget): void {
-  if (deleteMode.value) {
-    deletingBudgetId.value = budget.id;
-    showDeleteConfirm.value = true;
-  } else {
-    openEditModal(budget);
-  }
+function onBudgetSwipeDelete(budget: Budget): void {
+  deletingBudgetId.value = budget.id;
+  showDeleteConfirm.value = true;
 }
 
 async function confirmBudgetDelete(): Promise<void> {

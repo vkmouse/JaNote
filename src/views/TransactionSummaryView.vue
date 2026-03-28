@@ -257,8 +257,9 @@ watch(
           <ListItem
             v-for="summary in categorySummaries"
             :key="summary.category_id"
-            class="category-item"
+            :swipeable="true"
           >
+            <div class="category-item">
             <div class="item-left">
               <CategoryIcon
                 :category-name="summary.category_name"
@@ -288,6 +289,7 @@ watch(
               <span class="item-percentage" v-if="totalAmount > 0">
                 {{ ((summary.total_amount / totalAmount) * 100).toFixed(1) }}%
               </span>
+            </div>
             </div>
           </ListItem>
         </ListGroup>

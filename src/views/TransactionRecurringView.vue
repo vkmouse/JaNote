@@ -5,7 +5,6 @@
       <template #left>
         <NavMenu />
         <NavSearch />
-        <NavDelete :active="deleteMode" @click="toggleDeleteMode" />
       </template>
       <template #right><NavSync /><NavAvatar /></template>
     </TopNavigation>
@@ -40,6 +39,8 @@
           <ListItem
             v-for="item in filteredRecurringTransactions"
             :key="item.id"
+            :swipeable="!isViewingShared"
+            @delete="onItemSwipeDelete('TRANSACTION', item.id)"
           >
             <div
               class="recurring-item"
@@ -97,6 +98,8 @@
           <ListItem
             v-for="item in filteredRecurringBudgets"
             :key="item.id"
+            :swipeable="!isViewingShared"
+            @delete="onItemSwipeDelete('BUDGET', item.id)"
           >
             <div
               class="recurring-item"
@@ -160,7 +163,6 @@ import CategoryIcon from "../components/CategoryIcon.vue";
 import { formatRecurrence } from "../utils/recurrence";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
-import NavDelete from "../components/NavDelete.vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useRecurringStore } from "../stores/recurringStore";
 import { useUserStore } from "../stores/userStore";
@@ -180,7 +182,6 @@ const isViewingShared = computed(() => userStore.isViewingShared);
 // ── State ──────────────────────────────────────────────────
 const viewMode = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
 const filterType = ref<EntryType>("EXPENSE");
-const deleteMode = ref(false);
 const showDeleteConfirm = ref(false);
 const deletingItemId = ref<string | null>(null);
 const deletingItemType = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
@@ -211,20 +212,18 @@ function getBudgetCategoryName(categoryIds: string): string {
   return "其他";
 }
 
-function toggleDeleteMode(): void {
-  deleteMode.value = !deleteMode.value;
-}
-
 function onItemClick(type: "TRANSACTION" | "BUDGET", id: string): void {
-  if (deleteMode.value) {
-    deletingItemType.value = type;
-    deletingItemId.value = id;
-    showDeleteConfirm.value = true;
-  } else if (type === "TRANSACTION") {
+  if (type === "TRANSACTION") {
     router.push(`/transactions/recurring/${id}/edit`);
   } else {
     router.push(`/transactions/budget/recurring/${id}/edit`);
   }
+}
+
+function onItemSwipeDelete(type: "TRANSACTION" | "BUDGET", id: string): void {
+  deletingItemType.value = type;
+  deletingItemId.value = id;
+  showDeleteConfirm.value = true;
 }
 
 async function confirmItemDelete(): Promise<void> {

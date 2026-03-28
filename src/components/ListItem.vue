@@ -133,7 +133,7 @@ function onDeleteClick() {
 </script>
 
 <template>
-  <div class="list-item">
+  <div :class="['list-item', { 'list-item--swipeable': swipeable }]">
     <template v-if="swipeable">
       <div class="swipe-action" @click.stop="onDeleteClick">
         <span v-html="iconTrash" class="delete-icon" />
@@ -171,6 +171,10 @@ function onDeleteClick() {
   z-index: 2;
 }
 
+.list-item--swipeable:not(:last-child)::after {
+  right: 0;
+}
+
 /* ── Delete action (revealed on swipe) ─────────────────────── */
 .swipe-action {
   position: absolute;
@@ -178,7 +182,7 @@ function onDeleteClick() {
   right: 0;
   bottom: 0;
   width: 72px;
-  background: #ef4444;
+  background: var(--janote-action, #F87171);
   display: flex;
   align-items: center;
   justify-content: center;
