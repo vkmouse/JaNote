@@ -5,7 +5,6 @@
       <template #left>
         <NavMenu />
         <NavSearch />
-        <NavDelete :active="deleteMode" @click="toggleDeleteMode" />
       </template>
       <template #center>
         <div class="month-display" @click="showMonthPicker = true">
@@ -77,12 +76,13 @@
             <ListItem
               v-for="transaction in group.transactions"
               :key="transaction.id"
-              class="transaction-item"
-              :class="{
-                'transaction-item--delete': deleteMode && !isViewingShared,
-              }"
-              @click="!isViewingShared && onTransactionClick(transaction.id)"
+              :swipeable="!isViewingShared"
+              @delete="onSwipeDelete(transaction.id)"
             >
+              <div
+                class="transaction-item"
+                @click="!isViewingShared && editTransaction(transaction.id)"
+              >
               <div class="item-left">
                 <CategoryIcon
                   :category-name="getCategoryName(transaction.category_id)"
@@ -96,6 +96,7 @@
               <div :class="['item-amount', transaction.type.toLowerCase()]">
                 ${{ transaction.type === "EXPENSE" ? "-" : ""
                 }}{{ transaction.amount.toLocaleString() }}
+              </div>
               </div>
             </ListItem>
           </ListGroup>
@@ -132,7 +133,6 @@ import type { Transaction } from "../types";
 import CategoryIcon from "../components/CategoryIcon.vue";
 import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
-import NavDelete from "../components/NavDelete.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import BottomTabBar from "../components/BottomTabBar.vue";
@@ -147,8 +147,6 @@ const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth() + 1);
 const showMonthPicker = ref(false);
 
-// Delete mode
-const deleteMode = ref(false);
 const showDeleteConfirm = ref(false);
 const deletingTransactionId = ref<string | null>(null);
 
@@ -283,17 +281,9 @@ const editTransaction = (id: string) => {
   router.push(`/transaction/${id}/edit`);
 };
 
-const toggleDeleteMode = () => {
-  deleteMode.value = !deleteMode.value;
-};
-
-const onTransactionClick = (id: string) => {
-  if (deleteMode.value) {
-    deletingTransactionId.value = id;
-    showDeleteConfirm.value = true;
-  } else {
-    editTransaction(id);
-  }
+const onSwipeDelete = (id: string) => {
+  deletingTransactionId.value = id;
+  showDeleteConfirm.value = true;
 };
 
 const confirmDelete = async () => {

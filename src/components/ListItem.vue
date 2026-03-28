@@ -207,5 +207,6 @@ function onDeleteClick() {
   z-index: 1;
   background: var(--bg-page);
   touch-action: pan-y;
+  width: 100%;
 }
 </style>
