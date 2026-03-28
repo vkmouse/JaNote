@@ -363,7 +363,10 @@ const groupedBudgets = computed(() => {
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([monthKey, budgets]) => ({ monthKey, budgets }));
+    .map(([monthKey, budgets]) => ({
+      monthKey,
+      budgets: [...budgets].sort((a, b) => b.goal - a.goal),
+    }));
 });
 
 const totalGoal = computed(() =>

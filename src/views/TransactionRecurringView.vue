@@ -191,15 +191,15 @@ const deletingItemType = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
 
 // ── Computed ───────────────────────────────────────────────
 const filteredRecurringTransactions = computed(() =>
-  recurringStore.visibleRecurringTransactions.filter(
-    (t) => t.type === filterType.value,
-  ),
+  recurringStore.visibleRecurringTransactions
+    .filter((t) => t.type === filterType.value)
+    .sort((a, b) => a.recurrence_day - b.recurrence_day || b.amount - a.amount),
 );
 
 const filteredRecurringBudgets = computed(() =>
-  recurringStore.visibleRecurringBudgets.filter(
-    (b) => b.type === filterType.value,
-  ),
+  recurringStore.visibleRecurringBudgets
+    .filter((b) => b.type === filterType.value)
+    .sort((a, b) => a.recurrence_day - b.recurrence_day || b.goal - a.goal),
 );
 
 // ── Helpers ────────────────────────────────────────────────
