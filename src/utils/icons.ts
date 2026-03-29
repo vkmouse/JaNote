@@ -38,6 +38,7 @@ import iconTag from "../assets/icons/new/icon-tag.svg?raw";
 import iconTrash from "../assets/icons/new/icon-trash.svg?raw";
 import iconUtensils from "../assets/icons/new/icon-utensils.svg?raw";
 import iconWine from "../assets/icons/new/icon-wine.svg?raw";
+import iconFunnel from "../assets/icons/new/icon-funnel.svg?raw";
 
 export {
   iconDefault,
@@ -77,4 +78,5 @@ export {
   iconTrash,
   iconUtensils,
   iconWine,
+  iconFunnel,
 };

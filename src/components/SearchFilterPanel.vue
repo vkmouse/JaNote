@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, watch } from "vue";
 import type { Category } from "../types";
 import ViewModeToggle from "./ViewModeToggle.vue";
 import CategoryGrid from "./CategoryGrid.vue";
 import MonthPicker from "./MonthPicker.vue";
 import YearPicker from "./YearPicker.vue";
 import DateRangePicker from "./DateRangePicker.vue";
-import { iconChevronLeft } from "../utils/icons";
 
 type TimeMode = "" | "monthly" | "yearly" | "custom";
+type VMToggleMode = "monthly" | "yearly" | "custom";
 
 const props = defineProps<{
+  show: boolean;
   timeMode: TimeMode;
   year: number;
   month: number;
@@ -21,6 +22,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  close: [];
   "update:timeMode": [value: TimeMode];
   "update:year": [value: number];
   "update:month": [value: number];
@@ -29,294 +31,226 @@ const emit = defineEmits<{
   "update:categoryIds": [value: string[]];
 }>();
 
-// ── Expand / collapse ────────────────────────────────────────────────────────
+// ── Draft state (only committed on Apply) ────────────────────────────────────
 
-const isExpanded = ref(false);
+const draftTimeMode = ref<TimeMode>(props.timeMode);
+const draftYear = ref(props.year);
+const draftMonth = ref(props.month);
+const draftStartDate = ref(props.startDate);
+const draftEndDate = ref(props.endDate);
+const draftCategoryIds = ref<string[]>([...props.categoryIds]);
 
-// Auto-expand when filter values are present (e.g. from URL)
+// When modal opens, copy current props into draft
 watch(
-  () => [props.timeMode, props.categoryIds.length] as const,
-  ([mode, catLen]) => {
-    if (mode !== "" || catLen > 0) {
-      isExpanded.value = true;
+  () => props.show,
+  (isOpen) => {
+    if (isOpen) {
+      draftTimeMode.value = props.timeMode;
+      draftYear.value = props.year;
+      draftMonth.value = props.month;
+      draftStartDate.value = props.startDate;
+      draftEndDate.value = props.endDate;
+      draftCategoryIds.value = [...props.categoryIds];
     }
   },
-  { immediate: true },
 );
 
-// ── Picker modals ────────────────────────────────────────────────────────────
+// ── Picker visibility ────────────────────────────────────────────────────────
 
 const showMonthPicker = ref(false);
 const showYearPicker = ref(false);
 const showDateRangePicker = ref(false);
 
-// ── Writable computed proxies (for v-model on pickers) ───────────────────────
+// ── ViewModeToggle adaptor (cannot be "" for the toggle) ─────────────────────
 
-const proxyYear = computed({
-  get: () => props.year,
-  set: (v) => emit("update:year", v),
-});
-
-const proxyMonth = computed({
-  get: () => props.month,
-  set: (v) => emit("update:month", v),
-});
-
-const proxyStartDate = computed({
-  get: () => props.startDate,
-  set: (v) => emit("update:startDate", v),
-});
-
-const proxyEndDate = computed({
-  get: () => props.endDate,
-  set: (v) => emit("update:endDate", v),
-});
-
-// ── Time mode toggle adaptor (ViewModeToggle uses "monthly"|"yearly"|"custom") ─
-
-type VMToggleMode = "monthly" | "yearly" | "custom";
-
-const timeModeForToggle = computed<VMToggleMode>({
-  get: () => (props.timeMode === "" ? "monthly" : props.timeMode),
-  set: (v: VMToggleMode) => emit("update:timeMode", v),
-});
-
-function activateTimeMode(mode: VMToggleMode) {
-  emit("update:timeMode", mode);
+function onTimeModeChange(v: VMToggleMode) {
+  draftTimeMode.value = v;
 }
 
-// ── Open picker for current time mode ────────────────────────────────────────
-
 function openPicker() {
-  if (props.timeMode === "monthly") showMonthPicker.value = true;
-  else if (props.timeMode === "yearly") showYearPicker.value = true;
-  else if (props.timeMode === "custom") showDateRangePicker.value = true;
+  if (draftTimeMode.value === "monthly") showMonthPicker.value = true;
+  else if (draftTimeMode.value === "yearly") showYearPicker.value = true;
+  else if (draftTimeMode.value === "custom") showDateRangePicker.value = true;
 }
 
 // ── Time display string ───────────────────────────────────────────────────────
 
-const timeSummary = computed(() => {
-  if (props.timeMode === "monthly") {
-    return `${props.year}年${props.month}月`;
-  } else if (props.timeMode === "yearly") {
-    return `${props.year}年`;
-  } else if (props.timeMode === "custom") {
+function timeSummary(): string {
+  if (draftTimeMode.value === "monthly") {
+    return `${draftYear.value}年${draftMonth.value}月`;
+  } else if (draftTimeMode.value === "yearly") {
+    return `${draftYear.value}年`;
+  } else if (draftTimeMode.value === "custom") {
     const fmt = (ts: number) => {
       const d = new Date(ts);
       return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
     };
-    return `${fmt(props.startDate)} ~ ${fmt(props.endDate)}`;
+    return `${fmt(draftStartDate.value)} ~ ${fmt(draftEndDate.value)}`;
   }
   return "";
-});
+}
 
-// ── Header active summary ─────────────────────────────────────────────────────
+// ── Apply ─────────────────────────────────────────────────────────────────────
 
-const activeSummary = computed(() => {
-  const parts: string[] = [];
-  if (props.timeMode !== "") parts.push(timeSummary.value);
-  if (props.categoryIds.length > 0) parts.push(`${props.categoryIds.length}個分類`);
-  return parts.join(" · ");
-});
+function applyFilters() {
+  emit("update:timeMode", draftTimeMode.value);
+  emit("update:year", draftYear.value);
+  emit("update:month", draftMonth.value);
+  emit("update:startDate", draftStartDate.value);
+  emit("update:endDate", draftEndDate.value);
+  emit("update:categoryIds", [...draftCategoryIds.value]);
+  emit("close");
+}
 
-const hasActiveFilter = computed(
-  () => props.timeMode !== "" || props.categoryIds.length > 0,
-);
+// ── Clear all ─────────────────────────────────────────────────────────────────
 
-// ── Clear helpers ─────────────────────────────────────────────────────────────
-
-function clearTime() {
+function clearAll() {
   emit("update:timeMode", "");
-}
-
-function clearCategories() {
+  emit("update:year", new Date().getFullYear());
+  emit("update:month", new Date().getMonth() + 1);
+  emit("update:startDate", new Date().setHours(0, 0, 0, 0));
+  emit("update:endDate", new Date().setHours(23, 59, 59, 999));
   emit("update:categoryIds", []);
+  emit("close");
 }
 
-// ── CategoryGrid proxy ────────────────────────────────────────────────────────
+// ── Dismiss (discard) ─────────────────────────────────────────────────────────
 
-const proxyCategoryIds = computed({
-  get: () => props.categoryIds,
-  set: (v: string[]) => emit("update:categoryIds", v),
-});
+function dismiss() {
+  emit("close");
+}
 </script>
 
 <template>
-  <div class="filter-panel" :class="{ expanded: isExpanded }">
-    <!-- Header / toggle -->
-    <button class="filter-header" @click="isExpanded = !isExpanded">
-      <span class="filter-label">
-        篩選
-        <span v-if="hasActiveFilter" class="active-badge">{{ activeSummary }}</span>
-      </span>
-      <span
-        class="chevron-icon"
-        v-html="iconChevronLeft"
-        :class="{ 'chevron-down': isExpanded }"
+  <Transition name="modal">
+    <div v-if="show" class="modal-overlay" @click.self="dismiss">
+      <div class="modal-container" @click.stop>
+        <div class="modal-body">
+          <!-- Time section -->
+          <div class="filter-section">
+            <div class="section-header">
+              <span class="section-title">時間</span>
+              <button
+                v-if="draftTimeMode !== ''"
+                class="clear-link"
+                @click="draftTimeMode = ''"
+              >清除</button>
+            </div>
+
+            <ViewModeToggle
+              :model-value="draftTimeMode === '' ? 'monthly' : draftTimeMode"
+              @update:model-value="onTimeModeChange"
+            />
+
+            <button
+              v-if="draftTimeMode !== ''"
+              class="time-display-btn"
+              @click="openPicker"
+            >
+              {{ timeSummary() }}
+              <span class="edit-hint">點擊修改</span>
+            </button>
+          </div>
+
+          <!-- Category section -->
+          <div class="filter-section">
+            <div class="section-header">
+              <span class="section-title">分類</span>
+              <button
+                v-if="draftCategoryIds.length > 0"
+                class="clear-link"
+                @click="draftCategoryIds = []"
+              >清除</button>
+            </div>
+            <CategoryGrid
+              :categories="categories"
+              :model-value="draftCategoryIds"
+              :multiple="true"
+              @update:model-value="(v) => (draftCategoryIds = v as string[])"
+            />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-clear-all" @click="clearAll">清除全部</button>
+          <button class="btn-apply" @click="applyFilters">套用</button>
+        </div>
+      </div>
+
+      <!-- Pickers rendered at modal level with higher z-index -->
+      <MonthPicker
+        :open="showMonthPicker"
+        :year="draftYear"
+        :month="draftMonth"
+        @update:open="showMonthPicker = $event"
+        @update:year="draftYear = $event"
+        @update:month="draftMonth = $event"
       />
-    </button>
-
-    <!-- Body -->
-    <div v-show="isExpanded" class="filter-body">
-      <!-- Time section -->
-      <div class="filter-section">
-        <div class="section-header">
-          <span class="section-title">時間</span>
-          <button v-if="timeMode !== ''" class="clear-link" @click="clearTime">清除</button>
-        </div>
-
-        <!-- Mode buttons -->
-        <div class="time-mode-row">
-          <button
-            :class="['mode-btn', { active: timeMode === 'monthly' }]"
-            @click="activateTimeMode('monthly')"
-          >月</button>
-          <button
-            :class="['mode-btn', { active: timeMode === 'yearly' }]"
-            @click="activateTimeMode('yearly')"
-          >年</button>
-          <button
-            :class="['mode-btn', { active: timeMode === 'custom' }]"
-            @click="activateTimeMode('custom')"
-          >自訂</button>
-        </div>
-
-        <!-- Selected time display — tap to open picker -->
-        <button v-if="timeMode !== ''" class="time-display-btn" @click="openPicker">
-          {{ timeSummary }}
-          <span class="edit-hint">點擊修改</span>
-        </button>
-      </div>
-
-      <!-- Category section -->
-      <div class="filter-section">
-        <div class="section-header">
-          <span class="section-title">分類</span>
-          <button v-if="categoryIds.length > 0" class="clear-link" @click="clearCategories">清除</button>
-        </div>
-        <CategoryGrid
-          :categories="categories"
-          :model-value="proxyCategoryIds"
-          :multiple="true"
-          @update:model-value="(v) => emit('update:categoryIds', v as string[])"
-        />
-      </div>
+      <YearPicker
+        :open="showYearPicker"
+        :year="draftYear"
+        @update:open="showYearPicker = $event"
+        @update:year="draftYear = $event"
+      />
+      <DateRangePicker
+        :open="showDateRangePicker"
+        :start-date="draftStartDate"
+        :end-date="draftEndDate"
+        @update:open="showDateRangePicker = $event"
+        @update:start-date="draftStartDate = $event"
+        @update:end-date="draftEndDate = $event"
+      />
     </div>
-
-    <!-- Pickers -->
-    <MonthPicker
-      :open="showMonthPicker"
-      :year="proxyYear"
-      :month="proxyMonth"
-      @update:open="showMonthPicker = $event"
-      @update:year="emit('update:year', $event)"
-      @update:month="emit('update:month', $event)"
-    />
-    <YearPicker
-      :open="showYearPicker"
-      :year="proxyYear"
-      @update:open="showYearPicker = $event"
-      @update:year="emit('update:year', $event)"
-    />
-    <DateRangePicker
-      :open="showDateRangePicker"
-      :start-date="proxyStartDate"
-      :end-date="proxyEndDate"
-      @update:open="showDateRangePicker = $event"
-      @update:start-date="emit('update:startDate', $event)"
-      @update:end-date="emit('update:endDate', $event)"
-    />
-  </div>
+  </Transition>
 </template>
 
 <style scoped>
-.filter-panel {
-  border: 1.5px solid var(--border-primary);
-  border-radius: 14px;
-  background: var(--bg-card, #f9f9f9);
-  overflow: hidden;
-  transition: border-color 0.15s;
-}
-
-.filter-panel.expanded {
-  border-color: var(--text-primary);
-}
-
-/* ── Header ── */
-.filter-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  gap: 8px;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.filter-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  text-align: left;
-}
-
-.active-badge {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary, #666);
-  background: var(--bg-page);
-  border: 1px solid var(--border-primary);
-  border-radius: 20px;
-  padding: 1px 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-}
-
-.chevron-icon {
+/* ── Modal overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  color: var(--text-secondary, #666);
-  transform: rotate(-90deg);
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
+  z-index: 1000;
 }
 
-.chevron-icon :deep(svg) {
-  width: 100%;
-  height: 100%;
-}
-
-.chevron-down {
-  transform: rotate(90deg);
-}
-
-/* ── Body ── */
-.filter-body {
-  padding: 0 14px 14px;
+.modal-container {
+  background: var(--bg-page);
+  border-radius: 16px;
+  padding: 24px;
+  width: 85%;
+  max-width: 380px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  border-top: 1px solid var(--border-primary);
+  gap: 0;
 }
 
-/* ── Section ── */
+.modal-title {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Modal body ── */
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* ── Filter sections ── */
 .filter-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-top: 12px;
 }
 
 .section-header {
@@ -343,36 +277,12 @@ const proxyCategoryIds = computed({
   text-decoration: underline;
 }
 
-/* ── Time mode buttons ── */
-.time-mode-row {
-  display: flex;
-  gap: 6px;
-}
-
-.mode-btn {
-  padding: 5px 16px;
-  border: 1.5px solid var(--border-primary);
-  border-radius: 20px;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.mode-btn.active {
-  background: var(--text-primary);
-  color: var(--text-light, #fff);
-  border-color: var(--text-primary);
-}
-
 /* ── Time display ── */
 .time-display-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-page);
+  background: var(--bg-card, #f5f5f5);
   border: 1.5px solid var(--border-primary);
   border-radius: 10px;
   padding: 8px 12px;
@@ -389,5 +299,52 @@ const proxyCategoryIds = computed({
   font-weight: 400;
   color: var(--text-disabled);
   margin-left: auto;
+}
+
+/* ── Footer ── */
+.modal-footer {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-clear-all,
+.btn-apply {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-clear-all {
+  background: var(--bg-hover, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border-primary, #e5e7eb);
+}
+
+.btn-apply {
+  background: var(--text-primary);
+  color: var(--text-light);
+}
+
+/* ── Picker z-index override (must render above this modal) ── */
+:deep(.month-picker-overlay),
+:deep(.year-picker-overlay),
+:deep(.picker-overlay) {
+  z-index: 1100;
+}
+
+/* ── Modal transition ── */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
 }
 </style>

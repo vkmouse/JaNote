@@ -589,8 +589,7 @@ watch(
 }
 
 .stat-label {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
   color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;

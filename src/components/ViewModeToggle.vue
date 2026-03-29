@@ -36,6 +36,7 @@ defineEmits<{ "update:modelValue": [value: ViewMode] }>();
   border-radius: 20px;
   padding: 2px;
   background: var(--bg-page);
+  width: fit-content;
 }
 
 .mode-btn {

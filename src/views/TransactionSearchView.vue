@@ -9,18 +9,7 @@
       <!-- Search bar + filter panel -->
       <div class="search-section">
         <div class="search-bar">
-          <svg
-            class="search-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <span class="search-icon" v-html="iconSearch" />
           <input
             ref="inputRef"
             v-model="searchQuery"
@@ -48,17 +37,20 @@
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
+          <button
+            class="funnel-btn"
+            @click="showFilterModal = true"
+            aria-label="篩選"
+          >
+            <span class="funnel-icon" v-html="iconFunnel" />
+            <span v-if="hasActiveFilterOnly" class="filter-dot" />
+          </button>
         </div>
 
-        <SearchFilterPanel
-          v-model:timeMode="timeMode"
-          v-model:year="selectedYear"
-          v-model:month="selectedMonth"
-          v-model:startDate="customStartDate"
-          v-model:endDate="customEndDate"
-          v-model:categoryIds="selectedCategoryIds"
-          :categories="transactionStore.visibleCategories"
-        />
+        <!-- Active filter summary -->
+        <div v-if="hasActiveFilterOnly" class="filter-summary">
+          {{ activeSummary }}
+        </div>
       </div>
 
       <!-- Search Results -->
@@ -127,6 +119,19 @@
       </div>
     </div>
 
+    <!-- Filter Modal -->
+    <SearchFilterPanel
+      :show="showFilterModal"
+      v-model:timeMode="timeMode"
+      v-model:year="selectedYear"
+      v-model:month="selectedMonth"
+      v-model:startDate="customStartDate"
+      v-model:endDate="customEndDate"
+      v-model:categoryIds="selectedCategoryIds"
+      :categories="transactionStore.visibleCategories"
+      @close="showFilterModal = false"
+    />
+
     <ConfirmModal
       :show="showDeleteConfirm"
       title="刪除交易"
@@ -155,6 +160,7 @@ import { useTransactionStore } from "../stores/transactionStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import { useSharedSwipeContext } from "../components/ListGroup.vue";
 import SearchFilterPanel from "../components/SearchFilterPanel.vue";
+import { iconFunnel, iconSearch } from "../utils/icons";
 
 type TimeMode = "" | "monthly" | "yearly" | "custom";
 
@@ -184,6 +190,7 @@ const selectedCategoryIds = ref<string[]>([]);
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const isInitialized = ref(false);
+const showFilterModal = ref(false);
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 
@@ -266,6 +273,30 @@ const hasAnyFilter = computed(
     timeMode.value !== "" ||
     selectedCategoryIds.value.length > 0,
 );
+
+// Active filter summary (time + category, excludes text query)
+const hasActiveFilterOnly = computed(
+  () => timeMode.value !== "" || selectedCategoryIds.value.length > 0,
+);
+
+const activeSummary = computed(() => {
+  const parts: string[] = [];
+  if (timeMode.value === "monthly") {
+    parts.push(`${selectedYear.value}年${selectedMonth.value}月`);
+  } else if (timeMode.value === "yearly") {
+    parts.push(`${selectedYear.value}年`);
+  } else if (timeMode.value === "custom") {
+    const fmt = (ts: number) => {
+      const d = new Date(ts);
+      return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+    };
+    parts.push(`${fmt(customStartDate.value)} ~ ${fmt(customEndDate.value)}`);
+  }
+  if (selectedCategoryIds.value.length > 0) {
+    parts.push(`${selectedCategoryIds.value.length}個分類`);
+  }
+  return parts.join(" · ");
+});
 
 const searchResults = computed(() => {
   if (!hasAnyFilter.value) return [];
@@ -426,24 +457,23 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
-/* ── Search section (bar + filter panel) ── */
+/* ── Search section ── */
 .search-section {
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .search-bar {
-  width: 100%;
-  height: 44px;
+  height: 39px;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
   background: var(--bg-card, #f5f5f5);
-  border: 1.5px solid var(--border-primary);
-  border-radius: 22px;
+  border: 2px solid var(--border-primary);
+  border-radius: 20px;
   transition: border-color 0.15s;
 }
 
@@ -452,17 +482,23 @@ onMounted(async () => {
 }
 
 .search-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.search-icon :deep(svg) {
+  width: 24px;
+  height: 24px;
 }
 
 .search-input {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text-primary);
   outline: none;
   font-family: inherit;
@@ -492,6 +528,53 @@ onMounted(async () => {
 .clear-btn.invisible {
   visibility: hidden;
   pointer-events: none;
+}
+
+/* ── Funnel button (inside search bar) ── */
+.funnel-btn {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-secondary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.funnel-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.funnel-icon :deep(svg) {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+}
+
+.filter-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-card, #f5f5f5);
+}
+
+/* ── Active filter summary ── */
+.filter-summary {
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+  padding: 0 4px;
 }
 
 /* ── Results ── */
