@@ -67,6 +67,32 @@ const openPicker = () => {
   }
 };
 
+function prevPeriod(): void {
+  if (viewMode.value === "monthly") {
+    if (selectedMonth.value === 1) {
+      selectedMonth.value = 12;
+      selectedYear.value--;
+    } else {
+      selectedMonth.value--;
+    }
+  } else if (viewMode.value === "yearly") {
+    selectedYear.value--;
+  }
+}
+
+function nextPeriod(): void {
+  if (viewMode.value === "monthly") {
+    if (selectedMonth.value === 12) {
+      selectedMonth.value = 1;
+      selectedYear.value++;
+    } else {
+      selectedMonth.value++;
+    }
+  } else if (viewMode.value === "yearly") {
+    selectedYear.value++;
+  }
+}
+
 // 從 Pinia Store 取得使用者狀態
 
 const filteredTransactions = computed(() => {
@@ -225,9 +251,12 @@ watch(
       <!-- 甜甜圈圖表 -->
       <div class="chart-wrapper">
         <DonutChart
+          :swipeable="viewMode !== 'custom'"
           :centerLabel="centerLabel"
           :centerBalance="centerBalance"
           :slices="donutSlices"
+          @swipe-prev="prevPeriod"
+          @swipe-next="nextPeriod"
         />
       </div>
 

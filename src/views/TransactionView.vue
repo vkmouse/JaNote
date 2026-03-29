@@ -39,9 +39,12 @@
         </div>
         <div class="chart-section">
           <DonutChart
+            :swipeable="true"
             :center-label="'月結餘'"
             :center-balance="`$${balance.toLocaleString()}`"
             :slices="chartSlices"
+            @swipe-prev="prevMonth"
+            @swipe-next="nextMonth"
           />
         </div>
       </div>
@@ -145,6 +148,24 @@ const transactionStore = useTransactionStore();
 const selectedYear = ref(new Date().getFullYear());
 const selectedMonth = ref(new Date().getMonth() + 1);
 const showMonthPicker = ref(false);
+
+function prevMonth() {
+  if (selectedMonth.value === 1) {
+    selectedMonth.value = 12;
+    selectedYear.value--;
+  } else {
+    selectedMonth.value--;
+  }
+}
+
+function nextMonth() {
+  if (selectedMonth.value === 12) {
+    selectedMonth.value = 1;
+    selectedYear.value++;
+  } else {
+    selectedMonth.value++;
+  }
+}
 
 useSharedSwipeContext();
 

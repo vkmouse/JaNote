@@ -1,25 +1,34 @@
 <template>
-  <div class="donut-chart-container">
-    <svg class="donut-chart" viewBox="0 0 200 200">
-      <path
-        v-for="(slice, index) in processedSlices"
-        :key="index"
-        :d="getSliceArcPath(index)"
-        :fill="slice.sliceColor"
-        stroke="#333"
-        stroke-width="1"
-        stroke-linejoin="round"
-      />
-    </svg>
-    <div class="chart-center">
-      <div class="chart-label">{{ centerLabel }}</div>
-      <div class="chart-balance">{{ centerBalance }}</div>
+  <div class="donut-chart-swipe-wrapper">
+    <div
+      ref="containerRef"
+      class="donut-chart-container"
+      :style="swipeStyle"
+      @touchstart.passive="onTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+    >
+      <svg class="donut-chart" viewBox="0 0 200 200">
+        <path
+          v-for="(slice, index) in processedSlices"
+          :key="index"
+          :d="getSliceArcPath(index)"
+          :fill="slice.sliceColor"
+          stroke="#333"
+          stroke-width="1"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <div class="chart-center">
+        <div class="chart-label">{{ centerLabel }}</div>
+        <div class="chart-balance">{{ centerBalance }}</div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 
 export interface DonutSlice {
   sliceLabel: string
@@ -32,7 +41,115 @@ const props = defineProps<{
   centerBalance: string
   slices: DonutSlice[]
   minSliceThreshold?: number
+  swipeable?: boolean
 }>()
+
+const emit = defineEmits<{
+  (e: 'swipe-prev'): void
+  (e: 'swipe-next'): void
+}>()
+
+// ── Swipe state ────────────────────────────────────────────────────────────────
+const containerRef = ref<HTMLElement>()
+const offsetX = ref(0)
+const isTransitioning = ref(false)
+
+const LOCK_THRESHOLD = 8 // px before committing H vs V direction
+let startX = 0
+let startY = 0
+let lockDir: 'h' | 'v' | null = null
+
+const swipeStyle = computed(() => ({
+  transform: `translateX(${offsetX.value}px)`,
+  transition: isTransitioning.value ? 'transform 0.3s cubic-bezier(0.3, 0, 0.2, 1)' : 'none',
+}))
+
+function onTouchStart(e: TouchEvent) {
+  if (!props.swipeable) return
+  const t = e.touches[0]!
+  startX = t.clientX
+  startY = t.clientY
+  lockDir = null
+  isTransitioning.value = false
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (!props.swipeable) return
+  if (lockDir === 'v') return
+
+  const t = e.touches[0]!
+  const dx = t.clientX - startX
+  const dy = t.clientY - startY
+  const absDx = Math.abs(dx)
+  const absDy = Math.abs(dy)
+
+  if (lockDir === null) {
+    if (absDx > LOCK_THRESHOLD && absDx >= absDy) {
+      lockDir = 'h'
+    } else if (absDy > LOCK_THRESHOLD) {
+      lockDir = 'v'
+      return
+    } else {
+      return
+    }
+  }
+
+  // lockDir === 'h'
+  e.preventDefault()
+  offsetX.value = dx
+}
+
+function onTouchEnd() {
+  if (!props.swipeable || lockDir !== 'h') {
+    offsetX.value = 0
+    lockDir = null
+    return
+  }
+
+  const containerWidth = containerRef.value?.offsetWidth ?? 280
+  const threshold = containerWidth / 3
+
+  if (Math.abs(offsetX.value) < threshold) {
+    // snap back
+    isTransitioning.value = true
+    offsetX.value = 0
+  } else {
+    const direction = offsetX.value < 0 ? 'next' : 'prev'
+    triggerNavigation(direction, containerWidth)
+  }
+
+  lockDir = null
+}
+
+function triggerNavigation(direction: 'prev' | 'next', containerWidth: number) {
+  const slideOutX = direction === 'next' ? -containerWidth * 1.2 : containerWidth * 1.2
+  const slideInX = direction === 'next' ? containerWidth * 1.2 : -containerWidth * 1.2
+
+  isTransitioning.value = true
+  offsetX.value = slideOutX
+
+  setTimeout(() => {
+    // emit event so parent can update data
+    if (direction === 'prev') {
+      emit('swipe-prev')
+    } else {
+      emit('swipe-next')
+    }
+
+    // snap to opposite side instantly (no transition)
+    isTransitioning.value = false
+    offsetX.value = slideInX
+
+    // double rAF: first rAF lets the browser paint the snap position,
+    // second rAF starts the slide-in animation from that painted position
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        isTransitioning.value = true
+        offsetX.value = 0
+      })
+    })
+  }, 300)
+}
 
 const cx = 100
 const cy = 100
@@ -211,12 +328,17 @@ function getSliceArcPath(index: number): string {
 
 <style scoped>
 /* 原有的樣式保持不變 */
+.donut-chart-swipe-wrapper {
+  overflow: hidden;
+}
+
 .donut-chart-container {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  will-change: transform;
 }
 
 .donut-chart {

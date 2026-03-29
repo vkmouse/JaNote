@@ -41,9 +41,12 @@
       <div v-if="currentBudgets.length > 0" class="budget-summary">
         <div class="summary-donut">
           <DonutChart
+            :swipeable="viewMode !== 'custom'"
             :slices="summaryDonutSlices"
             :center-label="summaryCenterLabel"
             :center-balance="summaryCenterBalance"
+            @swipe-prev="prevPeriod"
+            @swipe-next="nextPeriod"
           />
         </div>
         <div class="stats-grid">
@@ -243,6 +246,32 @@ function openPicker(): void {
   if (viewMode.value === "monthly") showMonthPicker.value = true;
   else if (viewMode.value === "yearly") showYearPicker.value = true;
   else showDateRangePicker.value = true;
+}
+
+function prevPeriod(): void {
+  if (viewMode.value === "monthly") {
+    if (selectedMonth.value === 1) {
+      selectedMonth.value = 12;
+      selectedYear.value--;
+    } else {
+      selectedMonth.value--;
+    }
+  } else if (viewMode.value === "yearly") {
+    selectedYear.value--;
+  }
+}
+
+function nextPeriod(): void {
+  if (viewMode.value === "monthly") {
+    if (selectedMonth.value === 12) {
+      selectedMonth.value = 1;
+      selectedYear.value++;
+    } else {
+      selectedMonth.value++;
+    }
+  } else if (viewMode.value === "yearly") {
+    selectedYear.value++;
+  }
 }
 
 // ── Month key helpers ─────────────────────────────────────
