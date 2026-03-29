@@ -13,6 +13,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "delete"): void;
   (e: "edit"): void;
+  (e: "item-click"): void;
 }>();
 
 // ── Exclusive state via ListGroup ────────────────────────────────────────────
@@ -115,12 +116,14 @@ if (groupContext) {
   );
 }
 
-// ── Content click → collapse ──────────────────────────────────────────────────
+// ── Content click → collapse or item-click ───────────────────────────────────
 function onContentClick() {
   if (isOpen.value) {
     translateX.value = 0;
     isOpen.value = false;
     groupContext?.closeAll();
+  } else {
+    emit("item-click");
   }
 }
 

@@ -101,6 +101,7 @@
             :swipeable="!isViewingShared"
             @delete="onBudgetSwipeDelete(budget)"
             @edit="openEditModal(budget)"
+            @item-click="goToSearchByBudget(budget)"
           >
             <div class="budget-item">
             <div class="item-left">
@@ -444,6 +445,35 @@ const summaryValueClass = computed(() => {
   if (transactionType.value === "INCOME" && overallPercentage.value >= 100) return "success";
   return "";
 });
+
+// ── Navigation to search view ─────────────────────────────
+
+function buildTimeQuery(): Record<string, string> {
+  const q: Record<string, string> = {};
+  q.mode = viewMode.value;
+  if (viewMode.value === "monthly" || viewMode.value === "yearly") {
+    q.year = String(selectedYear.value);
+    if (viewMode.value === "monthly") q.month = String(selectedMonth.value);
+  }
+  if (viewMode.value === "custom") {
+    q.start = String(customStartDate.value);
+    q.end = String(customEndDate.value);
+  }
+  return q;
+}
+
+function goToSearchByBudget(budget: Budget): void {
+  if (isViewingShared.value) return;
+  const catIds = budget.category_ids
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(",");
+  router.push({
+    path: "/transactions/search",
+    query: { ...buildTimeQuery(), ...(catIds ? { cat: catIds } : {}) },
+  });
+}
 
 // ── Navigation to edit view ────────────────────────────────
 

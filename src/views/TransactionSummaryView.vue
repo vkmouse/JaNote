@@ -175,7 +175,26 @@ const centerBalance = computed(() => {
   return `$${totalAmount.value.toLocaleString()}`;
 });
 
-const goToSearch = () => router.push("/transactions/search");
+function buildTimeQuery(): Record<string, string> {
+  const q: Record<string, string> = {};
+  q.mode = viewMode.value;
+  if (viewMode.value === "monthly" || viewMode.value === "yearly") {
+    q.year = String(selectedYear.value);
+    if (viewMode.value === "monthly") q.month = String(selectedMonth.value);
+  }
+  if (viewMode.value === "custom") {
+    q.start = String(customStartDate.value);
+    q.end = String(customEndDate.value);
+  }
+  return q;
+}
+
+function goToSearchByCategory(summary: CategorySummary): void {
+  router.push({
+    path: "/transactions/search",
+    query: { ...buildTimeQuery(), cat: summary.category_id },
+  });
+}
 
 const getCategoryName = (categoryId: string): string => {
   const category = transactionStore.visibleCategories.find(
@@ -286,9 +305,8 @@ watch(
           <ListItem
             v-for="summary in categorySummaries"
             :key="summary.category_id"
-            :swipeable="true"
           >
-            <div class="category-item">
+            <div class="category-item" @click="goToSearchByCategory(summary)">
             <div class="item-left">
               <CategoryIcon
                 :category-name="summary.category_name"
@@ -411,6 +429,7 @@ watch(
   padding: 14px 16px;
   position: relative;
   background: var(--bg-page);
+  cursor: pointer;
 }
 
 .item-left {
