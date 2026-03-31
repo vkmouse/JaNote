@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import SyncView from "../views/SyncView.vue";
+import ProfileView from "../views/ProfileView.vue";
 import TransactionSummaryView from "../views/TransactionSummaryView.vue";
 import TransactionView from "../views/TransactionView.vue";
 import TransactionSearchView from "../views/TransactionSearchView.vue";
@@ -10,7 +10,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: "/", redirect: "/transactions" },
-    { path: "/sync", name: "sync", component: SyncView },
+    { path: "/profile", name: "profile", component: ProfileView },
     {
       path: "/transactions/summary",
       name: "transaction-summary",

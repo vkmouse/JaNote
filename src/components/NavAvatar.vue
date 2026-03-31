@@ -53,7 +53,7 @@ const currentAvatarInfo = computed(() => {
 /** 單擊：本人頭像時進入同步管理 */
 const handleSingleClick = () => {
   if (!userStore.isViewingShared) {
-    router.push("/sync");
+    router.push("/profile");
   }
 };
 
