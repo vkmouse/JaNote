@@ -154,8 +154,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
 import NavAvatar from "../components/NavAvatar.vue";
@@ -176,6 +176,7 @@ import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
 import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
 const router = useRouter();
+const route = useRoute();
 const transactionStore = useTransactionStore();
 const recurringStore = useRecurringStore();
 const userStore = useUserStore();
@@ -256,7 +257,25 @@ function cancelItemDelete(): void {
 }
 
 // ── Lifecycle ──────────────────────────────────────────────
+
+const isInitialized = ref(false);
+
+watch(
+  [filterType, viewMode],
+  () => {
+    if (!isInitialized.value) return;
+    router.replace({
+      query: { type: filterType.value, view: viewMode.value },
+    });
+  },
+);
+
 onMounted(async () => {
+  const q = route.query;
+  if (q.type === "EXPENSE" || q.type === "INCOME") filterType.value = q.type as EntryType;
+  if (q.view === "TRANSACTION" || q.view === "BUDGET") viewMode.value = q.view as "TRANSACTION" | "BUDGET";
+  await nextTick();
+  isInitialized.value = true;
   await Promise.all([
     transactionStore.loadCategories(),
     recurringStore.loadRecurringTransactions(),

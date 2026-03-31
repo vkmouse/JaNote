@@ -123,8 +123,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
 import NavAvatar from "../components/NavAvatar.vue";
@@ -144,6 +144,7 @@ import ListItem from "../components/ListItem.vue";
 import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const transactionStore = useTransactionStore();
 const selectedYear = ref(new Date().getFullYear());
@@ -328,8 +329,31 @@ const cancelDelete = () => {
   deletingTransactionId.value = null;
 };
 
+const isInitialized = ref(false);
+
+watch(
+  [selectedYear, selectedMonth],
+  () => {
+    if (!isInitialized.value) return;
+    router.replace({
+      query: { year: String(selectedYear.value), month: String(selectedMonth.value) },
+    });
+  },
+);
+
 onMounted(async () => {
   await userStore.loadUser();
+  const q = route.query;
+  if (typeof q.year === "string") {
+    const y = parseInt(q.year);
+    if (!isNaN(y)) selectedYear.value = y;
+  }
+  if (typeof q.month === "string") {
+    const m = parseInt(q.month);
+    if (!isNaN(m)) selectedMonth.value = m;
+  }
+  await nextTick();
+  isInitialized.value = true;
   loadTransactions();
   loadCategories();
 });

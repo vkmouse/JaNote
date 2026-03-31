@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
 import NavAvatar from "../components/NavAvatar.vue";
@@ -30,6 +30,7 @@ interface CategorySummary {
 }
 
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const transactionStore = useTransactionStore();
 const viewMode = ref<ViewMode>("monthly");
@@ -211,8 +212,51 @@ const loadCategories = async () => {
   await transactionStore.loadCategories();
 };
 
+const isInitialized = ref(false);
+
+watch(
+  [viewMode, transactionType, selectedYear, selectedMonth, customStartDate, customEndDate],
+  () => {
+    if (!isInitialized.value) return;
+    const q: Record<string, string> = {
+      type: transactionType.value,
+      mode: viewMode.value,
+    };
+    if (viewMode.value === "monthly" || viewMode.value === "yearly") {
+      q.year = String(selectedYear.value);
+      if (viewMode.value === "monthly") q.month = String(selectedMonth.value);
+    }
+    if (viewMode.value === "custom") {
+      q.start = String(customStartDate.value);
+      q.end = String(customEndDate.value);
+    }
+    router.replace({ query: q });
+  },
+);
+
 onMounted(async () => {
   await userStore.loadUser();
+  const q = route.query;
+  if (q.type === "EXPENSE" || q.type === "INCOME") transactionType.value = q.type as EntryType;
+  if (q.mode === "monthly" || q.mode === "yearly" || q.mode === "custom") viewMode.value = q.mode as ViewMode;
+  if (typeof q.year === "string") {
+    const y = parseInt(q.year);
+    if (!isNaN(y)) selectedYear.value = y;
+  }
+  if (typeof q.month === "string") {
+    const m = parseInt(q.month);
+    if (!isNaN(m)) selectedMonth.value = m;
+  }
+  if (typeof q.start === "string") {
+    const s = parseInt(q.start);
+    if (!isNaN(s)) customStartDate.value = s;
+  }
+  if (typeof q.end === "string") {
+    const e = parseInt(q.end);
+    if (!isNaN(e)) customEndDate.value = e;
+  }
+  await nextTick();
+  isInitialized.value = true;
   await loadCategories();
   await loadTransactions();
 });
