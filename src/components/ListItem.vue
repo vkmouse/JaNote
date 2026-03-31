@@ -22,7 +22,7 @@ const itemId = Symbol();
 
 // ── Swipe state ──────────────────────────────────────────────────────────────
 const BUTTON_WIDTH = 144; // 72px edit + 72px delete
-const SNAP_THRESHOLD = 48;
+const SNAP_THRESHOLD = 12;
 const DIRECTION_LOCK_THRESHOLD = 8;
 
 const translateX = ref(0);

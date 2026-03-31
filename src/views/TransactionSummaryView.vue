@@ -326,18 +326,6 @@ watch(
       <!-- 分類摘要列表 -->
       <div class="category-list">
         <div v-if="categorySummaries.length === 0" class="empty-state">
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
           <p>暫無資料</p>
         </div>
 

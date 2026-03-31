@@ -38,7 +38,7 @@
       </div>
 
       <!-- Summary Section -->
-      <div v-if="currentBudgets.length > 0" class="budget-summary">
+      <div class="budget-summary">
         <div class="summary-donut">
           <DonutChart
             :swipeable="viewMode !== 'custom'"
@@ -49,7 +49,7 @@
             @swipe-next="nextPeriod"
           />
         </div>
-        <div class="stats-grid">
+        <div v-if="currentBudgets.length > 0" class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">本期目標</div>
             <div class="stat-value">${{ totalGoal.toLocaleString() }}</div>
@@ -63,30 +63,13 @@
             <div class="stat-value" :class="summaryValueClass">{{ overallPercentage.toFixed(1) }}%</div>
           </div>
         </div>
+        <div v-else class="chart-empty-text">
+          <p>尚未設定{{ transactionType === "EXPENSE" ? "支出預算" : "收入目標" }}</p>
+        </div>
       </div>
 
       <!-- Budget List -->
       <div class="budget-list">
-        <div v-if="currentBudgets.length === 0" class="empty-state">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <p>
-            尚未設定{{
-              transactionType === "EXPENSE" ? "支出預算" : "收入目標"
-            }}
-          </p>
-        </div>
-
         <ListGroup
           v-for="group in groupedBudgets"
           :key="group.monthKey"
@@ -661,13 +644,11 @@ watch(
   gap: 16px;
 }
 
-.empty-state {
+.chart-empty-text {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  min-height: 260px;
+  padding: 16px 0 8px;
   color: var(--text-disabled);
   font-size: 14px;
 }

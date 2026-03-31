@@ -47,15 +47,14 @@
             @swipe-next="nextMonth"
           />
         </div>
+        <div v-if="groupedTransactions.length === 0" class="chart-empty-text">
+          <p>暫無交易記錄</p>
+        </div>
       </div>
 
       <!-- Daily Transaction List -->
       <div class="transaction-list">
-        <div v-if="groupedTransactions.length === 0" class="empty-state">
-          <p>暫無交易記錄</p>
-        </div>
-
-        <div v-else class="daily-groups">
+        <div v-if="groupedTransactions.length > 0" class="daily-groups">
           <ListGroup
             v-for="group in groupedTransactions"
             :key="group.date"
@@ -439,11 +438,11 @@ onMounted(async () => {
   padding: 0 16px;
 }
 
-.empty-state {
+.chart-empty-text {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
+  padding: 16px 0 8px;
   color: var(--text-disabled);
   font-size: 14px;
 }
