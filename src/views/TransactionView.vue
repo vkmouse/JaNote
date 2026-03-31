@@ -82,8 +82,9 @@
               :swipeable="!isViewingShared"
               @delete="onSwipeDelete(transaction.id)"
               @edit="editTransaction(transaction.id)"
+              @item-click="goToSearch(transaction)"
             >
-              <div class="transaction-item">
+              <div class="transaction-item" @click="isViewingShared && goToSearch(transaction)">
               <div class="item-left">
                 <CategoryIcon
                   :category-name="getCategoryName(transaction.category_id)"
@@ -301,6 +302,12 @@ const getCategoryName = (categoryId: string): string => {
 const editTransaction = (id: string) => {
   if (isViewingShared.value) return;
   router.push(`/transaction/${id}/edit`);
+};
+
+const goToSearch = (transaction: Transaction) => {
+  const query: Record<string, string> = { cat: transaction.category_id };
+  if (transaction.note) query.q = transaction.note;
+  router.push({ path: "/transactions/search", query });
 };
 
 const onSwipeDelete = (id: string) => {

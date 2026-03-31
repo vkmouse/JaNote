@@ -107,7 +107,7 @@ function onTouchEnd() {
   }
 
   const containerWidth = containerRef.value?.offsetWidth ?? 280
-  const threshold = containerWidth / 3
+  const threshold = containerWidth / 10
 
   if (Math.abs(offsetX.value) < threshold) {
     // snap back

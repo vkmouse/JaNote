@@ -42,10 +42,12 @@
             :swipeable="!isViewingShared"
             @delete="onItemSwipeDelete('TRANSACTION', item.id)"
             @edit="onItemClick('TRANSACTION', item.id)"
+            @item-click="goToSearchByRecurring(item)"
           >
             <div
               class="recurring-item"
               :class="{ 'recurring-item--readonly': isViewingShared }"
+              @click="isViewingShared && goToSearchByRecurring(item)"
             >
               <div class="item-icon">
                 <CategoryIcon :category-name="getCategoryNameById(item.category_id)" color-mode="type" :entry-type="item.type" />
@@ -169,7 +171,7 @@ import { useUserStore } from "../stores/userStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
-import type { EntryType } from "../types";
+import type { EntryType, RecurringTransaction } from "../types";
 import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
 import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
@@ -221,6 +223,12 @@ function onItemClick(type: "TRANSACTION" | "BUDGET", id: string): void {
   } else {
     router.push(`/transactions/budget/recurring/${id}/edit`);
   }
+}
+
+function goToSearchByRecurring(item: RecurringTransaction): void {
+  const query: Record<string, string> = { cat: item.category_id };
+  if (item.note) query.q = item.note;
+  router.push({ path: "/transactions/search", query });
 }
 
 function onItemSwipeDelete(type: "TRANSACTION" | "BUDGET", id: string): void {
