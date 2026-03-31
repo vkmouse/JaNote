@@ -22,9 +22,9 @@ const itemId = Symbol();
 
 // ── Swipe state ──────────────────────────────────────────────────────────────
 const BUTTON_WIDTH = 144; // 72px edit + 72px delete
-const SNAP_THRESHOLD = 12;
 const DIRECTION_LOCK_THRESHOLD = 8;
 
+const containerRef = ref<HTMLElement>();
 const translateX = ref(0);
 const isDragging = ref(false);
 const isOpen = ref(false);
@@ -91,13 +91,29 @@ function onTouchEnd() {
     return;
   }
 
-  if (Math.abs(translateX.value) >= SNAP_THRESHOLD) {
-    translateX.value = -BUTTON_WIDTH;
-    isOpen.value = true;
-    groupContext?.setOpen(itemId);
+  const containerWidth = containerRef.value?.offsetWidth ?? 360;
+  const threshold = containerWidth / 10;
+  const dragDelta = translateX.value - startTranslateX; // negative = left, positive = right
+
+  if (!isOpen.value) {
+    // Closed → open if dragged left past threshold
+    if (translateX.value <= -threshold) {
+      translateX.value = -BUTTON_WIDTH;
+      isOpen.value = true;
+      groupContext?.setOpen(itemId);
+    } else {
+      translateX.value = 0;
+      isOpen.value = false;
+    }
   } else {
-    translateX.value = 0;
-    isOpen.value = false;
+    // Open → close if dragged right past threshold
+    if (dragDelta >= threshold) {
+      translateX.value = 0;
+      isOpen.value = false;
+    } else {
+      translateX.value = -BUTTON_WIDTH;
+      isOpen.value = true;
+    }
   }
 
   isDragging.value = false;
@@ -156,6 +172,7 @@ function onDeleteClick() {
         </div>
       </div>
       <div
+        ref="containerRef"
         class="swipe-content"
         :style="contentStyle"
         @touchstart.passive="onTouchStart"
