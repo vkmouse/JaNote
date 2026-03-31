@@ -321,15 +321,14 @@ watch(
           @swipe-prev="prevPeriod"
           @swipe-next="nextPeriod"
         />
+        <div v-if="categorySummaries.length === 0" class="chart-empty-text">
+          <p>暫無資料</p>
+        </div>
       </div>
 
       <!-- 分類摘要列表 -->
       <div class="category-list">
-        <div v-if="categorySummaries.length === 0" class="empty-state">
-          <p>暫無資料</p>
-        </div>
-
-        <ListGroup>
+        <ListGroup v-if="categorySummaries.length > 0">
           <template #header-left>
             <span class="header-label">{{ transactionType === 'EXPENSE' ? '支出明細' : '收入明細' }}</span>
           </template>
@@ -436,13 +435,11 @@ watch(
   padding: 0 16px;
 }
 
-.empty-state {
+.chart-empty-text {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  min-height: 200px;
+  padding: 16px 0 8px;
   color: var(--text-disabled);
   font-size: 14px;
 }
