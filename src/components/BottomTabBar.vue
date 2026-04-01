@@ -5,7 +5,7 @@
         <template v-for="(tab, i) in tabs" :key="tab.key">
           <button
             :class="['tab-btn', { active: isActive(tab.route) }]"
-            @click="router.replace(tab.route)"
+            @click="navigateToTab(tab)"
             :aria-label="tab.label"
           >
             <span class="tab-icon" v-html="tab.icon" />
@@ -55,7 +55,9 @@ const drawerOpen = inject<Ref<boolean>>("sideDrawerOpen");
 const route = useRoute();
 const router = useRouter();
 
-const tabs = [
+type Tab = { key: string; label: string; route: string; icon: string };
+
+const tabs: Tab[] = [
   {
     key: "transactions",
     label: "記帳",
@@ -83,6 +85,56 @@ const tabs = [
 ];
 
 const isActive = (tabRoute: string) => route.path === tabRoute;
+
+// ──────────────────────────────────────────────────────────
+// Cross-tab date/mode/type context propagation
+// Rules:
+//  → 記帳 (transactions): always navigate without any query (reset to current date)
+//  → from TransactionView: carry year+month as mode=monthly
+//  → from Budget or Summary: carry full time context (mode, type, year/month or start/end)
+//  → from any other page (e.g. Recurring): plain path replacement
+// ──────────────────────────────────────────────────────────
+function navigateToTab(tab: Tab): void {
+  const currentPath = route.path;
+  const q = route.query;
+
+  // Always navigate without params when going to 記帳
+  if (tab.key === "transactions") {
+    router.replace(tab.route);
+    return;
+  }
+
+  // From TransactionView → Budget or Summary: carry year+month as monthly mode
+  if (currentPath === "/transactions") {
+    const year = typeof q.year === "string" ? q.year : String(new Date().getFullYear());
+    const month = typeof q.month === "string" ? q.month : String(new Date().getMonth() + 1);
+    router.replace({
+      path: tab.route,
+      query: { mode: "monthly", year, month },
+    });
+    return;
+  }
+
+  // From Budget or Summary → the other: carry full time context
+  if (currentPath === "/transactions/budget" || currentPath === "/transactions/summary") {
+    const mode = typeof q.mode === "string" ? q.mode : "monthly";
+    const type = typeof q.type === "string" ? q.type : undefined;
+    const timeQuery: Record<string, string> = { mode };
+    if (type) timeQuery.type = type;
+    if (mode === "monthly" || mode === "yearly") {
+      if (typeof q.year === "string") timeQuery.year = q.year;
+      if (mode === "monthly" && typeof q.month === "string") timeQuery.month = q.month;
+    } else if (mode === "custom") {
+      if (typeof q.start === "string") timeQuery.start = q.start;
+      if (typeof q.end === "string") timeQuery.end = q.end;
+    }
+    router.replace({ path: tab.route, query: timeQuery });
+    return;
+  }
+
+  // Fallback: plain navigation
+  router.replace(tab.route);
+}
 </script>
 
 <style scoped>

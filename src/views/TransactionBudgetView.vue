@@ -447,7 +447,6 @@ function buildTimeQuery(): Record<string, string> {
 }
 
 function goToSearchByBudget(budget: Budget): void {
-  if (isViewingShared.value) return;
   const catIds = budget.category_ids
     .split(",")
     .map((s) => s.trim())

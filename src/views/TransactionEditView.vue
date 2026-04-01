@@ -309,7 +309,7 @@ async function saveTransaction() {
       date: currentDate.value,
     });
   }
-  router.replace("/transactions");
+  router.back();
 }
 
 async function saveBudget() {
@@ -329,7 +329,7 @@ async function saveBudget() {
   } else {
     await budgetStore.addBudget(payload);
   }
-  router.replace("/transactions/budget");
+  router.back();
 }
 
 async function saveRecurringTransaction() {
