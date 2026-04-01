@@ -229,6 +229,10 @@ views / components
 - **禁止直接 import**：components 與 views **不得**直接 `import xxx from "...assets/icons/..."?raw`，一律從 `src/utils/icons.ts` 引入。
 - **新增 icon**：在 `src/utils/icons.ts` 加入 import 與 export，再於需要的元件中從該檔案引入。
 
+### 備註語言規範
+
+撰寫程式碼備註（comments）時，使用**繁體中文**描述。變數名稱、關鍵字、技術術語（如 `type`、`interface`、`async/await`）除外。
+
 ### 修改完成標準
 
 每次修改前端程式碼後，**必須執行 `npm run type-check` 並確認通過**，才算修改完成。

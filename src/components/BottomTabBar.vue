@@ -87,24 +87,35 @@ const tabs: Tab[] = [
 const isActive = (tabRoute: string) => route.path === tabRoute;
 
 // ──────────────────────────────────────────────────────────
-// Cross-tab date/mode/type context propagation
-// Rules:
-//  → 記帳 (transactions): always navigate without any query (reset to current date)
-//  → from TransactionView: carry year+month as mode=monthly
-//  → from Budget or Summary: carry full time context (mode, type, year/month or start/end)
-//  → from any other page (e.g. Recurring): plain path replacement
+// 跨 Tab 日期 / 模式 / 類型上下文傳遞規則：
+//  → 記帳（transactions）：永遠不帶 query，回到當前年月
+//     例外：來源為 Budget/Summary 且為月份模式時，帶入 year+month
+//  → 從記帳 → 預算/總覽：帶入 year+month 並強制 mode=monthly
+//  → 預算 ↔ 總覽互換：帶入完整時間上下文（mode、type、year/month 或 start/end）
+//  → 其他來源（如固定頁）→ 任意目標：單純路徑跳轉
 // ──────────────────────────────────────────────────────────
 function navigateToTab(tab: Tab): void {
   const currentPath = route.path;
   const q = route.query;
 
-  // Always navigate without params when going to 記帳
+  // 切到記帳 tab
   if (tab.key === "transactions") {
-    router.replace(tab.route);
+    // 來源為預算或總覽且為月份模式：保留年月
+    if (
+      (currentPath === "/transactions/budget" || currentPath === "/transactions/summary") &&
+      q.mode === "monthly" &&
+      typeof q.year === "string" &&
+      typeof q.month === "string"
+    ) {
+      router.replace({ path: tab.route, query: { year: q.year, month: q.month } });
+    } else {
+      // 其他情況（年度、自訂、其他來源）回當前日期，不帶 query
+      router.replace(tab.route);
+    }
     return;
   }
 
-  // From TransactionView → Budget or Summary: carry year+month as monthly mode
+  // 從記帳 → 預算或總覽：帶入 year+month，強制 mode=monthly
   if (currentPath === "/transactions") {
     const year = typeof q.year === "string" ? q.year : String(new Date().getFullYear());
     const month = typeof q.month === "string" ? q.month : String(new Date().getMonth() + 1);
@@ -115,7 +126,7 @@ function navigateToTab(tab: Tab): void {
     return;
   }
 
-  // From Budget or Summary → the other: carry full time context
+  // 預算 ↔ 總覽互換：帶入完整時間上下文
   if (currentPath === "/transactions/budget" || currentPath === "/transactions/summary") {
     const mode = typeof q.mode === "string" ? q.mode : "monthly";
     const type = typeof q.type === "string" ? q.type : undefined;
@@ -132,7 +143,7 @@ function navigateToTab(tab: Tab): void {
     return;
   }
 
-  // Fallback: plain navigation
+  // 其他來源：單純路徑跳轉
   router.replace(tab.route);
 }
 </script>

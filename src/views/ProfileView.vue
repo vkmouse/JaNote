@@ -904,23 +904,23 @@ function getShareDirection(share: UserShare): string {
 }
 
 .btn-action-export {
-  border: 1.5px solid var(--janote-expense);
-  background: transparent;
+  border: none;
+  background: var(--janote-expense);
   color: var(--text-primary);
 }
 
 .btn-action-export:not(:disabled):active {
-  background: var(--janote-expense);
+  opacity: 0.8;
 }
 
 .btn-action-import {
-  border: 1.5px solid var(--janote-income);
-  background: transparent;
+  border: none;
+  background: var(--janote-income);
   color: var(--text-primary);
 }
 
 .btn-action-import:not(:disabled):active {
-  background: var(--janote-income);
+  opacity: 0.8;
 }
 
 .danger-card {
@@ -958,22 +958,21 @@ function getShareDirection(share: UserShare): string {
 
 .btn-clear {
   font-family: inherit;
-  border: 1.5px solid var(--janote-action);
+  border: none;
   border-radius: 8px;
-  background: transparent;
-  color: var(--janote-action);
+  background: var(--janote-action);
+  color: var(--text-light);
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  transition: opacity 0.15s;
 }
 
 .btn-clear:active {
-  background: var(--janote-action);
-  color: var(--text-light);
+  opacity: 0.8;
 }
 
 /* ── Invite form ─────────────────────────────────────────── */

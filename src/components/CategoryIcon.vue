@@ -26,6 +26,7 @@ export const categoryColorMap: Record<string, string> = {
   投資: "#80DEEA",
   股息: "#B0C4DE",
   利息: "#D4B8E0",
+  分潤: "#A8E6CF",
 };
 
 export function getCategoryColor(categoryName: string): string {
@@ -61,6 +62,7 @@ import {
   iconSquaresFour,
   iconUtensils,
   iconWine,
+  iconShareProfit,
 } from "../utils/icons";
 
 const props = defineProps<{
@@ -94,6 +96,7 @@ const categoryIconMap: Record<string, string> = {
   投資: iconPiggyBank,
   股息: iconChartLineUp,
   利息: iconChartNoAxesColumnIncreasing,
+  分潤: iconShareProfit,
 };
 
 const iconSvg = computed(
