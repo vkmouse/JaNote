@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
+import NavSync from "../components/NavSync.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup, { useSharedSwipeContext } from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import { useUserStore } from "../stores/userStore";
 import { useSyncStore } from "../stores/syncStore";
+import { useSyncStatusStore } from "../stores/syncStatusStore";
 import { useUserShareStore } from "../stores/userShareStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import type { UserShare } from "../types";
 
 const userStore = useUserStore();
 const syncStore = useSyncStore();
+const syncStatusStore = useSyncStatusStore();
 const userShareStore = useUserShareStore();
 const transactionStore = useTransactionStore();
 
@@ -23,21 +26,6 @@ const inviteEmail = ref("");
 const isInviting = ref(false);
 const operatingShareId = ref<string | null>(null);
 
-// ── 同步 ────────────────────────────────────────────────────
-const isSyncing = computed(() => syncStore.syncStatus === "syncing");
-
-const syncStatusLabel = computed(() => {
-  switch (syncStore.syncStatus) {
-    case "syncing":
-      return "同步中";
-    case "success":
-      return "就緒";
-    case "error":
-      return "同步失敗";
-    default:
-      return "待命";
-  }
-});
 
 // ── CSV ─────────────────────────────────────────────────────
 const csvFileInput = ref<HTMLInputElement | null>(null);
@@ -294,13 +282,10 @@ onMounted(async () => {
 // ── 同步 ────────────────────────────────────────────────────
 
 async function syncNow() {
-  try {
-    await syncStore.performSync("/api");
-    await userStore.loadUser();
-    await userShareStore.loadShares(userStore.currentUserId);
-  } catch (error) {
-    console.error("同步失敗:", error);
-  }
+  await syncStatusStore.triggerSync();
+  // 補充 reload Profile 頁專用的資料
+  await userStore.loadUser();
+  await userShareStore.loadShares(userStore.currentUserId);
 }
 
 // ── 清空資料 ────────────────────────────────────────────────
@@ -411,6 +396,7 @@ function getShareDirection(share: UserShare): string {
       <template #center>
         <span class="nav-title">個人檔案</span>
       </template>
+      <template #right><NavSync /></template>
     </TopNavigation>
 
     <div class="page-content">
@@ -428,102 +414,12 @@ function getShareDirection(share: UserShare): string {
         </div>
       </section>
 
-      <!-- ── 同步 ──────────────────────────────────────────── -->
-      <section class="section">
-        <h2 class="section-label">同步</h2>
-        <div class="card">
-          <div class="sync-status-row">
-            <span class="status-dot" :class="syncStore.syncStatus"></span>
-            <span class="sync-status-label">{{ syncStatusLabel }}</span>
-          </div>
-
-          <div class="sync-meta-grid">
-            <div class="meta-cell">
-              <span class="meta-key">Queue</span>
-              <strong class="meta-value">{{ syncStore.activeQueueCount }}</strong>
-            </div>
-            <div class="meta-cell">
-              <span class="meta-key">Cursor</span>
-              <strong class="meta-value">{{ syncStore.lastCursor }}</strong>
-            </div>
-            <div class="meta-cell meta-cell--full">
-              <span class="meta-key">Last Sync</span>
-              <strong class="meta-value">{{ syncStore.lastSyncAt || "—" }}</strong>
-            </div>
-          </div>
-
-          <button
-            class="btn btn-primary"
-            :disabled="isSyncing"
-            @click="syncNow"
-          >
-            {{ isSyncing ? "同步中…" : "立即同步" }}
-          </button>
-        </div>
-      </section>
-
-      <!-- ── 資料操作 ────────────────────────────────────────── -->
-      <section v-if="!userStore.isViewingShared" class="section">
-        <h2 class="section-label">資料操作</h2>
-        <!-- 匯出資料 -->
-        <div class="action-card">
-          <div class="action-row">
-            <div class="action-info">
-              <span class="action-title">匯出資料</span>
-              <span class="action-desc">將本機交易記錄匯出為 CSV 格式</span>
-            </div>
-            <button
-              class="btn-action-sm btn-action-export"
-              :disabled="isImporting"
-              @click="exportCsv"
-            >
-              匯出
-            </button>
-          </div>
-        </div>
-        <!-- 匯入資料 -->
-        <div class="action-card">
-          <div class="action-row">
-            <div class="action-info">
-              <span class="action-title">匯入資料</span>
-              <span class="action-desc">匯入 CSV 檔案，完成後請執行同步以上傳資料</span>
-            </div>
-            <button
-              class="btn-action-sm btn-action-import"
-              :disabled="isImporting"
-              @click="triggerCsvImport"
-            >
-              {{ isImporting ? "匯入中…" : "匯入" }}
-            </button>
-          </div>
-        </div>
-        <!-- 危險區 -->
-        <div class="danger-card">
-          <div class="danger-row">
-            <div class="danger-info">
-              <span class="danger-title">清空本機資料</span>
-              <span class="danger-desc">移除所有本地記錄與同步狀態</span>
-            </div>
-            <button class="btn-clear" @click="showClearModal = true">
-              清空
-            </button>
-          </div>
-        </div>
-        <input
-          ref="csvFileInput"
-          type="file"
-          accept=".csv,text/csv"
-          style="display: none"
-          @change="handleCsvImport"
-        />
-      </section>
-
       <!-- ── 共享管理 ─────────────────────────────────────── -->
       <section class="section">
         <h2 class="section-label">共享管理</h2>
 
         <!-- 發送邀請 -->
-        <div class="invite-form">
+        <div class="invite-row">
           <input
             v-model="inviteEmail"
             type="email"
@@ -532,11 +428,11 @@ function getShareDirection(share: UserShare): string {
             @keyup.enter="sendInvite"
           />
           <button
-            class="btn btn-primary"
+            class="btn-action-sm btn-action-invite"
             :disabled="isInviting"
             @click="sendInvite"
           >
-            {{ isInviting ? "發送中…" : "發送邀請" }}
+            {{ isInviting ? "發送中…" : "邀請" }}
           </button>
         </div>
 
@@ -633,21 +529,99 @@ function getShareDirection(share: UserShare): string {
           </ListItem>
         </ListGroup>
 
-        <!-- Empty state -->
-        <div
-          v-if="
-            userShareStore.sentPendingInvites.length === 0 &&
-            userShareStore.receivedPendingInvites.length === 0 &&
-            userShareStore.activeShares.length === 0
-          "
-          class="empty-state"
-        >
-          <p>暫無共享記錄</p>
+
+      </section>
+
+      <!-- ── 同步與資料 ─────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-label">同步與資料</h2>
+        <!-- 同步狀態 -->
+        <div class="card">
+          <div class="sync-meta-grid">
+            <div class="meta-cell">
+              <span class="meta-key">未同步數量</span>
+              <strong class="meta-value">{{ syncStore.activeQueueCount }}</strong>
+            </div>
+            <div class="meta-cell">
+              <span class="meta-key">同步游標</span>
+              <strong class="meta-value">{{ syncStore.lastCursor }}</strong>
+            </div>
+            <div class="meta-cell meta-cell--full">
+            <span class="meta-key">最後同步時間</span>
+            <strong class="meta-value">{{ syncStore.lastSyncAt || "—" }}</strong>
+          </div>
         </div>
+      </div>
+      <!-- 立即同步 -->
+      <div class="action-card">
+        <div class="action-row">
+          <div class="action-info">
+            <span class="action-title">立即同步</span>
+            <span class="action-desc">將本機變更推送至雲端並拉取最新資料</span>
+          </div>
+          <button
+            class="btn-action-sm btn-action-sync"
+            :disabled="!syncStatusStore.canSync"
+            @click="syncNow"
+          >
+            {{ syncStatusStore.status === 'syncing' ? '同步中…' : '同步' }}
+          </button>
+        </div>
+      </div>
+      <!-- 匯出／匯入／清空（非共享瀏覽模式才顯示） -->
+      <template v-if="!userStore.isViewingShared">
+        <div class="action-card">
+          <div class="action-row">
+            <div class="action-info">
+              <span class="action-title">匯出資料</span>
+              <span class="action-desc">將本機交易記錄匯出為 CSV 格式</span>
+            </div>
+            <button
+              class="btn-action-sm btn-action-export"
+              :disabled="isImporting"
+              @click="exportCsv"
+            >
+              匯出
+            </button>
+          </div>
+        </div>
+        <div class="action-card">
+          <div class="action-row">
+            <div class="action-info">
+              <span class="action-title">匯入資料</span>
+              <span class="action-desc">從 CSV 匯入交易記錄，匯入後請執行同步</span>
+            </div>
+            <button
+              class="btn-action-sm btn-action-import"
+              :disabled="isImporting"
+              @click="triggerCsvImport"
+            >
+              {{ isImporting ? "匯入中…" : "匯入" }}
+            </button>
+          </div>
+        </div>
+        <div class="danger-card">
+          <div class="danger-row">
+            <div class="danger-info">
+              <span class="danger-title">清空本機資料</span>
+              <span class="danger-desc">移除所有本地記錄與同步狀態，無法復原</span>
+            </div>
+            <button class="btn-clear" @click="showClearModal = true">
+              清空
+            </button>
+          </div>
+        </div>
+        <input
+          ref="csvFileInput"
+          type="file"
+          accept=".csv,text/csv"
+          style="display: none"
+          @change="handleCsvImport"
+        />
+      </template>
       </section>
     </div>
 
-    <!-- 清空資料確認 Modal -->
     <ConfirmModal
       :show="showClearModal"
       title="清空本機資料"
@@ -690,11 +664,8 @@ function getShareDirection(share: UserShare): string {
 }
 
 .section-label {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 700;
   margin: 0;
   padding: 0 2px;
 }
@@ -703,7 +674,7 @@ function getShareDirection(share: UserShare): string {
 
 .card {
   background: var(--bg-page);
-  border: 2px solid var(--border-primary);
+  border: 1.5px solid var(--border-primary);
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;
@@ -724,8 +695,6 @@ function getShareDirection(share: UserShare): string {
 .info-key {
   font-size: 13px;
   color: var(--text-secondary);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .info-value {
@@ -742,49 +711,10 @@ function getShareDirection(share: UserShare): string {
 
 /* ── 同步 ────────────────────────────────────────────────── */
 
-.sync-status-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--text-disabled);
-  flex-shrink: 0;
-  transition: background 0.2s, box-shadow 0.2s;
-}
-
-.status-dot.syncing {
-  background: var(--janote-income);
-  box-shadow: 0 0 10px rgba(71, 184, 224, 0.6);
-}
-
-.status-dot.success {
-  background: #22c55e;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
-}
-
-.status-dot.error {
-  background: var(--janote-action);
-  box-shadow: 0 0 10px rgba(248, 113, 113, 0.6);
-}
-
-.sync-status-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .sync-meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 8px;
-  padding: 10px 0;
-  border-top: 1px solid var(--border-primary);
-  border-bottom: 1px solid var(--border-primary);
 }
 
 .meta-cell {
@@ -799,9 +729,7 @@ function getShareDirection(share: UserShare): string {
 }
 
 .meta-key {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
@@ -814,44 +742,7 @@ function getShareDirection(share: UserShare): string {
   white-space: nowrap;
 }
 
-/* ── Buttons ─────────────────────────────────────────────── */
-
-.btn {
-  font-family: inherit;
-  border: none;
-  border-radius: 12px;
-  padding: 14px 20px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  width: 100%;
-  text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.btn-primary {
-  background: var(--janote-expense);
-  color: var(--text-primary);
-  box-shadow: 0 2px 8px rgba(255, 201, 82, 0.3);
-}
-
-.btn-income {
-  background: var(--janote-income);
-  color: var(--text-light);
-  box-shadow: 0 2px 8px rgba(71, 184, 224, 0.3);
-}
-
-.btn-danger {
-  background: var(--janote-action);
-  color: var(--text-light);
-  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
-}
+/* ── Buttons ─────────────────────────────────────────── */
 
 .action-card {
   border: 1.5px solid var(--border-primary);
@@ -905,8 +796,8 @@ function getShareDirection(share: UserShare): string {
 
 .btn-action-export {
   border: none;
-  background: var(--janote-expense);
-  color: var(--text-primary);
+  background: var(--janote-income);
+  color: var(--text-light);
 }
 
 .btn-action-export:not(:disabled):active {
@@ -916,10 +807,30 @@ function getShareDirection(share: UserShare): string {
 .btn-action-import {
   border: none;
   background: var(--janote-income);
-  color: var(--text-primary);
+  color: var(--text-light);
 }
 
 .btn-action-import:not(:disabled):active {
+  opacity: 0.8;
+}
+
+.btn-action-sync {
+  border: none;
+  background: var(--janote-expense);
+  color: var(--text-primary);
+}
+
+.btn-action-sync:not(:disabled):active {
+  opacity: 0.8;
+}
+
+.btn-action-invite {
+  border: none;
+  background: var(--janote-expense);
+  color: var(--text-primary);
+}
+
+.btn-action-invite:not(:disabled):active {
   opacity: 0.8;
 }
 
@@ -977,16 +888,17 @@ function getShareDirection(share: UserShare): string {
 
 /* ── Invite form ─────────────────────────────────────────── */
 
-.invite-form {
+.invite-row {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
 }
 
 .invite-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid var(--border-primary);
   background: var(--bg-page);

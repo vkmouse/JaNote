@@ -2,7 +2,7 @@
   <section class="search-page">
     <TopNavigation>
       <template #left><NavBack /></template>
-      <template #right><NavAvatar /></template>
+      <template #right><NavSync /><NavAvatar /></template>
     </TopNavigation>
 
     <div class="page-content page">
@@ -150,6 +150,7 @@ import { ref, computed, onMounted, nextTick, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
+import NavSync from "../components/NavSync.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import type { Transaction } from "../types";
 import CategoryIcon from "../components/CategoryIcon.vue";
