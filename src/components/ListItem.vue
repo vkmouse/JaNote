@@ -6,8 +6,9 @@ import { iconTrash, iconDefault } from "../utils/icons";
 const props = withDefaults(
   defineProps<{
     swipeable?: boolean;
+    deleteOnly?: boolean;
   }>(),
-  { swipeable: false }
+  { swipeable: false, deleteOnly: false }
 );
 
 const emit = defineEmits<{
@@ -21,7 +22,7 @@ const groupContext = inject(listGroupKey, null);
 const itemId = Symbol();
 
 // ── Swipe state ──────────────────────────────────────────────────────────────
-const BUTTON_WIDTH = 144; // 72px edit + 72px delete
+const buttonWidth = computed(() => (props.deleteOnly ? 72 : 144));
 const DIRECTION_LOCK_THRESHOLD = 8;
 
 const containerRef = ref<HTMLElement>();
@@ -82,7 +83,7 @@ function onTouchMove(e: TouchEvent) {
   // directionLocked === 'h'
   e.preventDefault();
   const next = startTranslateX + deltaX;
-  translateX.value = Math.min(0, Math.max(-BUTTON_WIDTH, next));
+  translateX.value = Math.min(0, Math.max(-buttonWidth.value, next));
 }
 
 function onTouchEnd() {
@@ -98,7 +99,7 @@ function onTouchEnd() {
   if (!isOpen.value) {
     // Closed → open if dragged left past threshold
     if (translateX.value <= -threshold) {
-      translateX.value = -BUTTON_WIDTH;
+      translateX.value = -buttonWidth.value;
       isOpen.value = true;
       groupContext?.setOpen(itemId);
     } else {
@@ -111,7 +112,7 @@ function onTouchEnd() {
       translateX.value = 0;
       isOpen.value = false;
     } else {
-      translateX.value = -BUTTON_WIDTH;
+      translateX.value = -buttonWidth.value;
       isOpen.value = true;
     }
   }
@@ -163,8 +164,8 @@ function onDeleteClick() {
 <template>
   <div :class="['list-item', { 'list-item--swipeable': swipeable }]">
     <template v-if="swipeable">
-      <div class="swipe-actions">
-        <div class="swipe-action swipe-action--edit" @click.stop="onEditClick">
+      <div class="swipe-actions" :class="{ 'swipe-actions--delete-only': deleteOnly }">
+        <div v-if="!deleteOnly" class="swipe-action swipe-action--edit" @click.stop="onEditClick">
           <span v-html="iconDefault" class="action-icon" />
         </div>
         <div class="swipe-action swipe-action--delete" @click.stop="onDeleteClick">
@@ -217,6 +218,10 @@ function onDeleteClick() {
   bottom: 0;
   width: 144px;
   display: flex;
+}
+
+.swipe-actions--delete-only {
+  width: 72px;
 }
 
 .swipe-action {

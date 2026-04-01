@@ -34,6 +34,25 @@ const isImporting = ref(false);
 // ── ConfirmModal ─────────────────────────────────────────────
 const showClearModal = ref(false);
 
+// ── 共享刪除確認 ────────────────────────────────────────────
+const showShareDeleteModal = ref(false);
+const pendingDeleteShare = ref<UserShare | null>(null);
+const pendingDeleteAction = ref("");
+
+function requestDeleteShare(share: UserShare, actionName: string) {
+  pendingDeleteShare.value = share;
+  pendingDeleteAction.value = actionName;
+  showShareDeleteModal.value = true;
+}
+
+async function confirmShareDelete() {
+  if (pendingDeleteShare.value) {
+    await rejectOrCancelShare(pendingDeleteShare.value, pendingDeleteAction.value);
+  }
+  showShareDeleteModal.value = false;
+  pendingDeleteShare.value = null;
+}
+
 // ── CSV 工具函式 ─────────────────────────────────────────────
 
 /** 解析單行 CSV，處理引號內含逗號的欄位 */
@@ -489,8 +508,8 @@ function getShareDirection(share: UserShare): string {
             v-for="share in userShareStore.sentPendingInvites"
             :key="share.id"
             :swipeable="true"
-            @delete="rejectOrCancelShare(share, '取消邀請')"
-            @edit="rejectOrCancelShare(share, '取消邀請')"
+            :delete-only="true"
+            @delete="requestDeleteShare(share, '取消邀請')"
           >
             <div class="share-row">
               <div class="share-info">
@@ -516,8 +535,8 @@ function getShareDirection(share: UserShare): string {
             v-for="share in userShareStore.activeShares"
             :key="share.id"
             :swipeable="true"
-            @delete="rejectOrCancelShare(share, '刪除共享')"
-            @edit="rejectOrCancelShare(share, '刪除共享')"
+            :delete-only="true"
+            @delete="requestDeleteShare(share, '刪除共享')"
           >
             <div class="share-row">
               <div class="share-info">
@@ -604,7 +623,7 @@ function getShareDirection(share: UserShare): string {
           <div class="danger-row">
             <div class="danger-info">
               <span class="danger-title">清空本機資料</span>
-              <span class="danger-desc">移除所有本地記錄與同步狀態，無法復原</span>
+              <span class="action-desc">移除所有本地記錄與同步狀態，無法復原</span>
             </div>
             <button class="btn-clear" @click="showClearModal = true">
               清空
@@ -630,6 +649,15 @@ function getShareDirection(share: UserShare): string {
       variant="danger"
       @confirm="clearAllData"
       @cancel="showClearModal = false"
+    />
+    <ConfirmModal
+      :show="showShareDeleteModal"
+      :title="pendingDeleteAction"
+      :message="`確定要${pendingDeleteAction}嗎？`"
+      confirm-text="確認"
+      variant="danger"
+      @confirm="confirmShareDelete"
+      @cancel="showShareDeleteModal = false"
     />
   </div>
 </template>
@@ -664,7 +692,7 @@ function getShareDirection(share: UserShare): string {
 }
 
 .section-label {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   margin: 0;
   padding: 0 2px;
@@ -674,7 +702,7 @@ function getShareDirection(share: UserShare): string {
 
 .card {
   background: var(--bg-page);
-  border: 1.5px solid var(--border-primary);
+  border: 2px solid var(--border-primary);
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;
@@ -729,7 +757,7 @@ function getShareDirection(share: UserShare): string {
 }
 
 .meta-key {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -745,7 +773,7 @@ function getShareDirection(share: UserShare): string {
 /* ── Buttons ─────────────────────────────────────────── */
 
 .action-card {
-  border: 1.5px solid var(--border-primary);
+  border: 2px solid var(--border-primary);
   border-radius: 12px;
   padding: 12px 16px;
 }
@@ -766,13 +794,13 @@ function getShareDirection(share: UserShare): string {
 }
 
 .action-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
 }
 
 .action-desc {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -835,7 +863,7 @@ function getShareDirection(share: UserShare): string {
 }
 
 .danger-card {
-  border: 1.5px solid rgba(248, 113, 113, 0.35);
+  border: 2px solid rgba(248, 113, 113, 0.35);
   border-radius: 12px;
   padding: 12px 16px;
   background: rgba(248, 113, 113, 0.04);
@@ -857,14 +885,9 @@ function getShareDirection(share: UserShare): string {
 }
 
 .danger-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--janote-action);
-}
-
-.danger-desc {
-  font-size: 12px;
-  color: var(--text-secondary);
 }
 
 .btn-clear {
@@ -900,7 +923,7 @@ function getShareDirection(share: UserShare): string {
   box-sizing: border-box;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid var(--border-primary);
+  border: 2px solid var(--border-primary);
   background: var(--bg-page);
   font-family: inherit;
   font-size: 14px;
@@ -919,8 +942,8 @@ function getShareDirection(share: UserShare): string {
 /* ── Share lists ─────────────────────────────────────────── */
 
 .group-header-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -950,7 +973,7 @@ function getShareDirection(share: UserShare): string {
 }
 
 .share-from {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
@@ -1017,15 +1040,5 @@ function getShareDirection(share: UserShare): string {
 .share-badge--active {
   background: rgba(34, 197, 94, 0.15);
   color: rgb(34, 197, 94);
-}
-
-/* ── Empty state ─────────────────────────────────────────── */
-
-.empty-state {
-  text-align: center;
-  padding: 20px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-style: italic;
 }
 </style>
