@@ -843,7 +843,7 @@ function getShareDirection(share: UserShare): string {
 
 .btn-income {
   background: var(--janote-income);
-  color: var(--text-primary);
+  color: var(--text-light);
   box-shadow: 0 2px 8px rgba(71, 184, 224, 0.3);
 }
 
