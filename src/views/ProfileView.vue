@@ -682,6 +682,7 @@ async function handleInviteConfirm() {
       @cancel="showNotifyModal = false"
     />
   </div>
+</template>
 
 <style scoped>
 .profile-page {
