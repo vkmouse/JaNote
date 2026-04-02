@@ -484,7 +484,7 @@ onMounted(async () => {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px;
+  padding: 0 12px;
   border-bottom: 2px solid var(--border-primary);
 }
 

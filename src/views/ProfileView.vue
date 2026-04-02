@@ -24,12 +24,36 @@ useSharedSwipeContext();
 // ── 共享邀請 UI 狀態 ────────────────────────────────────────
 const inviteEmail = ref("");
 const isInviting = ref(false);
+const inviteError = ref("");
 const operatingShareId = ref<string | null>(null);
 
 
 // ── CSV ─────────────────────────────────────────────────────
 const csvFileInput = ref<HTMLInputElement | null>(null);
 const isImporting = ref(false);
+
+// ── 通知 Modal（取代 alert）────────────────────────────────
+const showNotifyModal = ref(false);
+const notifyMessage = ref("");
+function showNotify(msg: string) {
+  notifyMessage.value = msg;
+  showNotifyModal.value = true;
+}
+
+// ── ImportRow 型別（供匯入確認 Modal 共用）─────────────────
+interface ImportRow {
+  category_id: string;
+  type: "EXPENSE" | "INCOME";
+  amount: number;
+  note: string;
+  date: number;
+}
+
+// ── 匯入確認 Modal ─────────────────────────────────────────
+const showImportConfirmModal = ref(false);
+const importConfirmMain = ref("");
+const importConfirmSkip = ref("");
+const pendingImportRows = ref<ImportRow[]>([]);
 
 // ── ConfirmModal ─────────────────────────────────────────────
 const showClearModal = ref(false);
@@ -178,10 +202,10 @@ async function handleCsvImport(event: Event) {
   const file = input.files?.[0];
   input.value = "";
   if (!file) return;
-  await importCsv(file);
+  await parseCsvFile(file);
 }
 
-async function importCsv(file: File) {
+async function parseCsvFile(file: File) {
   isImporting.value = true;
   try {
     let text = await file.text();
@@ -189,7 +213,7 @@ async function importCsv(file: File) {
 
     const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
     if (lines.length < 2) {
-      alert("匯入失敗：CSV 內容為空");
+      showNotify("匯入失敗：CSV 內容為空");
       return;
     }
 
@@ -198,7 +222,7 @@ async function importCsv(file: File) {
       (col) => !headers.includes(col),
     );
     if (missingCols.length > 0) {
-      alert(`匯入失敗：缺少必要欄位 [${missingCols.join("、")}]`);
+      showNotify(`匯入失敗：缺少必要欄位 [${missingCols.join("、")}]`);
       return;
     }
 
@@ -208,14 +232,6 @@ async function importCsv(file: File) {
     }
 
     const myCategories = transactionStore.visibleCategories;
-
-    interface ImportRow {
-      category_id: string;
-      type: "EXPENSE" | "INCOME";
-      amount: number;
-      note: string;
-      date: number;
-    }
     const validRows: ImportRow[] = [];
     const skippedRows: number[] = [];
 
@@ -261,27 +277,37 @@ async function importCsv(file: File) {
         skippedRows.length > 0
           ? `所有資料列都無法對應分類（第 ${skippedRows.join("、")} 行）`
           : "沒有可匯入的資料";
-      alert(`匯入失敗：${reason}`);
+      showNotify(`匯入失敗：${reason}`);
       return;
     }
 
-    const skipMsg =
+    pendingImportRows.value = validRows;
+    importConfirmMain.value = `本次將新增 ${validRows.length} 筆交易，確認匯入？`;
+    importConfirmSkip.value =
       skippedRows.length > 0
-        ? `\n（第 ${skippedRows.join("、")} 行因分類不符將被跳過）`
+        ? `第 ${skippedRows.join("、")} 行因分類不符將被跳過`
         : "";
-    if (
-      !confirm(`本次將新增 ${validRows.length} 筆交易，確認匯入？${skipMsg}`)
-    ) {
-      return;
-    }
+    showImportConfirmModal.value = true;
+  } catch (err) {
+    showNotify("匯入失敗：讀取 CSV 發生錯誤");
+    console.error("CSV 匯入錯誤:", err);
+  } finally {
+    isImporting.value = false;
+  }
+}
 
-    for (const row of validRows) {
+async function confirmImport() {
+  showImportConfirmModal.value = false;
+  const rows = pendingImportRows.value;
+  pendingImportRows.value = [];
+  isImporting.value = true;
+  try {
+    for (const row of rows) {
       await transactionStore.addTransaction(row);
     }
-
-    alert(`已成功匯入 ${validRows.length} 筆交易，請執行同步以上傳資料`);
+    showNotify(`已成功匯入 ${rows.length} 筆交易，請執行同步以上傳資料`);
   } catch (err) {
-    alert("匯入失敗：讀取 CSV 發生錯誤");
+    showNotify("匯入失敗：寫入資料時發生錯誤");
     console.error("CSV 匯入錯誤:", err);
   } finally {
     isImporting.value = false;
@@ -325,43 +351,45 @@ async function clearAllData() {
 
 // ── 共享邀請 ────────────────────────────────────────────────
 
-async function sendInvite() {
+async function sendInvite(): Promise<boolean> {
+  inviteError.value = "";
   const email = inviteEmail.value.trim();
 
   if (!email) {
-    alert("請輸入 Email 地址");
-    return;
+    inviteError.value = "請輸入 Email 地址";
+    return false;
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    alert("請輸入有效的 Email 地址");
-    return;
+    inviteError.value = "請輸入有效的 Email 地址";
+    return false;
   }
 
   const existingInvite = userShareStore.sentPendingInvites.find(
     (invite) => invite.receiver_email === email,
   );
   if (existingInvite) {
-    alert("已經邀請過此 Email");
-    return;
+    inviteError.value = "已經邀請過此 Email";
+    return false;
   }
 
   isInviting.value = true;
   try {
     const user = userStore.currentUser;
     if (!user?.id || !user?.email) {
-      alert("無法取得使用者資訊");
-      return;
+      inviteError.value = "無法取得使用者資訊";
+      return false;
     }
 
     await userShareStore.sendInvite(user.id, user.email, email);
     await userShareStore.loadShares(userStore.currentUserId);
     inviteEmail.value = "";
-    alert("邀請已發送，請執行同步");
+    return true;
   } catch (error) {
-    alert("發送邀請失敗");
+    inviteError.value = "發送邀請失敗，請稍後再試";
     console.error("發送邀請失敗:", error);
+    return false;
   } finally {
     isInviting.value = false;
   }
@@ -406,6 +434,22 @@ function getShareOtherEmail(share: UserShare): string {
 function getShareDirection(share: UserShare): string {
   return share.sender_id === userStore.currentUserId ? "共享給" : "來自";
 }
+
+// ── 新增邀請 Modal ────────────────────────────────────────
+const showInviteModal = ref(false);
+
+function openInviteModal() {
+  inviteEmail.value = "";
+  inviteError.value = "";
+  showInviteModal.value = true;
+}
+
+async function handleInviteConfirm() {
+  const success = await sendInvite();
+  if (success) {
+    showInviteModal.value = false;
+  }
+}
 </script>
 
 <template>
@@ -420,60 +464,99 @@ function getShareDirection(share: UserShare): string {
 
     <div class="page-content">
 
-      <!-- ── 個人資訊 ─────────────────────────────────────── -->
+      <!-- ── 個人管理 ────────────────────────────────────── -->
       <section class="section">
-        <h2 class="section-label">個人資訊</h2>
+        <h2 class="section-label">個人管理</h2>
         <div class="card">
-          <div class="info-row">
-            <span class="info-key">電子信箱</span>
-            <span class="info-value">
-              {{ userStore.currentUserEmail || "—" }}
-            </span>
+          <!-- 電子信箱 -->
+          <div class="info-email">{{ userStore.currentUserEmail || "—" }}</div>
+
+          <!-- 同步資訊 -->
+          <div class="info-meta-list">
+            <div class="info-meta-row">
+              <span class="info-meta-label">尚未同步數量</span>
+              <span class="info-meta-value">{{ syncStore.activeQueueCount }}</span>
+            </div>
+            <div class="info-meta-row">
+              <span class="info-meta-label">最後同步游標</span>
+              <span class="info-meta-value">{{ syncStore.lastCursor }}</span>
+            </div>
+            <div class="info-meta-row">
+              <span class="info-meta-label">最後同步時間</span>
+              <span class="info-meta-value">{{ syncStore.lastSyncAt || "—" }}</span>
+            </div>
           </div>
+
+          <!-- 2×2 按鈕格線 -->
+          <div class="btn-grid">
+            <!-- 立即同步 -->
+            <button
+              class="btn-grid-item btn-grid-sync"
+              :disabled="!syncStatusStore.canSync"
+              @click="syncNow"
+            >
+              {{ syncStatusStore.status === 'syncing' ? '同步中…' : '立即同步' }}
+            </button>
+
+            <!-- 清空本機（僅非共享模式） -->
+            <button
+              v-if="!userStore.isViewingShared"
+              class="btn-grid-item btn-grid-clear"
+              @click="showClearModal = true"
+            >
+              清空本機
+            </button>
+
+            <!-- 匯入資料（僅非共享模式） -->
+            <button
+              v-if="!userStore.isViewingShared"
+              class="btn-grid-item btn-grid-import"
+              :disabled="isImporting"
+              @click="triggerCsvImport"
+            >
+              {{ isImporting ? "匯入中…" : "匯入資料" }}
+            </button>
+
+            <!-- 匯出資料（僅非共享模式） -->
+            <button
+              v-if="!userStore.isViewingShared"
+              class="btn-grid-item btn-grid-export"
+              :disabled="isImporting"
+              @click="exportCsv"
+            >
+              匯出資料
+            </button>
+          </div>
+
+          <input
+            ref="csvFileInput"
+            type="file"
+            accept=".csv,text/csv"
+            style="display: none"
+            @change="handleCsvImport"
+          />
         </div>
       </section>
 
-      <!-- ── 共享管理 ─────────────────────────────────────── -->
+      <!-- ── 共享管理 ────────────────────────────────────── -->
       <section class="section">
         <h2 class="section-label">共享管理</h2>
 
-        <!-- 發送邀請 -->
-        <div class="invite-row">
-          <input
-            v-model="inviteEmail"
-            type="email"
-            class="invite-input"
-            placeholder="輸入要邀請的 Email"
-            @keyup.enter="sendInvite"
-          />
-          <button
-            class="btn-action-sm btn-action-invite"
-            :disabled="isInviting"
-            @click="sendInvite"
-          >
-            {{ isInviting ? "發送中…" : "邀請" }}
-          </button>
-        </div>
-
-        <!-- 收到的邀請 -->
-        <ListGroup v-if="userShareStore.receivedPendingInvites.length > 0">
+        <ListGroup>
           <template #header-left>
-            <span class="group-header-title">收到的邀請</span>
+            <span class="group-header-title">管理清單</span>
           </template>
           <template #header-right>
-            <span class="group-header-count">
-              {{ userShareStore.receivedPendingInvites.length }}
-            </span>
+            <button class="btn-invite" @click="openInviteModal">新增邀請</button>
           </template>
+
+          <!-- 收到的邀請（尚未接受）→ 顯示接受/取消按鈕 -->
           <ListItem
             v-for="share in userShareStore.receivedPendingInvites"
             :key="share.id"
           >
             <div class="share-row">
-              <div class="share-info">
-                <span class="share-from">來自</span>
-                <span class="share-email">{{ share.sender_email }}</span>
-              </div>
+              <span class="share-email">{{ share.sender_email }}</span>
               <div class="share-btns">
                 <button
                   class="btn-sm btn-accept"
@@ -487,23 +570,13 @@ function getShareDirection(share: UserShare): string {
                   :disabled="operatingShareId === share.id"
                   @click="rejectOrCancelShare(share, '拒絕邀請')"
                 >
-                  拒絕
+                  取消
                 </button>
               </div>
             </div>
           </ListItem>
-        </ListGroup>
 
-        <!-- 發出的邀請 -->
-        <ListGroup v-if="userShareStore.sentPendingInvites.length > 0">
-          <template #header-left>
-            <span class="group-header-title">發出的邀請</span>
-          </template>
-          <template #header-right>
-            <span class="group-header-count">
-              {{ userShareStore.sentPendingInvites.length }}
-            </span>
-          </template>
+          <!-- 發出的邀請（邀請中）→ 藍色徽章，可滑動刪除 -->
           <ListItem
             v-for="share in userShareStore.sentPendingInvites"
             :key="share.id"
@@ -512,25 +585,12 @@ function getShareDirection(share: UserShare): string {
             @delete="requestDeleteShare(share, '取消邀請')"
           >
             <div class="share-row">
-              <div class="share-info">
-                <span class="share-from">邀請</span>
-                <span class="share-email">{{ share.receiver_email }}</span>
-              </div>
+              <span class="share-email">{{ share.receiver_email }}</span>
               <span class="share-badge share-badge--pending">邀請中</span>
             </div>
           </ListItem>
-        </ListGroup>
 
-        <!-- 已啟用的共享 -->
-        <ListGroup v-if="userShareStore.activeShares.length > 0">
-          <template #header-left>
-            <span class="group-header-title">已啟用的共享</span>
-          </template>
-          <template #header-right>
-            <span class="group-header-count">
-              {{ userShareStore.activeShares.length }}
-            </span>
-          </template>
+          <!-- 已啟用的共享 → 綠色徽章，可滑動刪除 -->
           <ListItem
             v-for="share in userShareStore.activeShares"
             :key="share.id"
@@ -539,108 +599,27 @@ function getShareDirection(share: UserShare): string {
             @delete="requestDeleteShare(share, '刪除共享')"
           >
             <div class="share-row">
-              <div class="share-info">
-                <span class="share-from">{{ getShareDirection(share) }}</span>
-                <span class="share-email">{{ getShareOtherEmail(share) }}</span>
-              </div>
+              <span class="share-email">{{ getShareOtherEmail(share) }}</span>
               <span class="share-badge share-badge--active">已啟用</span>
             </div>
           </ListItem>
-        </ListGroup>
 
-
-      </section>
-
-      <!-- ── 同步與資料 ─────────────────────────────────────── -->
-      <section class="section">
-        <h2 class="section-label">同步與資料</h2>
-        <!-- 同步狀態 -->
-        <div class="card">
-          <div class="sync-meta-grid">
-            <div class="meta-cell">
-              <span class="meta-key">未同步數量</span>
-              <strong class="meta-value">{{ syncStore.activeQueueCount }}</strong>
-            </div>
-            <div class="meta-cell">
-              <span class="meta-key">同步游標</span>
-              <strong class="meta-value">{{ syncStore.lastCursor }}</strong>
-            </div>
-            <div class="meta-cell meta-cell--full">
-            <span class="meta-key">最後同步時間</span>
-            <strong class="meta-value">{{ syncStore.lastSyncAt || "—" }}</strong>
-          </div>
-        </div>
-      </div>
-      <!-- 立即同步 -->
-      <div class="action-card">
-        <div class="action-row">
-          <div class="action-info">
-            <span class="action-title">立即同步</span>
-            <span class="action-desc">將本機變更推送至雲端並拉取最新資料</span>
-          </div>
-          <button
-            class="btn-action-sm btn-action-sync"
-            :disabled="!syncStatusStore.canSync"
-            @click="syncNow"
+          <!-- 空清單提示 -->
+          <div
+            v-if="
+              userShareStore.receivedPendingInvites.length === 0 &&
+              userShareStore.sentPendingInvites.length === 0 &&
+              userShareStore.activeShares.length === 0
+            "
+            class="share-empty"
           >
-            {{ syncStatusStore.status === 'syncing' ? '同步中…' : '同步' }}
-          </button>
-        </div>
-      </div>
-      <!-- 匯出／匯入／清空（非共享瀏覽模式才顯示） -->
-      <template v-if="!userStore.isViewingShared">
-        <div class="action-card">
-          <div class="action-row">
-            <div class="action-info">
-              <span class="action-title">匯出資料</span>
-              <span class="action-desc">將本機交易記錄匯出為 CSV 格式</span>
-            </div>
-            <button
-              class="btn-action-sm btn-action-export"
-              :disabled="isImporting"
-              @click="exportCsv"
-            >
-              匯出
-            </button>
+            尚無共享記錄
           </div>
-        </div>
-        <div class="action-card">
-          <div class="action-row">
-            <div class="action-info">
-              <span class="action-title">匯入資料</span>
-              <span class="action-desc">從 CSV 匯入交易記錄，匯入後請執行同步</span>
-            </div>
-            <button
-              class="btn-action-sm btn-action-import"
-              :disabled="isImporting"
-              @click="triggerCsvImport"
-            >
-              {{ isImporting ? "匯入中…" : "匯入" }}
-            </button>
-          </div>
-        </div>
-        <div class="danger-card">
-          <div class="danger-row">
-            <div class="danger-info">
-              <span class="danger-title">清空本機資料</span>
-              <span class="action-desc">移除所有本地記錄與同步狀態，無法復原</span>
-            </div>
-            <button class="btn-clear" @click="showClearModal = true">
-              清空
-            </button>
-          </div>
-        </div>
-        <input
-          ref="csvFileInput"
-          type="file"
-          accept=".csv,text/csv"
-          style="display: none"
-          @change="handleCsvImport"
-        />
-      </template>
+        </ListGroup>
       </section>
     </div>
 
+    <!-- ── 清空本機確認 Modal ───────────────────────────── -->
     <ConfirmModal
       :show="showClearModal"
       title="清空本機資料"
@@ -650,6 +629,8 @@ function getShareDirection(share: UserShare): string {
       @confirm="clearAllData"
       @cancel="showClearModal = false"
     />
+
+    <!-- ── 共享刪除確認 Modal ───────────────────────────── -->
     <ConfirmModal
       :show="showShareDeleteModal"
       :title="pendingDeleteAction"
@@ -659,8 +640,48 @@ function getShareDirection(share: UserShare): string {
       @confirm="confirmShareDelete"
       @cancel="showShareDeleteModal = false"
     />
+
+    <!-- ── 新增邀請 Modal ──────────────────────────────── -->
+    <ConfirmModal
+      :show="showInviteModal"
+      title="新增邀請"
+      confirm-text="送出"
+      :cancel-text="'取消'"
+      @confirm="handleInviteConfirm"
+      @cancel="showInviteModal = false"
+    >
+      <input
+        v-model="inviteEmail"
+        type="email"
+        class="invite-input"
+        placeholder="輸入要邀請的 Email"
+        @keyup.enter="handleInviteConfirm"
+      />
+      <p v-if="inviteError" class="invite-error">{{ inviteError }}</p>
+    </ConfirmModal>
+    <!-- ── 匯入確認 Modal ──────────────────────────────── -->
+    <ConfirmModal
+      :show="showImportConfirmModal"
+      title="確認匯入"
+      confirm-text="匯入"
+      @confirm="confirmImport"
+      @cancel="showImportConfirmModal = false"
+    >
+      <p class="csv-confirm-main">{{ importConfirmMain }}</p>
+      <p v-if="importConfirmSkip" class="csv-confirm-skip">{{ importConfirmSkip }}</p>
+    </ConfirmModal>
+
+    <!-- ── 通知 Modal（取代 alert）──────────────────────── -->
+    <ConfirmModal
+      :show="showNotifyModal"
+      title="提示"
+      :message="notifyMessage"
+      confirm-text="確認"
+      cancel-text=""
+      @confirm="showNotifyModal = false"
+      @cancel="showNotifyModal = false"
+    />
   </div>
-</template>
 
 <style scoped>
 .profile-page {
@@ -710,22 +731,41 @@ function getShareDirection(share: UserShare): string {
   gap: 14px;
 }
 
-/* ── 個人資訊 ────────────────────────────────────────────── */
+/* ── 個人管理：電子信箱 ──────────────────────────────── */
 
-.info-row {
+.info-email {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 個人管理：同步資訊 ──────────────────────────────── */
+
+.info-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-meta-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
-.info-key {
+.info-meta-label {
   font-size: 13px;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.info-value {
+.info-meta-value {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
@@ -733,213 +773,58 @@ function getShareDirection(share: UserShare): string {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: right;
-  flex: 1;
-  min-width: 0;
 }
 
-/* ── 同步 ────────────────────────────────────────────────── */
+/* ── 個人管理：2×2 按鈕格線 ──────────────────────────── */
 
-.sync-meta-grid {
+.btn-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
-.meta-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.meta-cell--full {
-  grid-column: 1 / -1;
-}
-
-.meta-key {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.meta-value {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ── Buttons ─────────────────────────────────────────── */
-
-.action-card {
-  border: 2px solid var(--border-primary);
-  border-radius: 12px;
-  padding: 12px 16px;
-}
-
-.action-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.action-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.action-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.action-desc {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-.btn-action-sm {
+.btn-grid-item {
   font-family: inherit;
+  border: none;
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 10px 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
-  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  transition: opacity 0.15s;
 }
 
-.btn-action-sm:disabled {
+.btn-grid-item:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn-action-export {
-  border: none;
-  background: var(--janote-income);
-  color: var(--text-light);
-}
-
-.btn-action-export:not(:disabled):active {
+.btn-grid-item:not(:disabled):active {
   opacity: 0.8;
 }
 
-.btn-action-import {
-  border: none;
-  background: var(--janote-income);
-  color: var(--text-light);
-}
-
-.btn-action-import:not(:disabled):active {
-  opacity: 0.8;
-}
-
-.btn-action-sync {
-  border: none;
+.btn-grid-sync {
   background: var(--janote-expense);
   color: var(--text-primary);
 }
 
-.btn-action-sync:not(:disabled):active {
-  opacity: 0.8;
-}
-
-.btn-action-invite {
-  border: none;
-  background: var(--janote-expense);
-  color: var(--text-primary);
-}
-
-.btn-action-invite:not(:disabled):active {
-  opacity: 0.8;
-}
-
-.danger-card {
-  border: 2px solid rgba(248, 113, 113, 0.35);
-  border-radius: 12px;
-  padding: 12px 16px;
-  background: rgba(248, 113, 113, 0.04);
-}
-
-.danger-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.danger-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.danger-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--janote-action);
-}
-
-.btn-clear {
-  font-family: inherit;
-  border: none;
-  border-radius: 8px;
+.btn-grid-clear {
   background: var(--janote-action);
   color: var(--text-light);
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
 }
 
-.btn-clear:active {
-  opacity: 0.8;
+.btn-grid-import {
+  background: var(--janote-income);
+  color: var(--text-light);
 }
 
-/* ── Invite form ─────────────────────────────────────────── */
-
-.invite-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.btn-grid-export {
+  background: var(--janote-income);
+  color: var(--text-light);
 }
 
-.invite-input {
-  flex: 1;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 2px solid var(--border-primary);
-  background: var(--bg-page);
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.invite-input::placeholder {
-  color: var(--text-disabled);
-}
-
-.invite-input:focus {
-  outline: none;
-  border-color: var(--text-primary);
-}
-
-/* ── Share lists ─────────────────────────────────────────── */
+/* ── 共享管理：Header ────────────────────────────────── */
 
 .group-header-title {
   font-size: 15px;
@@ -947,13 +832,24 @@ function getShareDirection(share: UserShare): string {
   color: var(--text-primary);
 }
 
-.group-header-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--bg-card, #f5f5f5);
-  padding: 2px 8px;
-  border-radius: 20px;
+.btn-invite {
+  font-family: inherit;
+  border: none;
+  border-radius: 8px;
+  background: var(--janote-expense);
+  color: var(--text-primary);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
+
+.btn-invite:active {
+  opacity: 0.8;
+}
+
+/* ── 共享管理：列表 Item ─────────────────────────────── */
 
 .share-row {
   display: flex;
@@ -962,21 +858,6 @@ function getShareDirection(share: UserShare): string {
   padding: 12px 16px;
   gap: 12px;
   min-width: 0;
-}
-
-.share-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.share-from {
-  font-size: 14px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .share-email {
@@ -1023,22 +904,86 @@ function getShareDirection(share: UserShare): string {
   color: var(--text-light);
 }
 
+/* ── 共享徽章（有邊框，無 icon） ──────────────────────── */
+
 .share-badge {
   font-size: 11px;
   padding: 3px 10px;
   border-radius: 20px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  border: 2px solid;
 }
 
 .share-badge--pending {
-  background: rgba(71, 184, 224, 0.15);
+  background: var(--janote-income-light, rgba(71, 184, 224, 0.12));
+  border-color: var(--janote-income);
   color: var(--janote-income);
 }
 
 .share-badge--active {
-  background: rgba(34, 197, 94, 0.15);
-  color: rgb(34, 197, 94);
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+/* ── 共享管理：空狀態 ────────────────────────────────── */
+
+.share-empty {
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── 新增邀請 Modal：Input ────────────────────────────── */
+
+.invite-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--border-primary);
+  background: var(--bg-page);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.invite-input::placeholder {
+  color: var(--text-disabled);
+}
+
+.invite-input:focus {
+  outline: none;
+  border-color: var(--text-primary);
+}
+
+/* ── 新增邀請 Modal：驗證錯誤訊息 ──────────────────────── */
+
+.invite-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--janote-action, #ef4444);
+  text-align: center;
+}
+
+/* ── CSV 確認 Modal：文字 ────────────────────────────── */
+
+.csv-confirm-main {
+  margin: 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.csv-confirm-skip {
+  margin: 6px 0 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

@@ -32,7 +32,7 @@ const emit = defineEmits<{
           </slot>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" @click="emit('cancel')">
+          <button v-if="cancelText" class="btn-cancel" @click="emit('cancel')">
             {{ cancelText }}
           </button>
           <button

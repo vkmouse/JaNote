@@ -47,7 +47,7 @@ defineEmits<{
 <style scoped>
 .input-section {
   flex-shrink: 0;
-  padding: 16px;
+  padding: 4px 16px;
   border-bottom: 2px solid var(--border-primary);
 }
 
@@ -67,6 +67,7 @@ defineEmits<{
 }
 
 .amount-display {
+  height: 40px;
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
@@ -74,10 +75,10 @@ defineEmits<{
 
 .notes-input {
   flex: 1;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--text-disabled);
   border-radius: 10px;
   padding: 8px;
-  font-size: 13px;
+  font-size: 15px;
   outline: none;
   transition: border-color 0.2s;
 }
