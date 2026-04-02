@@ -32,7 +32,7 @@ const operatingShareId = ref<string | null>(null);
 const csvFileInput = ref<HTMLInputElement | null>(null);
 const isImporting = ref(false);
 
-// ── 通知 Modal（取代 alert）────────────────────────────────
+// ── 通知 Modal ────────────────────────────────
 const showNotifyModal = ref(false);
 const notifyMessage = ref("");
 function showNotify(msg: string) {
@@ -401,9 +401,8 @@ async function acceptInvitation(share: UserShare) {
   try {
     await userShareStore.acceptInvitation(share);
     await userShareStore.loadShares(userStore.currentUserId);
-    alert("已接受邀請，請執行同步");
   } catch (error) {
-    alert("接受邀請失敗");
+    showNotify("接受邀請失敗");
     console.error("接受邀請失敗:", error);
   } finally {
     operatingShareId.value = null;
@@ -416,9 +415,8 @@ async function rejectOrCancelShare(share: UserShare, actionName: string) {
   try {
     await userShareStore.rejectOrCancelShare(share);
     await userShareStore.loadShares(userStore.currentUserId);
-    alert(`已${actionName}，請執行同步`);
   } catch (error) {
-    alert(`${actionName}失敗`);
+    showNotify(`${actionName}失敗`);
     console.error(`${actionName}失敗:`, error);
   } finally {
     operatingShareId.value = null;
@@ -671,7 +669,7 @@ async function handleInviteConfirm() {
       <p v-if="importConfirmSkip" class="csv-confirm-skip">{{ importConfirmSkip }}</p>
     </ConfirmModal>
 
-    <!-- ── 通知 Modal（取代 alert）──────────────────────── -->
+    <!-- ── 通知 Modal ──────────────────────── -->
     <ConfirmModal
       :show="showNotifyModal"
       title="提示"
