@@ -204,6 +204,34 @@ export interface RecurringBudgetPayload {
   last_executed_at?: string | null;
 }
 
+// ── 帳戶管理（純前端，localStorage） ─────────────────────────
+
+/** 主帳戶的單筆餘額來源（例如某銀行存款） */
+export interface AccountBalanceSource {
+  id: string;
+  name: string;
+  amount: number; // 必須 >= 0
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  balanceSources?: AccountBalanceSource[]; // 主帳戶專用：多筆餘額來源
+  color: string;
+  isPrimary: boolean;
+  createdAt: number;
+}
+
+export interface AccountTransfer {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  date: number; // Unix ms
+  note: string;
+  createdAt: number;
+}
+
 export interface LogEntry {
   id: string;
   time: string;

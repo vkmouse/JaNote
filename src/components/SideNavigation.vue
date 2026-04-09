@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { iconDollarCircle } from "../utils/icons";
+import { iconDollarCircle, iconMoney } from "../utils/icons";
 
 interface Props {
   isOpen?: boolean;
@@ -18,6 +18,7 @@ const route = useRoute();
 
 const navItems = [
   { to: "/transactions", label: "記帳管理", icon: iconDollarCircle },
+  { to: "/accounts", label: "帳戶管理", icon: iconMoney },
 ];
 
 const isActive = (path: string) => route.path.startsWith(path);
