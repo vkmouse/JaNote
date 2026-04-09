@@ -633,6 +633,7 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   flex: 1;
+  min-width: 0;
 }
 
 .category-name {
