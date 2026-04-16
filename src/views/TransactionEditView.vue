@@ -149,10 +149,12 @@ const filteredCategories = computed(() =>
 
 const formattedAmount = computed(() => {
   const num = amount.value || "0";
-  if (/^[0-9.]+$/.test(num)) {
-    const parts = num.split(".");
+  const isNegative = num.startsWith("-");
+  const abs = isNegative ? num.slice(1) : num;
+  if (/^[0-9.]+$/.test(abs)) {
+    const parts = abs.split(".");
     parts[0] = parts[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return parts.join(".");
+    return (isNegative ? "-" : "") + parts.join(".");
   }
   return num;
 });
@@ -170,7 +172,8 @@ const canSave = computed(() => {
       parseFloat(amount.value) > 0
     );
   }
-  return !!(selectedCategoryId.value && amount.value && parseFloat(amount.value) > 0);
+  // 交易與固定交易允許負數金額（例如退款、調整）
+  return !!(selectedCategoryId.value && amount.value && parseFloat(amount.value) !== 0);
 });
 
 const displayCategoryName = computed(() => {
