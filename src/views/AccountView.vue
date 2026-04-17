@@ -1,60 +1,88 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
 import DonutChart, { type DonutSlice } from "../components/DonutChart.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup, { useSharedSwipeContext } from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
+import TypeToggle from "../components/TypeToggle.vue";
 import {
-  ensurePrimaryAccount,
+  loadAccounts,
   loadTransfers,
   saveAccounts,
-  saveTransfers,
   getAccountBalance,
-  nextAccountColor,
+  getNetAllocated,
+  getLogicalBalance,
+  nextPhysicalColor,
+  nextLogicalColor,
 } from "../utils/accountStorage";
 import type { Account } from "../types";
 
 const router = useRouter();
+const route = useRoute();
 
 useSharedSwipeContext();
 
 // ── 狀態 ─────────────────────────────────────────────────────
 const accounts = ref<Account[]>([]);
 const transfers = ref(loadTransfers());
-
-// ── 計算各帳戶餘額 ────────────────────────────────────────────
-const accountBalances = computed(() =>
-  accounts.value.map((acc) => ({
-    account: acc,
-    balance: getAccountBalance(acc, transfers.value),
-  }))
-);
-
-// ── 總資產 ────────────────────────────────────────────────────
-const totalBalance = computed(() =>
-  accountBalances.value.reduce((sum, { balance }) => sum + balance, 0)
-);
-
-// ── DonutChart 切片 ───────────────────────────────────────────
-const donutSlices = computed<DonutSlice[]>(() =>
-  accountBalances.value.map(({ account, balance }) => ({
-    sliceLabel: account.name,
-    sliceValue: Math.max(balance, 0.01),
-    sliceColor: account.color,
-  }))
-);
+const viewMode = ref<"physical" | "logical">("physical");
 
 // ── 初始化 ────────────────────────────────────────────────────
 onMounted(() => {
-  accounts.value = ensurePrimaryAccount();
+  accounts.value = loadAccounts();
   transfers.value = loadTransfers();
+  const t = route.query.type;
+  if (t === "physical" || t === "logical") viewMode.value = t;
+  // 初始化時將目前 tab 同步至 URL
+  if (!route.query.type) router.replace({ query: { type: viewMode.value } });
 });
 
-// ── 格式化金額（不顯示負號） ──────────────────────────────────
-function formatAmount(amount: number): string {
+// ── URL 同步：切換 tab 時更新 query string ────────────────────
+watch(viewMode, (val) => {
+  router.replace({ query: { type: val } });
+});
+
+// ── 過濾帳戶 ──────────────────────────────────────────────────
+const physicalAccounts = computed(() =>
+  accounts.value.filter((a) => a.accountType === "physical"),
+);
+const logicalAccounts = computed(() =>
+  accounts.value.filter((a) => a.accountType === "logical"),
+);
+
+// ── DonutChart 實體：以 amount 為切片大小 ────────────────────
+const physicalDonutSlices = computed<DonutSlice[]>(() =>
+  physicalAccounts.value.map((acc) => ({
+    sliceLabel: acc.name,
+    sliceValue: Math.max(acc.amount, 0.01),
+    sliceColor: acc.color,
+  })),
+);
+
+// ── DonutChart 邏輯：以 logicalBalance 為切片大小 ────────────
+const logicalDonutSlices = computed<DonutSlice[]>(() =>
+  logicalAccounts.value.map((acc) => ({
+    sliceLabel: acc.name,
+    sliceValue: Math.max(getLogicalBalance(acc, transfers.value), 0.01),
+    sliceColor: acc.color,
+  })),
+);
+
+const physicalTotal = computed(() =>
+  physicalAccounts.value.reduce((sum, a) => sum + a.amount, 0),
+);
+const logicalTotal = computed(() =>
+  logicalAccounts.value.reduce(
+    (sum, a) => sum + getLogicalBalance(a, transfers.value),
+    0,
+  ),
+);
+
+// ── 格式化金額 ────────────────────────────────────────────────
+function fmt(amount: number): string {
   return `$${Math.max(amount, 0).toLocaleString()}`;
 }
 
@@ -63,13 +91,15 @@ function goToDetail(accountId: string) {
   router.push({ name: "account-detail", params: { id: accountId } });
 }
 
-// ── 建立帳戶 Modal ─────────────────────────────────────────────
+// ── 新增帳戶 Modal ─────────────────────────────────────────────
 const showCreateModal = ref(false);
 const createName = ref("");
+const createAmountStr = ref("");
 const createError = ref("");
 
 function openCreateModal() {
   createName.value = "";
+  createAmountStr.value = "";
   createError.value = "";
   showCreateModal.value = true;
 }
@@ -84,19 +114,39 @@ function submitCreateAccount() {
     createError.value = "請輸入帳戶名稱";
     return;
   }
-  const newAccount: Account = {
-    id: `acc_${Date.now()}`,
-    name,
-    color: nextAccountColor(accounts.value),
-    isPrimary: false,
-    createdAt: Date.now(),
-  };
-  accounts.value = [...accounts.value, newAccount];
+
+  if (viewMode.value === "physical") {
+    const amount = parseFloat(createAmountStr.value);
+    if (isNaN(amount) || amount < 0) {
+      createError.value = "請輸入有效金額（不可為負數）";
+      return;
+    }
+    const newAccount: Account = {
+      id: `acc_${Date.now()}`,
+      name,
+      accountType: "physical",
+      amount,
+      color: nextPhysicalColor(accounts.value),
+      createdAt: Date.now(),
+    };
+    accounts.value = [...accounts.value, newAccount];
+  } else {
+    const newAccount: Account = {
+      id: `acc_${Date.now()}`,
+      name,
+      accountType: "logical",
+      amount: 0,
+      color: nextLogicalColor(accounts.value),
+      createdAt: Date.now(),
+    };
+    accounts.value = [...accounts.value, newAccount];
+  }
+
   saveAccounts(accounts.value);
   closeCreateModal();
 }
 
-// ── 編輯非主帳戶名稱 Modal ─────────────────────────────────────
+// ── 編輯帳戶名稱 Modal ─────────────────────────────────────────
 const showEditNameModal = ref(false);
 const editNameValue = ref("");
 const editNameError = ref("");
@@ -120,45 +170,51 @@ function submitEditName() {
     return;
   }
   accounts.value = accounts.value.map((a) =>
-    a.id === editNameAccountId ? { ...a, name } : a
+    a.id === editNameAccountId ? { ...a, name } : a,
   );
   saveAccounts(accounts.value);
   closeEditNameModal();
 }
 
-// ── 刪除非主帳戶 ──────────────────────────────────────────────
+// ── 刪除帳戶 ─────────────────────────────────────────────────
 const showDeleteModal = ref(false);
+const showDeleteBlockModal = ref(false);
+const deleteBlockReason = ref("");
 let deleteAccountId = "";
 
 function requestDelete(account: Account) {
+  const bal = getAccountBalance(account, transfers.value);
+  const net = getNetAllocated(account.id, transfers.value);
+
+  if (account.accountType === "physical") {
+    if (account.amount > 0 || net > 0) {
+      deleteBlockReason.value =
+        account.amount > 0
+          ? `此實體帳戶仍有餘額 ${fmt(account.amount)}，無法刪除。請先清空餘額。`
+          : `此實體帳戶仍有 ${fmt(net)} 分配給邏輯帳戶，無法刪除。請先讓邏輯帳戶轉回。`;
+      showDeleteBlockModal.value = true;
+      return;
+    }
+  } else {
+    if (bal > 0) {
+      deleteBlockReason.value = `此邏輯帳戶仍有餘額 ${fmt(bal)}，無法刪除。請先轉回實體帳戶。`;
+      showDeleteBlockModal.value = true;
+      return;
+    }
+  }
+
   deleteAccountId = account.id;
   showDeleteModal.value = true;
 }
 
-function confirmDeleteAccount() {
-  const remaining = transfers.value.filter(
-    (t) => t.fromAccountId !== deleteAccountId && t.toAccountId !== deleteAccountId
-  );
-  transfers.value = remaining;
+function confirmDelete() {
   accounts.value = accounts.value.filter((a) => a.id !== deleteAccountId);
   saveAccounts(accounts.value);
-  saveTransfers(remaining);
   showDeleteModal.value = false;
 }
 
-function cancelDeleteAccount() {
+function cancelDelete() {
   showDeleteModal.value = false;
-}
-
-// ── 清除本機資料 ─────────────────────────────────────────────
-const showClearLocalModal = ref(false);
-
-function clearLocalData() {
-  saveAccounts([]);
-  saveTransfers([]);
-  accounts.value = ensurePrimaryAccount();
-  transfers.value = loadTransfers();
-  showClearLocalModal.value = false;
 }
 </script>
 
@@ -174,53 +230,86 @@ function clearLocalData() {
     </TopNavigation>
 
     <div class="page-content">
-      <!-- DonutChart 總覽 -->
-      <div class="chart-card">
-        <DonutChart
-          centerLabel="總資產"
-          :centerBalance="formatAmount(totalBalance)"
-          :slices="donutSlices"
+      <!-- 帳戶類型切換 Tab -->
+      <div class="tab-row">
+        <TypeToggle
+          v-model="viewMode"
+          leftLabel="實體"
+          rightLabel="邏輯"
+          leftValue="physical"
+          rightValue="logical"
         />
       </div>
 
-      <!-- 本機資料說明卡片 -->
-      <div class="local-info-card">
-        <p class="local-info-text">
-          帳戶為測試功能，所有資料僅儲存於本機裝置，<strong>不會同步至雲端資料庫</strong>。清除後，所有帳戶與轉帳紀錄將從本機移除，此操作無法復原。
-        </p>
-        <button class="btn-clear-local" @click="showClearLocalModal = true">
-          清除本機資料
-        </button>
+      <!-- DonutChart 總覽 -->
+      <div class="chart-card">
+        <DonutChart
+          :centerLabel="viewMode === 'physical' ? '實體總額' : '邏輯總額'"
+          :centerBalance="viewMode === 'physical' ? fmt(physicalTotal) : fmt(logicalTotal)"
+          :slices="viewMode === 'physical' ? physicalDonutSlices : logicalDonutSlices"
+        />
       </div>
 
-      <!-- 帳戶列表 -->
-      <ListGroup>
+      <!-- 實體帳戶清單 -->
+      <ListGroup v-if="viewMode === 'physical'">
         <template #header-left>
-          <span class="group-header-title">帳戶清單</span>
+          <span class="group-header-title">實體帳戶</span>
         </template>
         <template #header-right>
-          <button class="btn-add-account" @click="openCreateModal">新增帳戶</button>
+          <button class="btn-add-account" @click="openCreateModal">新增</button>
         </template>
+        <div v-if="physicalAccounts.length === 0" class="empty-state">
+          <p>尚無實體帳戶</p>
+        </div>
         <ListItem
-          v-for="{ account, balance } in accountBalances"
-          :key="account.id"
-          :swipeable="!account.isPrimary"
-          @edit="openEditNameModal(account)"
-          @delete="requestDelete(account)"
-          @item-click="goToDetail(account.id)"
+          v-for="acc in physicalAccounts"
+          :key="acc.id"
+          :swipeable="true"
+          @edit="openEditNameModal(acc)"
+          @delete="requestDelete(acc)"
+          @item-click="goToDetail(acc.id)"
         >
-          <div
-            class="account-row"
-            :class="{ 'account-row--clickable': account.isPrimary }"
-            @click="account.isPrimary ? goToDetail(account.id) : undefined"
-          >
-            <div class="account-color-dot" :style="{ background: account.color }"></div>
+          <div class="account-row">
+            <div class="account-color-dot" :style="{ background: acc.color }"></div>
             <div class="account-info">
-              <span class="account-name">{{ account.name }}</span>
-              <span v-if="account.isPrimary" class="primary-badge">主</span>
+              <span class="account-name">{{ acc.name }}</span>
+
             </div>
-            <div class="account-balance">
-              {{ formatAmount(balance) }}
+            <div class="account-amounts">
+              <span class="account-amount">{{ fmt(acc.amount) }}</span>
+              <span class="account-balance-hint">可用 {{ fmt(getAccountBalance(acc, transfers)) }}</span>
+            </div>
+          </div>
+        </ListItem>
+      </ListGroup>
+
+      <!-- 邏輯帳戶清單 -->
+      <ListGroup v-if="viewMode === 'logical'">
+        <template #header-left>
+          <span class="group-header-title">邏輯帳戶</span>
+        </template>
+        <template #header-right>
+          <button class="btn-add-account logical" @click="openCreateModal">新增</button>
+        </template>
+        <div v-if="logicalAccounts.length === 0" class="empty-state">
+          <p>尚無邏輯帳戶</p>
+        </div>
+        <ListItem
+          v-for="acc in logicalAccounts"
+          :key="acc.id"
+          :swipeable="true"
+          @edit="openEditNameModal(acc)"
+          @delete="requestDelete(acc)"
+          @item-click="goToDetail(acc.id)"
+        >
+          <div class="account-row">
+            <div class="account-color-dot" :style="{ background: acc.color }"></div>
+            <div class="account-info">
+              <span class="account-name">{{ acc.name }}</span>
+
+            </div>
+            <div class="account-amounts">
+              <span class="account-amount">{{ fmt(getAccountBalance(acc, transfers)) }}</span>
             </div>
           </div>
         </ListItem>
@@ -231,7 +320,7 @@ function clearLocalData() {
     <Transition name="modal">
       <div v-if="showCreateModal" class="modal-overlay" @click="closeCreateModal">
         <div class="modal-container" @click.stop>
-          <h3 class="modal-title">新增帳戶</h3>
+          <h3 class="modal-title">{{ viewMode === 'physical' ? '新增實體帳戶' : '新增邏輯帳戶' }}</h3>
           <div class="modal-body">
             <div class="form-row">
               <label class="form-label">帳戶名稱</label>
@@ -239,10 +328,25 @@ function clearLocalData() {
                 v-model="createName"
                 type="text"
                 class="form-input"
-                placeholder="例：定存帳戶"
+                :placeholder="viewMode === 'physical' ? '例：玉山銀行' : '例：旅遊基金'"
                 maxlength="20"
                 @input="createError = ''"
               />
+            </div>
+            <div v-if="viewMode === 'physical'" class="form-row">
+              <label class="form-label">初始金額</label>
+              <div class="amount-row">
+                <span class="currency-sign">$</span>
+                <input
+                  v-model="createAmountStr"
+                  type="number"
+                  inputmode="decimal"
+                  min="0"
+                  class="form-input amount-input"
+                  placeholder="0"
+                  @input="createError = ''"
+                />
+              </div>
             </div>
             <p v-if="createError" class="form-error">{{ createError }}</p>
           </div>
@@ -258,7 +362,7 @@ function clearLocalData() {
     <Transition name="modal">
       <div v-if="showEditNameModal" class="modal-overlay" @click="closeEditNameModal">
         <div class="modal-container" @click.stop>
-          <h3 class="modal-title">編輯帳戶</h3>
+          <h3 class="modal-title">編輯帳戶名稱</h3>
           <div class="modal-body">
             <div class="form-row">
               <label class="form-label">帳戶名稱</label>
@@ -284,24 +388,24 @@ function clearLocalData() {
     <ConfirmModal
       :show="showDeleteModal"
       title="刪除帳戶"
-      message="確定要刪除此帳戶嗎？所有相關轉帳紀錄也將一併刪除，此操作無法復原。"
+      message="確定要刪除此帳戶嗎？此操作無法復原。"
       confirm-text="刪除"
       cancel-text="取消"
       variant="danger"
-      @confirm="confirmDeleteAccount"
-      @cancel="cancelDeleteAccount"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
     />
 
-    <!-- 清除本機資料確認 -->
+    <!-- 刪除被阻止提示 -->
     <ConfirmModal
-      :show="showClearLocalModal"
-      title="清除本機資料"
-      message="確定要清除所有帳戶及轉帳紀錄嗎？此操作無法復原。"
-      confirm-text="清除"
-      cancel-text="取消"
+      :show="showDeleteBlockModal"
+      title="無法刪除"
+      :message="deleteBlockReason"
+      confirm-text="知道了"
+      cancel-text=""
       variant="danger"
-      @confirm="clearLocalData"
-      @cancel="showClearLocalModal = false"
+      @confirm="showDeleteBlockModal = false"
+      @cancel="showDeleteBlockModal = false"
     />
   </section>
 </template>
@@ -326,26 +430,25 @@ function clearLocalData() {
   gap: 16px;
 }
 
+/* ── Tab 切換列 ──────────────────────────────────────────────── */
+.tab-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── 圖表卡片 ────────────────────────────────────────────────── */
 .chart-card {
   background: var(--bg-elevated, #ffffff);
   border-radius: 12px;
   padding: 16px 8px;
 }
 
+/* ── 帳戶列 ──────────────────────────────────────────────────── */
 .account-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-}
-
-.account-row--clickable {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.account-row--clickable:active {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  padding: 14px 16px;
 }
 
 .account-color-dot {
@@ -372,22 +475,23 @@ function clearLocalData() {
   text-overflow: ellipsis;
 }
 
-.primary-badge {
+.account-amounts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   flex-shrink: 0;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--border-primary, #000);
-  color: #fff;
-  letter-spacing: 0.3px;
+  gap: 2px;
 }
 
-.account-balance {
+.account-amount {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary, #1a1a1a);
-  flex-shrink: 0;
+}
+
+.account-balance-hint {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
 }
 
 .group-header-title {
@@ -409,47 +513,24 @@ function clearLocalData() {
   transition: opacity 0.15s;
 }
 
+.btn-add-account.logical {
+  background: var(--janote-income);
+  color: var(--text-light);
+}
+
 .btn-add-account:active {
   opacity: 0.8;
 }
 
-/* ── 本機資料說明卡片 ─────────────────────────────────────── */
-
-.local-info-card {
-  background: var(--bg-page);
-  border: 2px solid var(--border-primary);
-  border-radius: 12px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ── 空狀態 ──────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 32px 0 16px;
+  color: var(--text-secondary, #888);
+  font-size: 14px;
 }
 
-.local-info-text {
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.btn-clear-local {
-  font-family: inherit;
-  border: none;
-  border-radius: 8px;
-  background: var(--janote-action);
-  color: var(--text-light);
-  padding: 10px 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  width: 100%;
-}
-
-.btn-clear-local:active {
-  opacity: 0.8;
-}
-
+/* ── Modal ───────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -516,12 +597,46 @@ function clearLocalData() {
 }
 
 .form-input:focus {
-  border-color: var(--janote-action, #F87171);
+  border-color: var(--janote-action, #f87171);
+}
+
+.amount-row {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--border-primary, #000);
+  border-radius: 10px;
+  background: var(--bg-page, #fff);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.amount-row:focus-within {
+  border-color: var(--janote-action, #f87171);
+}
+
+.currency-sign {
+  padding: 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary, #888);
+  flex-shrink: 0;
+}
+
+.amount-input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  flex: 1;
+}
+
+.amount-input:focus {
+  border-color: transparent !important;
 }
 
 .form-error {
   font-size: 12px;
-  color: var(--janote-action, #F87171);
+  color: var(--janote-action, #f87171);
   margin: 0;
 }
 

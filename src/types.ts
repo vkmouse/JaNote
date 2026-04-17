@@ -206,19 +206,20 @@ export interface RecurringBudgetPayload {
 
 // ── 帳戶管理（純前端，localStorage） ─────────────────────────
 
-/** 主帳戶的單筆餘額來源（例如某銀行存款） */
-export interface AccountBalanceSource {
-  id: string;
-  name: string;
-  amount: number; // 必須 >= 0
-}
+/** 轉帳類型：實體→實體、實體→邏輯、邏輯→實體 */
+export type AccountTransferType =
+  | "physical-physical"
+  | "physical-logical"
+  | "logical-physical";
 
 export interface Account {
   id: string;
   name: string;
-  balanceSources?: AccountBalanceSource[]; // 主帳戶專用：多筆餘額來源
+  /** 帳戶類型：physical = 實體帳戶（有固定金額），logical = 邏輯帳戶（依轉帳計算） */
+  accountType: "physical" | "logical";
+  /** 實體帳戶儲存金額；邏輯帳戶固定為 0 */
+  amount: number;
   color: string;
-  isPrimary: boolean;
   createdAt: number;
 }
 
@@ -229,6 +230,7 @@ export interface AccountTransfer {
   amount: number;
   date: number; // Unix ms
   note: string;
+  transferType: AccountTransferType;
   createdAt: number;
 }
 
