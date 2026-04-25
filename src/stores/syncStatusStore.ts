@@ -1,16 +1,17 @@
 import { ref, computed } from "vue";
 import { defineStore } from "pinia";
-import { useSyncStore } from "./syncStore";
+import { useSyncStore, AuthExpiredError } from "./syncStore";
 import { useTransactionStore } from "./transactionStore";
 import { useBudgetStore } from "./budgetStore";
 import { useRecurringStore } from "./recurringStore";
 
-export type SyncButtonStatus = "idle" | "syncing" | "success" | "error";
+export type SyncButtonStatus = "idle" | "syncing" | "success" | "error" | "auth_expired";
 
 export const useSyncStatusStore = defineStore("syncStatus", () => {
   const status = ref<SyncButtonStatus>("idle");
   let resetTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // auth_expired 時不允許重試，避免大量發出 redirect 請求
   const canSync = computed(() => status.value === "idle");
 
   async function triggerSync(apiBase = "/api") {
@@ -39,7 +40,12 @@ export const useSyncStatusStore = defineStore("syncStatus", () => {
         recurringStore.loadRecurringTransactions(),
         recurringStore.loadRecurringBudgets(),
       ]);
-    } catch {
+    } catch (e) {
+      if (e instanceof AuthExpiredError) {
+        // auth 過期不重置為 idle，持續顯示過期狀態直到使用者重新登入
+        status.value = "auth_expired";
+        return;
+      }
       status.value = "error";
     }
 

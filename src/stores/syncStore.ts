@@ -23,6 +23,16 @@ import type {
   RecurringBudgetPayload,
 } from "../types";
 
+// ── Auth error ────────────────────────────────────────────────────────────────
+
+/** 當 Cloudflare Access session 過期，fetch 被 redirect 到外部登入頁時拋出 */
+export class AuthExpiredError extends Error {
+  constructor() {
+    super("Auth session expired");
+    this.name = "AuthExpiredError";
+  }
+}
+
 // ── Private business logic helpers ────────────────────────────────────────────
 
 function parsePayload(
@@ -423,6 +433,11 @@ async function runSync(apiBase: string): Promise<SyncResponse> {
         user: localUser,
       }),
     });
+
+    // CF Access session 過期時，fetch 會 follow redirect 到外部登入頁
+    if (!response.url.startsWith(window.location.origin)) {
+      throw new AuthExpiredError();
+    }
 
     if (!response.ok) {
       throw new Error(`Sync failed with status ${response.status}`);
