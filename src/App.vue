@@ -27,23 +27,29 @@ const userStore = useUserStore();
 const syncStatusStore = useSyncStatusStore();
 
 // ── Auth 過期偵測 ─────────────────────────────────────────────
-/** 呼叫 /api/health 探測 CF Access session 是否仍有效；偵測到 302 時清除 PWA 快取並重導頁面 */
+const authError = ref(false);
+
+/** 呼叫 /api/health 探測 CF Access session 是否仍有效；偵測到 302 時顯示提示 Modal */
 async function checkAuth(): Promise<boolean> {
   try {
     const res = await fetch("/api/health", { redirect: "manual" });
     if (res.type === "opaqueredirect") {
-      // 302 redirect → 清除所有 Cache Storage，讓瀏覽器重新導向正確的登入頁
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((k) => caches.delete(k)));
-      }
-      window.location.href = "/";
+      authError.value = true;
       return false;
     }
   } catch {
     // 網路斷線，不觸發 auth 過期（離線情境）
   }
   return true;
+}
+
+/** 使用者確認重新登入：清除 PWA 快取後重導頁面 */
+async function handleAuthErrorConfirm() {
+  if ("caches" in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+  }
+  window.location.href = "/";
 }
 
 onMounted(async () => {
@@ -77,6 +83,17 @@ const handleClose = () => {
     </main>
     <!-- 先暫時將底部導覽註解 -->
     <!-- <BottomNavigation /> -->
+
+    <!-- Auth 過期提示 Modal -->
+    <ConfirmModal
+      :show="authError"
+      title="登入已過期"
+      message="Session 已過期，請重新登入以繼續同步。"
+      confirm-text="重新登入"
+      cancel-text="稍後再說"
+      @confirm="handleAuthErrorConfirm"
+      @cancel="authError = false"
+    />
 
     <!-- PWA 更新提示 Modal -->
     <ConfirmModal
