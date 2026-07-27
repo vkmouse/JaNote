@@ -8,6 +8,7 @@ import TransactionSearchView from "../views/TransactionSearchView.vue";
 import TransactionEditView from "../views/TransactionEditView.vue";
 import TransactionBudgetView from "../views/TransactionBudgetView.vue";
 import TransactionRecurringView from "../views/TransactionRecurringView.vue";
+import QuickEntryView from "../views/QuickEntryView.vue";
 
 
 const router = createRouter({
@@ -35,6 +36,11 @@ const router = createRouter({
       path: "/transactions/search",
       name: "transaction-search",
       component: TransactionSearchView,
+    },
+    {
+      path: "/transactions/quick-entry",
+      name: "quick-entry",
+      component: QuickEntryView,
     },
     {
       path: "/transactions/new",

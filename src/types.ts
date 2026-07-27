@@ -243,6 +243,34 @@ export interface LogEntry {
   tone: "info" | "warn" | "error" | "success";
 }
 
+// ── AI 快速記帳（Quick Entry，純前端，localStorage） ──────────
+
+export interface DraftRequest {
+  raw_text: string;
+}
+
+export interface ExpenseDraft {
+  draft_id: string; // 後端 crypto.randomUUID() 產生
+  note: string;
+  amount: number;
+  category_id: string | null; // 後端已比對好，對不到就是 null → 前端顯示「未分類」
+  date: number; // unix ms，後端已完成格式驗證/fallback
+}
+
+export interface DraftResponse {
+  drafts: ExpenseDraft[];
+}
+
+export type QuickEntryDraft = ExpenseDraft;
+
+export interface QuickEntryRawText {
+  content: string;
+  updated_at: number;
+}
+
+export type QuickEntryRawTextStore = Record<string, QuickEntryRawText>;
+export type QuickEntryDraftsStore = Record<string, QuickEntryDraft[]>;
+
 export type StoreName =
   | "categories"
   | "transactions"

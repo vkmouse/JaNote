@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
@@ -106,6 +106,10 @@ import { useBudgetStore } from "../stores/budgetStore";
 import { useRecurringStore } from "../stores/recurringStore";
 import { useUserStore } from "../stores/userStore";
 import { iconDollarCircle, iconPiggyBank, iconTag } from "../utils/icons";
+import {
+  consumeOnTransactionCreated,
+  discardOnTransactionCreated,
+} from "../utils/transactionEditBridge";
 
 const router = useRouter();
 const route = useRoute();
@@ -311,6 +315,7 @@ async function saveTransaction() {
       note: notes.value,
       date: currentDate.value,
     });
+    consumeOnTransactionCreated();
   }
   router.back();
 }
@@ -462,7 +467,29 @@ onMounted(async () => {
     }
     if (state?.year) selectedYear.value = state.year;
     if (state?.month) selectedMonth.value = state.month;
+  } else if (!isBudget.value && !isRecurring.value) {
+    // 套用上一頁透過 history.state 帶入的初始值（例如快速記帳草稿點進來）
+    const state = window.history.state as
+      | {
+          prefill?: {
+            note?: string;
+            amount?: number;
+            category_id?: string | null;
+            date?: number;
+          };
+        }
+      | undefined;
+    if (state?.prefill) {
+      notes.value = state.prefill.note ?? "";
+      amount.value = state.prefill.amount != null ? String(state.prefill.amount) : "";
+      selectedCategoryId.value = state.prefill.category_id ?? "";
+      currentDate.value = state.prefill.date ?? Date.now();
+    }
   }
+});
+
+onUnmounted(() => {
+  discardOnTransactionCreated();
 });
 </script>
 
