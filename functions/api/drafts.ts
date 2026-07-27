@@ -19,7 +19,7 @@ const MAX_RAW_TEXT_LENGTH = 2000;
 export const onRequest: PagesFunction<Env, any, AuthContext> = async (
   context,
 ) => {
-  const { DB, GEMINI_API_KEY } = context.env;
+  const { DB, GEMINI_API_KEY, GEMINI_MODEL } = context.env;
   const userEmail = context.data.email;
 
   if (context.request.method !== "POST") {
@@ -63,6 +63,7 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
       body.raw_text,
       categoryNames,
       GEMINI_API_KEY,
+      GEMINI_MODEL,
       todayStr,
     );
   } catch (error: any) {

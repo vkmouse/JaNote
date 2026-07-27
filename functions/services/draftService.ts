@@ -1,7 +1,6 @@
 import type { AiRawDraft, ExpenseDraft } from "../types";
 import { isValidDateString } from "../utils/validators";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_TIMEOUT_MS = 15_000;
 const MAX_DRAFTS = 20;
 const RESPONSE_SCHEMA = {
@@ -61,13 +60,14 @@ ${rawText}
 async function callGeminiOnce(
   prompt: string,
   apiKey: string,
+  model: string,
 ): Promise<AiRawDraft[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,19 +111,23 @@ export async function parseRawTextWithGemini(
   rawText: string,
   categoryNames: string[],
   apiKey: string | undefined,
+  model: string | undefined,
   todayStr: string = getTaipeiTodayString(),
 ): Promise<AiRawDraft[]> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured");
   }
+  if (!model) {
+    throw new Error("GEMINI_MODEL is not configured");
+  }
 
   const prompt = buildPrompt(rawText, categoryNames, todayStr);
 
   try {
-    return await callGeminiOnce(prompt, apiKey);
+    return await callGeminiOnce(prompt, apiKey, model);
   } catch {
     // 第一次失敗（逾時、非合法 JSON 等），重試一次
-    return await callGeminiOnce(prompt, apiKey);
+    return await callGeminiOnce(prompt, apiKey, model);
   }
 }
 

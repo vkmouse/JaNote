@@ -13,6 +13,7 @@ export interface Env {
   POLICY_AUD?: string;
   TEAM_DOMAIN?: string;
   GEMINI_API_KEY?: string;
+  GEMINI_MODEL?: string;
 }
 
 export interface AuthContext extends Record<string, unknown> {
