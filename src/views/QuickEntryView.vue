@@ -22,6 +22,17 @@
         <p v-if="submitError" class="quick-entry-error" role="alert">
           {{ submitError }}
         </p>
+
+        <!-- TEMP DEBUG PANEL - 除錯用，之後記得移除 -->
+        <div v-if="debugInfo" class="debug-panel">
+          <div class="debug-panel-header">
+            <strong>[DEBUG] /api/drafts 回應</strong>
+            <button type="button" class="debug-close" @click="debugInfo = null">✕</button>
+          </div>
+          <pre class="debug-panel-body">{{ debugInfoText }}</pre>
+        </div>
+        <!-- /TEMP DEBUG PANEL -->
+
         <button
           class="submit-btn"
           :disabled="!canSubmit || isSubmitting"
@@ -123,6 +134,13 @@ const submitError = ref<string | null>(null);
 
 const canSubmit = computed(() => rawText.value.trim().length > 0);
 
+// TEMP DEBUG - 除錯用，之後記得移除
+const debugInfo = ref<Record<string, unknown> | null>(null);
+const debugInfoText = computed(() =>
+  debugInfo.value ? JSON.stringify(debugInfo.value, null, 2) : "",
+);
+// /TEMP DEBUG
+
 // 每次輸入 debounce 300ms 寫入 localStorage
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -153,6 +171,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true;
   submitError.value = null;
+  debugInfo.value = null; // TEMP DEBUG
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -166,6 +185,19 @@ async function handleSubmit() {
       } satisfies DraftRequest),
       signal: controller.signal,
     });
+
+    // TEMP DEBUG - 先讀原始文字，不管成功或失敗都留一份，
+    // 因為 response.json() 如果不是合法 JSON 會直接丟例外，什麼都看不到。
+    const rawBodyText = await response.clone().text();
+    debugInfo.value = {
+      requestUrl: response.url,
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      contentType: response.headers.get("content-type"),
+      rawBodyPreview: rawBodyText.slice(0, 1000),
+    };
+    // /TEMP DEBUG
 
     if (!response.ok) {
       let errorCode: string | undefined;
@@ -184,9 +216,15 @@ async function handleSubmit() {
     drafts.value = data.drafts;
     clearRawText(userStore.currentUserId);
     rawText.value = "";
-  } catch {
-    // fetch 逾時（AbortController）或網路錯誤
+  } catch (err) {
+    // fetch 逾時（AbortController）或網路錯誤，或 rawBodyText/JSON 解析出錯
     submitError.value = "連線逾時，請確認網路後重試";
+    // TEMP DEBUG
+    debugInfo.value = {
+      ...(debugInfo.value ?? {}),
+      caughtError: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+    };
+    // /TEMP DEBUG
   } finally {
     clearTimeout(timeoutId);
     isSubmitting.value = false;
@@ -362,6 +400,47 @@ onMounted(async () => {
   background: rgba(239, 68, 68, 0.08);
   border-radius: 8px;
 }
+
+/* TEMP DEBUG PANEL - 除錯用，之後記得移除 */
+.debug-panel {
+  border: 1px dashed #f59e0b;
+  background: #fffbeb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.debug-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #fde68a;
+  font-size: 12px;
+  color: #78350f;
+}
+
+.debug-close {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: #78350f;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.debug-panel-body {
+  margin: 0;
+  padding: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #451a03;
+  max-height: 240px;
+  overflow: auto;
+}
+/* /TEMP DEBUG PANEL */
 
 .submit-btn {
   height: 46px;
