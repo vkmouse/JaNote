@@ -13,6 +13,19 @@ export async function getCategoryVersion(
   return row?.version ?? 0;
 }
 
+/** 取得使用者未刪除的支出分類（依 sort_order 排序） */
+export async function getActiveExpenseCategories(
+  userId: string,
+  DB: D1Database,
+): Promise<Pick<Category, "id" | "name">[]> {
+  const result = await DB.prepare(
+    "SELECT id, name FROM categories WHERE user_id = ? AND type = 'EXPENSE' AND is_deleted = 0 ORDER BY sort_order",
+  )
+    .bind(userId)
+    .all<Pick<Category, "id" | "name">>();
+  return result.results || [];
+}
+
 export async function getCategoryById(
   id: string,
   userId: string,

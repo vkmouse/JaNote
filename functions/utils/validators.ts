@@ -36,6 +36,21 @@ export function isValidEntryType(value: unknown): value is EntryType {
 }
 
 /**
+ * 檢查值是否為合法的 YYYY-MM-DD 日期字串
+ */
+export function isValidDateString(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12) return false;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return day >= 1 && day <= daysInMonth;
+}
+
+/**
  * 解析 payload 為字符串和對象
  */
 export function parsePayload(payload: unknown): {

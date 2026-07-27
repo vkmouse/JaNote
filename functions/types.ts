@@ -12,6 +12,7 @@ export interface Env {
   DB: D1Database;
   POLICY_AUD?: string;
   TEAM_DOMAIN?: string;
+  GEMINI_API_KEY?: string;
 }
 
 export interface AuthContext extends Record<string, unknown> {
@@ -194,3 +195,30 @@ export type EntityHandler = (
   event: PushCommand,
   context: ServiceContext,
 ) => Promise<PushResult>;
+
+// ============================================
+// AI Quick Entry (Drafts) Types
+// ============================================
+
+export interface AiRawDraft {
+  note: string;
+  amount: number;
+  category_name: string | null;
+  date: string | null; // "YYYY-MM-DD" 或 null
+}
+
+export interface ExpenseDraft {
+  draft_id: string;
+  note: string;
+  amount: number;
+  category_id: string | null;
+  date: number; // unix ms
+}
+
+export interface DraftRequest {
+  raw_text: string;
+}
+
+export interface DraftResponse {
+  drafts: ExpenseDraft[];
+}
