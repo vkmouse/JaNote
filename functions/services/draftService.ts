@@ -10,8 +10,8 @@ const RESPONSE_SCHEMA = {
     properties: {
       note: { type: "string" },
       amount: { type: "number" },
-      category_name: { type: ["string", "null"] },
-      date: { type: ["string", "null"] },
+      category_name: { type: "string", nullable: true },
+      date: { type: "string", nullable: true },
     },
     required: ["note", "amount", "category_name", "date"],
   },
