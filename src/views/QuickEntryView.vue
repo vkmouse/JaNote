@@ -116,7 +116,7 @@ const transactionStore = useTransactionStore();
 
 useSharedSwipeContext();
 
-// ── 記事本輸入區狀態 ─────────────────────────────────────────
+// ── 記事本輸入區狀態 ────────────────────────────────────────
 const rawText = ref("");
 const isSubmitting = ref(false);
 const submitError = ref<string | null>(null);
