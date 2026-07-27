@@ -13,8 +13,7 @@
         <textarea
           v-model="rawText"
           class="quick-entry-textarea"
-          placeholder="貼上你的消費紀錄，例如：
-早餐 大冰奶 65 午餐便當105 晚上跟朋友聚餐 850 捷運 30"
+          placeholder="貼上你的消費紀錄"
           maxlength="2000"
           rows="4"
           @input="onTextInput"
@@ -22,16 +21,6 @@
         <p v-if="submitError" class="quick-entry-error" role="alert">
           {{ submitError }}
         </p>
-
-        <!-- TEMP DEBUG PANEL - 除錯用，之後記得移除 -->
-        <div v-if="debugInfo" class="debug-panel">
-          <div class="debug-panel-header">
-            <strong>[DEBUG] /api/drafts 回應</strong>
-            <button type="button" class="debug-close" @click="debugInfo = null">✕</button>
-          </div>
-          <pre class="debug-panel-body">{{ debugInfoText }}</pre>
-        </div>
-        <!-- /TEMP DEBUG PANEL -->
 
         <button
           class="submit-btn"
