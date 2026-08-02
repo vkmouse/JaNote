@@ -18,8 +18,6 @@ import {
   isValidEntityType,
   isValidAction,
 } from "../utils/validators";
-import { getUserIdByEmail as getUserIdByEmailRepo } from "../repositories/userRepository";
-import { initializeDefaultCategories } from "../repositories/categoryRepository";
 import {
   getSyncEventByMutationId,
   getMaxSyncEventId,
@@ -63,35 +61,6 @@ import {
 } from "../services/recurringBudgetService";
 import { executeRecurringSchedules } from "../services/recurringExecutionService";
 
-/**
- * 根據使用者的 Email 取得 User ID。
- * 如果這是一個全新建立的使用者，會順便幫他初始化預設的記帳分類。
- */
-async function getUserIdByEmail(
-  email: string,
-  DB: D1Database,
-): Promise<string> {
-  const userId = await getUserIdByEmailRepo(email, DB);
-
-  // 檢查這是否為新使用者（剛建立的）
-  const existing = await DB.prepare("SELECT created_at FROM users WHERE id = ?")
-    .bind(userId)
-    .first<{ created_at: string }>();
-
-  if (existing) {
-    const createdAt = new Date(existing.created_at);
-    const now = new Date();
-    const diffSeconds = (now.getTime() - createdAt.getTime()) / 1000;
-
-    // 如果使用者剛被建立，則初始化預設分類
-    if (diffSeconds < 1) {
-      await initializeDefaultCategories(userId, DB);
-    }
-  }
-
-  return userId;
-}
-
 // 實體處理函式映射表 (Routing Map)
 const entityHandlers: Record<string, EntityHandler> = {
   "POST:CAT": postCategory,
@@ -122,8 +91,9 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
   context,
 ) => {
   const { DB } = context.env;
-  const userEmail = context.data.email; // 從認證 middleware 中取得已經驗證過的 Email
-  const userId = await getUserIdByEmail(userEmail, DB);
+  // 從認證 middleware 中取得已經驗證過的 Email / UserId（皆來自 App JWT payload，不再查 DB）
+  const userEmail = context.data.email;
+  const userId = context.data.userId;
 
   // 同步 API 必須使用 POST 方法
   if (context.request.method !== "POST") {

@@ -10,14 +10,41 @@
 
 export interface Env {
   DB: D1Database;
-  POLICY_AUD?: string;
-  TEAM_DOMAIN?: string;
+  /**
+   * Cloudflare Access（Zero Trust）簽發 Cf-Access-Jwt-Assertion 時使用的
+   * team domain（值本身已包含 `https://`，例如
+   * `https://your-team.cloudflareaccess.com`），用來組出驗證簽章用的 JWKS
+   * 網址：`${ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`。
+   * 只有 functions/api/auth/login.ts 會用到。一般環境變數（非 secret）。
+   */
+  ACCESS_TEAM_DOMAIN?: string;
+  /**
+   * 這個 Access Application 的 Audience (AUD) Tag，驗證 Cf-Access-Jwt-Assertion
+   * 時要比對的 `aud`，確保 token 是發給這個 Application 的。
+   * 只有 functions/api/auth/login.ts 會用到。一般環境變數（非 secret）。
+   */
+  ACCESS_AUD?: string;
+  /**
+   * `common_name`（Service Token 名稱，格式為 `<Client ID>.access`）→ email
+   * 的對照表，JSON 字串形式，例如
+   * `{"e367826f93b8d71185e03fe518aff3b4.access": "alice@example.com"}`。
+   * 只有 functions/api/auth/login.ts 會用到。Client Id 本身不是敏感資訊，
+   * 所以是一般環境變數（非 secret）。
+   */
+  SERVICE_IDENTITY_MAP?: string;
+  /**
+   * 用來簽發 / 驗證 access token 與 refresh token 的共用密鑰，兩種 token
+   * 靠 payload 裡的 `type` 欄位互相區分。是 secret，務必透過
+   * `wrangler pages secret put APP_JWT_SECRET` 設定，不要寫進版控。
+   */
+  APP_JWT_SECRET?: string;
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;
 }
 
 export interface AuthContext extends Record<string, unknown> {
   email: string;
+  userId: string;
 }
 
 export interface ServiceContext {

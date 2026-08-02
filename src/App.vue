@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, provide, onMounted } from "vue";
+import { ref, provide } from "vue";
+import AccessGate from "./components/AccessGate.vue";
 import SideNavigation from "./components/SideNavigation.vue";
 import BottomNavigation from "./components/BottomNavigation.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
@@ -26,40 +27,16 @@ provide("sideDrawerOpen", sideDrawerOpen);
 const userStore = useUserStore();
 const syncStatusStore = useSyncStatusStore();
 
-// ── Auth 過期偵測 ─────────────────────────────────────────────
-const authError = ref(false);
-
-/** 呼叫 /api/health 探測 CF Access session 是否仍有效；偵測到 302 時顯示提示 Modal */
-async function checkAuth(): Promise<boolean> {
-  try {
-    const res = await fetch("/api/health", { redirect: "manual" });
-    if (res.type === "opaqueredirect") {
-      authError.value = true;
-      return false;
-    }
-  } catch {
-    // 網路斷線，不觸發 auth 過期（離線情境）
-  }
-  return true;
-}
-
-/** 使用者確認重新登入：清除 PWA 快取後重導頁面 */
-async function handleAuthErrorConfirm() {
-  if ("caches" in window) {
-    const keys = await caches.keys();
-    await Promise.all(keys.map((k) => caches.delete(k)));
-  }
-  window.location.href = "/";
-}
-
-onMounted(async () => {
+/**
+ * AccessGate 驗證通過才會觸發（不管是掛載時用舊憑證驗證成功，還是使用者
+ * 剛手動輸入成功），這裡才開始載入本地使用者資料、觸發第一次同步——
+ * 因為 /api/sync 現在一定要有效的 access_token 才打得通，在驗證通過之前
+ * 觸發只會白白吃一次 401。
+ */
+async function handleAuthenticated() {
   await userStore.loadUser();
-  // 啟動時先做 auth 探測，再執行同步
-  const authed = await checkAuth();
-  if (authed) {
-    syncStatusStore.triggerSync();
-  }
-});
+  syncStatusStore.triggerSync();
+}
 
 // 初始化 Service Worker 更新邏輯
 const { needRefresh, updateServiceWorker } = useServiceWorkerUpdate();
@@ -76,36 +53,25 @@ const handleClose = () => {
 </script>
 
 <template>
-  <div class="app-shell">
-    <SideNavigation :isOpen="sideDrawerOpen" @close="closeSideDrawer" />
-    <main class="app-main">
-      <router-view />
-    </main>
-    <!-- 先暫時將底部導覽註解 -->
-    <!-- <BottomNavigation /> -->
+  <AccessGate @authenticated="handleAuthenticated">
+    <div class="app-shell">
+      <SideNavigation :isOpen="sideDrawerOpen" @close="closeSideDrawer" />
+      <main class="app-main">
+        <router-view />
+      </main>
+      <!-- 先暫時將底部導覽註解 -->
+      <!-- <BottomNavigation /> -->
 
-    <!-- Auth 過期提示 Modal -->
-    <ConfirmModal
-      :show="authError"
-      title="登入已過期"
-      message="Session 已過期，請重新登入以繼續同步。"
-      confirm-text="重新登入"
-      cancel-text="稍後再說"
-      @confirm="handleAuthErrorConfirm"
-      @cancel="authError = false"
-    />
-
-    <!-- PWA 更新提示 Modal -->
-    <ConfirmModal
-      :show="needRefresh"
-      title="🎉 新版本可用"
-      message="我們已經準備好新版本，包含功能改進和錯誤修正。是否立即更新？"
-      confirm-text="立即更新"
-      cancel-text="稍後再說"
-      @confirm="handleUpdate"
-      @cancel="handleClose"
-    />
-  </div>
+      <!-- PWA 更新提示 Modal -->
+      <ConfirmModal
+        :show="needRefresh"
+        title="🎉 新版本可用"
+        message="我們已經準備好新版本，包含功能改進和錯誤修正。是否立即更新？"
+        confirm-text="立即更新"
+        cancel-text="稍後再說"
+        @confirm="handleUpdate"
+        @cancel="handleClose"
+      />
+    </div>
+  </AccessGate>
 </template>
-
-

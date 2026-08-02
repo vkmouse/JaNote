@@ -9,6 +9,7 @@ import { budgetRepository } from "../db/repositories/budgetRepository";
 import { recurringTransactionRepository } from "../db/repositories/recurringTransactionRepository";
 import { recurringBudgetRepository } from "../db/repositories/recurringBudgetRepository";
 import { userRepository } from "../db/repositories/userRepository";
+import { authorizedFetch } from "../services/api";
 import type {
   SyncQueueItem,
   PushCommand,
@@ -414,7 +415,7 @@ async function runSync(apiBase: string): Promise<SyncResponse> {
       batch.map((item) => [item.mutation_id, item]),
     );
 
-    const response = await fetch(`${apiBase}/sync`, {
+    const response = await authorizedFetch(`${apiBase}/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

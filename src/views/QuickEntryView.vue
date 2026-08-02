@@ -100,6 +100,7 @@ import ListItem from "../components/ListItem.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { setOnTransactionCreated } from "../utils/transactionEditBridge";
+import { authorizedFetch } from "../services/api";
 import {
   loadRawText,
   saveRawText,
@@ -166,7 +167,7 @@ async function handleSubmit() {
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
-    const response = await fetch("/api/drafts", {
+    const response = await authorizedFetch("/api/drafts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

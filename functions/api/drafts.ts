@@ -2,7 +2,6 @@
 
 import type { AuthContext, Env, DraftRequest, DraftResponse } from "../types";
 import { isNonEmptyString } from "../utils/validators";
-import { getUserIdByEmail } from "../repositories/userRepository";
 import { getActiveExpenseCategories } from "../repositories/categoryRepository";
 import {
   parseRawTextWithGemini,
@@ -20,7 +19,6 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
   context,
 ) => {
   const { DB, GEMINI_API_KEY, GEMINI_MODEL } = context.env;
-  const userEmail = context.data.email;
 
   if (context.request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
@@ -50,7 +48,8 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
     );
   }
 
-  const userId = await getUserIdByEmail(userEmail, DB);
+  // 從認證 middleware 中取得已經驗證過的 UserId（來自 App JWT payload，不再查 DB）
+  const userId = context.data.userId;
 
   // 只取該使用者未刪除的 EXPENSE 分類，name 陣列餵給 AI，id 留在後端做比對
   const categories = await getActiveExpenseCategories(userId, DB);

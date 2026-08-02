@@ -1,0 +1,51 @@
+/**
+ * `/api/*` 專屬的 _middleware.ts（放在 functions/api/ 底下，Cloudflare Pages
+ * Functions 會依檔案所在目錄自動限縮套用範圍，只套用在 `/api/*`）。
+ *
+ * `/api/auth/login`、`/api/auth/refresh` 這兩條路徑各自處理自己的驗證邏輯
+ * （login 驗 Cf-Access-Jwt-Assertion，refresh 驗 refresh_token Cookie），
+ * 這裡直接放行、不重複驗證。
+ *
+ * 其餘所有 `/api/*` 路徑一律只驗 `access_token` Cookie 裡的 App JWT
+ * 簽章 / 效期，直接從 payload 拿 email / userId 塞進 context.data，
+ * **不再查 DB**（DB 查詢只發生在 functions/api/auth/login.ts 簽發 token 的當下）。
+ *
+ * 沒有 Cf Access session、也沒有 demo email 這種 fallback 行為：
+ * 驗不過一律回 401。
+ */
+import type { AuthContext, Env } from "../types";
+import { verifyAppToken } from "../utils/jwt";
+import { ACCESS_TOKEN_COOKIE_NAME, getCookie } from "../utils/cookie";
+
+const SKIP_AUTH_PATHS = new Set(["/api/auth/login", "/api/auth/refresh"]);
+
+export const onRequest: PagesFunction<Env, any, AuthContext> = async (
+  context,
+) => {
+  const { env, request } = context;
+  const { pathname } = new URL(request.url);
+
+  if (SKIP_AUTH_PATHS.has(pathname)) {
+    return await context.next();
+  }
+
+  if (!env.APP_JWT_SECRET) {
+    console.error("[auth] 缺少環境變數 APP_JWT_SECRET");
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const token = getCookie(request.headers.get("Cookie"), ACCESS_TOKEN_COOKIE_NAME);
+  if (!token) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const identity = await verifyAppToken(env.APP_JWT_SECRET, token, "access");
+  if (!identity) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  context.data.email = identity.email;
+  context.data.userId = identity.userId;
+
+  return await context.next();
+};
