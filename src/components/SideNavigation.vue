@@ -168,6 +168,7 @@ const handleNavClick = () => {
 
 .nav-link.active {
   background: var(--janote-expense);
+  color: var(--text-on-expense);
   font-weight: 600;
 }
 

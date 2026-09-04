@@ -54,6 +54,6 @@ defineEmits<{ "update:modelValue": [value: ViewMode] }>();
 
 .mode-btn.active {
   background: var(--text-primary);
-  color: var(--text-light);
+  color: var(--bg-page);
 }
 </style>

@@ -641,7 +641,7 @@ const calendarModelValue = computed({
 .balance-hint { font-size: 12px; color: var(--text-secondary, #888); }
 .balance-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 .btn-card-action { font-family: inherit; border: 1.5px solid var(--border-primary); border-radius: 8px; background: transparent; color: var(--text-primary); padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
-.btn-card-action.primary { background: var(--text-primary); color: #fff; border-color: transparent; }
+.btn-card-action.primary { background: var(--text-primary); color: var(--bg-page); border-color: transparent; }
 .btn-card-action:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-card-action:not(:disabled):active { opacity: 0.75; }
 .tab-row { display: flex; justify-content: flex-end; }

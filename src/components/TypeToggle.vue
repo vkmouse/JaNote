@@ -70,7 +70,7 @@ defineEmits<{ "update:modelValue": [value: any] }>();
 
 .toggle-btn:first-child.active {
   background: var(--janote-expense);
-  color: var(--text-primary);
+  color: var(--text-on-expense);
 }
 
 .toggle-btn:last-child.active {

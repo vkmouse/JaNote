@@ -158,8 +158,8 @@ function navigateToTab(tab: Tab): void {
   pointer-events: auto;
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 1) 40%
+    transparent 0%,
+    var(--bg-page) 40%
   );
   padding-top: 32px;
 }
@@ -214,6 +214,7 @@ function navigateToTab(tab: Tab): void {
 
 .tab-btn.active {
   background: var(--janote-expense);
+  color: var(--text-on-expense);
   font-weight: 600;
 }
 

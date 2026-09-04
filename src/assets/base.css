@@ -40,6 +40,15 @@
   --badge-success-bg: #dcfce7;
   --badge-success-border: #16a34a;
 
+  /*
+   * --janote-expense 本身不隨主題變化（兩個主題都是同一個亮黃色，見下方
+   * [data-theme="dark"] 區塊就沒有重新宣告它），所以疊在它上面的文字也不能
+   * 用會隨主題變色的 --text-primary（深色模式下會變成淺色文字，疊在黃色上
+   * 幾乎看不清楚）。這裡故意只在 :root 宣告、不在 dark 區塊覆寫，讓它維持
+   * 固定深色，跟 --janote-expense 兩個主題都用同一組深色底黃色配色。
+   */
+  --text-on-expense: #212121;
+
   /* 圖表專用色 */
   --chart-neutral: #E0E0E0;
   --chart-stroke: #333333;

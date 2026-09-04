@@ -24,7 +24,7 @@
   padding: calc(32px + env(safe-area-inset-bottom)) 16px;
   z-index: 1000;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%);
+  background: linear-gradient(to bottom, transparent 0%, var(--bg-page) 100%);
 }
 
 .nav-left {

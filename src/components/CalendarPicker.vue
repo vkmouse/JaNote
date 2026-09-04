@@ -241,7 +241,7 @@ const isToday = (day: CalendarDay): boolean => {
 
 .today-btn {
   background: var(--text-primary);
-  color: var(--text-light);
+  color: var(--bg-page);
   border: none;
   border-radius: 8px;
   padding: 8px 16px;

@@ -201,7 +201,7 @@ function _resolveShare(
   width: 36px;
   height: 36px;
   background: var(--janote-expense, #ff6b6b);
-  color: var(--text-primary, #333);
+  color: var(--text-on-expense, #333);
   font-size: 14px;
   z-index: 1;
   border-radius: 50%;

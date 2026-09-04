@@ -505,7 +505,7 @@ function cancelDelete() {
   border: none;
   border-radius: 8px;
   background: var(--janote-expense);
-  color: var(--text-primary);
+  color: var(--text-on-expense);
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;

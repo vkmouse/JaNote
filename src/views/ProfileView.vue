@@ -793,7 +793,7 @@ async function handleInviteConfirm() {
 
 .theme-btn.active {
   background: var(--text-primary);
-  color: var(--text-light);
+  color: var(--bg-page);
 }
 
 /* ── 個人管理：電子信箱 ──────────────────────────────── */
@@ -871,7 +871,7 @@ async function handleInviteConfirm() {
 
 .btn-grid-sync {
   background: var(--janote-expense);
-  color: var(--text-primary);
+  color: var(--text-on-expense);
 }
 
 .btn-grid-clear {
@@ -902,7 +902,7 @@ async function handleInviteConfirm() {
   border: none;
   border-radius: 8px;
   background: var(--janote-expense);
-  color: var(--text-primary);
+  color: var(--text-on-expense);
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
@@ -961,7 +961,7 @@ async function handleInviteConfirm() {
 
 .btn-accept {
   background: var(--janote-expense);
-  color: var(--text-primary);
+  color: var(--text-on-expense);
 }
 
 .btn-reject {

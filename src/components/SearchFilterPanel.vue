@@ -327,7 +327,7 @@ function dismiss() {
 
 .btn-apply {
   background: var(--text-primary);
-  color: var(--text-light);
+  color: var(--bg-page);
 }
 
 /* ── Picker z-index override (must render above this modal) ── */

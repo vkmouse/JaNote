@@ -187,7 +187,7 @@ watch(
   width: 100%;
   padding: 12px;
   background: var(--text-primary);
-  color: var(--text-light);
+  color: var(--bg-page);
   border: none;
   border-radius: 8px;
   cursor: pointer;

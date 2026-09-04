@@ -113,7 +113,7 @@ const emit = defineEmits<{
 
 .btn-confirm {
   background: var(--text-primary);
-  color: var(--text-light);
+  color: var(--bg-page);
 }
 
 .btn-danger {

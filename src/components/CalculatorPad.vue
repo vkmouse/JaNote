@@ -296,7 +296,7 @@ const handleCalcKey = (key: string) => {
 }
 
 .calc-btn.number-btn {
-  background: #ffffff;
+  background: var(--bg-page);
 }
 
 .calc-btn.function-btn {
