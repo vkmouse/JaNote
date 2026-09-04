@@ -988,9 +988,9 @@ async function handleInviteConfirm() {
 }
 
 .share-badge--active {
-  background: #dcfce7;
-  border-color: #16a34a;
-  color: #16a34a;
+  background: var(--badge-success-bg);
+  border-color: var(--badge-success-border);
+  color: var(--badge-success-border);
 }
 
 /* ── 共享管理：空狀態 ────────────────────────────────── */

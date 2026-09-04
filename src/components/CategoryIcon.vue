@@ -153,6 +153,6 @@ const borderStyle = computed<string | undefined>(() => {
 .category-icon-root :deep(svg) {
   width: 24px;
   height: 24px;
-  color: #333;
+  color: var(--text-primary);
 }
 </style>
