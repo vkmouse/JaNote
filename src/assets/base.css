@@ -52,6 +52,43 @@
   --nav-width-mobile: 200px;
 }
 
+[data-theme="dark"] {
+  --janote-expense: #FFC952;
+  --janote-expense-light: #3D3220;
+
+  --janote-income: #47B8E0;
+  --janote-income-light: #16323D;
+
+  --janote-action: #F87171;
+  --janote-action-light: #3D2020;
+
+  --bg-page: #17150F;
+  --bg-body: #17150F;
+
+  --text-primary: #F2EDE6;
+  --text-secondary: #A79C8B;
+  --text-disabled: #5C554A;
+  --text-light: #FFFFFF;
+
+  --border-primary: #4A4038;
+
+  --bg-active: #34302A;
+  --bg-hover: #2C2822;
+  --bg-elevated: #221F1A;
+  --bg-card: #1D1B16;
+  --border: #3A352C;
+
+  --state-danger: #FF6B6B;
+  --state-warning: #F0A868;
+
+  --bg-muted: #2A2620;
+  --text-muted: #6B6357;
+
+  --chart-neutral: #4A453C;
+  --chart-stroke: #17150F;
+  --progress-track-bg: #2C2822;
+}
+
 *,
 *::before,
 *::after {
@@ -137,4 +174,17 @@ a {
   color: var(--text-primary);
   border-color: #16a34a;
   cursor: pointer;
+}
+
+/* 深色模式：以上兩個 badge 目前是寫死色碼，需要另外覆寫 */
+[data-theme="dark"] .recurring-badge-inactive {
+  background: #2A2620;
+  color: #6B6357;
+  border-color: #3A352C;
+}
+
+[data-theme="dark"] .recurring-badge-active {
+  background: #16321F;
+  color: var(--text-primary);
+  border-color: #2E9E5B;
 }

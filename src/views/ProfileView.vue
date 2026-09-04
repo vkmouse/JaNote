@@ -11,6 +11,7 @@ import { useSyncStore } from "../stores/syncStore";
 import { useSyncStatusStore } from "../stores/syncStatusStore";
 import { useUserShareStore } from "../stores/userShareStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import { theme, setTheme } from "../utils/theme";
 import type { UserShare } from "../types";
 
 const userStore = useUserStore();
@@ -462,6 +463,30 @@ async function handleInviteConfirm() {
 
     <div class="page-content">
 
+      <!-- ── 外觀 ──────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-label">外觀</h2>
+        <div class="card">
+          <div class="theme-row">
+            <span class="theme-row-label">主題色系</span>
+            <div class="theme-toggle">
+              <button
+                :class="['theme-btn', { active: theme === 'light' }]"
+                @click="setTheme('light')"
+              >
+                淺色
+              </button>
+              <button
+                :class="['theme-btn', { active: theme === 'dark' }]"
+                @click="setTheme('dark')"
+              >
+                深色
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ── 個人管理 ────────────────────────────────────── -->
       <section class="section">
         <h2 class="section-label">個人管理</h2>
@@ -728,6 +753,47 @@ async function handleInviteConfirm() {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* ── 外觀 ────────────────────────────────────────────────── */
+.theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.theme-row-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.theme-toggle {
+  display: flex;
+  gap: 2px;
+  border: 2px solid var(--border-primary);
+  border-radius: 20px;
+  padding: 2px;
+  width: fit-content;
+}
+
+.theme-btn {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 46px;
+}
+
+.theme-btn.active {
+  background: var(--text-primary);
+  color: var(--text-light);
 }
 
 /* ── 個人管理：電子信箱 ──────────────────────────────── */
