@@ -30,6 +30,22 @@
           <span v-if="isSubmitting" class="spinner" aria-hidden="true"></span>
           <span v-else>送出解析</span>
         </button>
+
+        <Transition name="progress-fade">
+          <div
+            v-if="progressState !== 'idle'"
+            class="submit-progress"
+            :class="progressState"
+          >
+            <div class="submit-progress-track">
+              <div
+                class="submit-progress-fill"
+                :style="{ width: progressPercent + '%' }"
+              ></div>
+            </div>
+            <span class="submit-progress-time">{{ elapsedSeconds.toFixed(1) }}s</span>
+          </div>
+        </Transition>
       </div>
 
       <!-- 未完成記帳草稿清單 -->
@@ -89,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
@@ -153,6 +169,71 @@ function mapErrorToMessage(errorCode: string | undefined): string {
 const RETRY_JITTER_MAX_MS = 1000;
 // 單次請求逾時（毫秒）
 const REQUEST_TIMEOUT_MS = 30000;
+
+// ── 送出進度條（等待體驗）──────────────────────────────────────
+// 進度條 100% 對應 REQUEST_TIMEOUT_MS（前端真正判定逾時的時間點），
+// 提早成功時直接把進度收尾到 100%，語意上「跑滿 = 真的逾時了」。
+type ProgressState = "idle" | "active" | "success" | "error";
+const progressState = ref<ProgressState>("idle");
+const progressPercent = ref(0);
+const elapsedSeconds = ref(0);
+
+let progressRafId: number | null = null;
+let progressStartTime = 0;
+let progressHideTimer: ReturnType<typeof setTimeout> | undefined;
+
+function startProgress() {
+  if (progressHideTimer) clearTimeout(progressHideTimer);
+  progressStartTime = performance.now();
+  progressState.value = "active";
+  progressPercent.value = 0;
+  elapsedSeconds.value = 0;
+
+  const tick = () => {
+    const elapsed = performance.now() - progressStartTime;
+    elapsedSeconds.value = elapsed / 1000;
+    progressPercent.value = Math.min((elapsed / REQUEST_TIMEOUT_MS) * 100, 100);
+
+    if (progressState.value === "active" && elapsed < REQUEST_TIMEOUT_MS) {
+      progressRafId = requestAnimationFrame(tick);
+    } else {
+      progressRafId = null;
+    }
+  };
+  progressRafId = requestAnimationFrame(tick);
+}
+
+function stopProgressLoop() {
+  if (progressRafId !== null) {
+    cancelAnimationFrame(progressRafId);
+    progressRafId = null;
+  }
+}
+
+/** 收到成功回應：快速收尾滑到 100%，短暫停留後淡出 */
+function finishProgressSuccess() {
+  stopProgressLoop();
+  progressState.value = "success";
+  progressPercent.value = 100;
+  progressHideTimer = setTimeout(() => {
+    progressState.value = "idle";
+  }, 250);
+}
+
+/** 三次都失敗（含真的逾時）：跳滿 100% 並變紅，短暫停留後淡出交給錯誤訊息接手 */
+function finishProgressError() {
+  stopProgressLoop();
+  progressState.value = "error";
+  progressPercent.value = 100;
+  progressHideTimer = setTimeout(() => {
+    progressState.value = "idle";
+  }, 450);
+}
+
+onUnmounted(() => {
+  stopProgressLoop();
+  if (progressHideTimer) clearTimeout(progressHideTimer);
+});
 
 /** 等待 ms 毫秒；若 signal 在等待中被 abort，直接以 AbortError reject */
 function delay(ms: number, signal: AbortSignal): Promise<void> {
@@ -218,6 +299,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true;
   submitError.value = null;
+  startProgress();
 
   const trimmedText = rawText.value.trim();
   const controllers = [new AbortController(), new AbortController(), new AbortController()];
@@ -239,13 +321,15 @@ async function handleSubmit() {
     drafts.value = data.drafts;
     clearRawText(userStore.currentUserId);
     rawText.value = "";
+    finishProgressSuccess();
   } catch (err) {
-    // 三次全部失敗（AggregateError）或其他未預期錯誤
+    // 三次全部失敗（AggregateError，含真的逾時）或其他未預期錯誤
     const errors: unknown[] = err instanceof AggregateError ? err.errors : [err];
     const draftError = errors.find(isDraftRequestError);
     submitError.value = draftError
       ? mapErrorToMessage(draftError.errorCode)
       : "連線逾時，請確認網路後重試";
+    finishProgressError();
   } finally {
     timeoutIds.forEach(clearTimeout);
     isSubmitting.value = false;
@@ -460,6 +544,64 @@ onMounted(async () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ── 送出進度條 ───────────────────────────────────────────── */
+.submit-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submit-progress-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-muted);
+  overflow: hidden;
+}
+
+.submit-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--janote-action);
+  width: 0%;
+  /* 進行中每個 frame 都手動更新寬度，不套用 transition 避免跟即時進度打架 */
+  transition: none;
+}
+
+.submit-progress.success .submit-progress-fill,
+.submit-progress.error .submit-progress-fill {
+  /* 命中成功 / 逾時失敗那一刻，快速收尾滑到 100% */
+  transition: width 150ms ease, background-color 150ms ease;
+}
+
+.submit-progress.error .submit-progress-fill {
+  background: var(--state-danger);
+}
+
+.submit-progress-time {
+  flex-shrink: 0;
+  min-width: 34px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-disabled);
+}
+
+.submit-progress.error .submit-progress-time {
+  color: var(--state-danger);
+}
+
+.progress-fade-enter-active {
+  transition: opacity 0.15s ease;
+}
+.progress-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.progress-fade-enter-from,
+.progress-fade-leave-to {
+  opacity: 0;
 }
 
 /* ── 草稿清單 ─────────────────────────────────────────────── */
