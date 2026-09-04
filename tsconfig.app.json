@@ -5,6 +5,10 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
+    // Promise.any / AggregateError 是 ES2021 才有的型別，
+    // @vue/tsconfig 預設只到 ES2020，這裡覆寫拉高一版
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+
     "paths": {
       "@/*": ["./src/*"]
     }
