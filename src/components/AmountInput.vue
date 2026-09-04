@@ -75,6 +75,8 @@ defineEmits<{
 
 .notes-input {
   flex: 1;
+  background: var(--bg-card);
+  color: var(--text-primary);
   border: 2px solid var(--text-disabled);
   border-radius: 10px;
   padding: 8px;
@@ -85,5 +87,9 @@ defineEmits<{
 
 .notes-input:focus {
   border-color: var(--border-primary);
+}
+
+.notes-input::placeholder {
+  color: var(--text-disabled);
 }
 </style>
