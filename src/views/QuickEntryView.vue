@@ -237,9 +237,9 @@ async function handleSubmit() {
     rawText.value = "";
   } catch (err) {
     // 三次全部失敗（AggregateError）或其他未預期錯誤
-    const errors = err instanceof AggregateError ? err.errors : [err];
+    const errors: unknown[] = err instanceof AggregateError ? err.errors : [err];
     const draftError = errors.find(
-      (e): e is DraftRequestError => e instanceof DraftRequestError,
+      (e: unknown): e is DraftRequestError => e instanceof DraftRequestError,
     );
     submitError.value = draftError
       ? mapErrorToMessage(draftError.errorCode)
