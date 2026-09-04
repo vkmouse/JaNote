@@ -485,7 +485,7 @@ onMounted(async () => {
 }
 
 .transaction-item:active {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  background: var(--bg-hover);
 }
 
 .transaction-item--delete {

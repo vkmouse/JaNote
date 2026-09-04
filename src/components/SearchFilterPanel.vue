@@ -282,7 +282,7 @@ function dismiss() {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-card, #f5f5f5);
+  background: var(--bg-card);
   border: 1.5px solid var(--border-primary);
   border-radius: 10px;
   padding: 8px 12px;
@@ -320,7 +320,7 @@ function dismiss() {
 }
 
 .btn-clear-all {
-  background: var(--bg-hover, #f3f4f6);
+  background: var(--bg-hover);
   color: var(--text-secondary, #6b7280);
   border: 1px solid var(--border-primary, #e5e7eb);
 }

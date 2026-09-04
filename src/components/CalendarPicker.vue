@@ -223,7 +223,7 @@ const isToday = (day: CalendarDay): boolean => {
 }
 
 .calendar-nav-btn:active {
-  background: var(--bg-active, #e0e0e0);
+  background: var(--bg-active);
 }
 
 .arrow-icon :deep(svg) {

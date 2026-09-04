@@ -103,7 +103,7 @@ const handleNavClick = () => {
   width: 280px;
   max-width: 80vw;
   padding: 24px 16px;
-  background: var(--bg-elevated, #ffffff);
+  background: var(--bg-elevated);
   box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
@@ -143,7 +143,7 @@ const handleNavClick = () => {
 }
 
 .close-btn:active {
-  background: var(--bg-active, #e0e0e0);
+  background: var(--bg-active);
 }
 
 .nav-links {

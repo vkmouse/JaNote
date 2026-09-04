@@ -438,7 +438,7 @@ function cancelDelete() {
 
 /* ── 圖表卡片 ────────────────────────────────────────────────── */
 .chart-card {
-  background: var(--bg-elevated, #ffffff);
+  background: var(--bg-elevated);
   border-radius: 12px;
   padding: 16px 8px;
 }
@@ -587,7 +587,7 @@ function cancelDelete() {
   width: 100%;
   padding: 10px 12px;
   font-size: 15px;
-  border: 1.5px solid var(--border-primary, #000);
+  border: 1.5px solid var(--border-primary);
   border-radius: 10px;
   background: var(--bg-page, #fff);
   color: var(--text-primary, #1a1a1a);
@@ -603,7 +603,7 @@ function cancelDelete() {
 .amount-row {
   display: flex;
   align-items: center;
-  border: 1.5px solid var(--border-primary, #000);
+  border: 1.5px solid var(--border-primary);
   border-radius: 10px;
   background: var(--bg-page, #fff);
   overflow: hidden;
@@ -653,9 +653,9 @@ function cancelDelete() {
 }
 
 .btn-cancel {
-  background: var(--bg-hover, #f3f4f6);
+  background: var(--bg-hover);
   color: var(--text-secondary, #6b7280);
-  border: 1.5px solid var(--border, #e5e7eb);
+  border: 1.5px solid var(--border);
 }
 
 .btn-confirm {

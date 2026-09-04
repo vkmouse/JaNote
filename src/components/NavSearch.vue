@@ -31,7 +31,7 @@ const router = useRouter();
 }
 
 .nav-btn:active {
-  background: var(--bg-active, #e0e0e0);
+  background: var(--bg-active);
 }
 
 .nav-btn .icon {

@@ -13,8 +13,7 @@
           v-for="(slice, index) in processedSlices"
           :key="index"
           :d="getSliceArcPath(index)"
-          :fill="slice.sliceColor"
-          stroke="#333"
+          :style="{ fill: slice.sliceColor, stroke: 'var(--chart-stroke)' }"
           stroke-width="1"
           stroke-linejoin="round"
         />
@@ -236,7 +235,7 @@ const processedSlices = computed<{
         sliceLabel: '无数据',
         sliceValue: 100,
         slicePercentage: 100,
-        sliceColor: '#e0e0e0',
+        sliceColor: 'var(--chart-neutral)',
       },
     ]
   }

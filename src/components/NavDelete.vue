@@ -36,7 +36,7 @@ defineEmits<{ click: [] }>();
 }
 
 .nav-btn:active {
-  background: var(--bg-active, #e0e0e0);
+  background: var(--bg-active);
 }
 
 .nav-btn .icon {
@@ -50,7 +50,7 @@ defineEmits<{ click: [] }>();
 }
 
 .nav-btn--active .icon {
-  color: #ef4444;
+  color: var(--state-danger);
 }
 
 .nav-btn .icon :deep(svg) {

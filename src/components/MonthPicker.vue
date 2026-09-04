@@ -98,7 +98,7 @@ const confirm = () => {
 }
 
 .picker-controls button:active {
-  background: var(--bg-active, #e0e0e0);
+  background: var(--bg-active);
 }
 
 .picker-arrow :deep(svg) {

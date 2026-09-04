@@ -132,8 +132,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #111827;
-  color: #f3f4f6;
+  background: var(--gate-bg);
+  color: var(--gate-text);
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   box-sizing: border-box;
@@ -156,7 +156,7 @@ onMounted(() => {
 
 .access-gate__text {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--gate-text-secondary);
   margin: 0;
 }
 
@@ -165,22 +165,22 @@ onMounted(() => {
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: #d1d5db;
+  color: var(--gate-text-tertiary);
 }
 
 .access-gate__field input {
   padding: 9px 10px;
   border-radius: 6px;
-  border: 1px solid #374151;
-  background: #1f2937;
-  color: #f3f4f6;
+  border: 1px solid var(--gate-border);
+  background: var(--gate-surface);
+  color: var(--gate-text);
   font-size: 14px;
   box-sizing: border-box;
 }
 
 .access-gate__field input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--gate-accent);
 }
 
 .access-gate__field input:disabled {
@@ -190,7 +190,7 @@ onMounted(() => {
 .access-gate__error {
   margin: 0;
   font-size: 13px;
-  color: #f87171;
+  color: var(--janote-action);
 }
 
 .access-gate__button {
@@ -198,8 +198,8 @@ onMounted(() => {
   padding: 10px;
   border-radius: 6px;
   border: none;
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--gate-accent);
+  color: var(--gate-accent-text);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

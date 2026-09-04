@@ -103,7 +103,7 @@
                         width: `${Math.min(budget.percentage, 100)}%`,
                         background:
                           budget.percentage > 100
-                            ? '#EF4444'
+                            ? 'var(--state-danger)'
                             : transactionType === 'EXPENSE'
                               ? 'var(--janote-expense)'
                               : 'var(--janote-income)',
@@ -396,19 +396,19 @@ const overallPercentage = computed(() =>
 const summaryDonutSlices = computed<DonutSlice[]>(() => {
   if (transactionType.value === "EXPENSE") {
     if (overallPercentage.value > 100) {
-      return [{ sliceLabel: "超出預算", sliceValue: 1, sliceColor: "#EF4444" }];
+      return [{ sliceLabel: "超出預算", sliceValue: 1, sliceColor: "var(--state-danger)" }];
     }
     return [
-      { sliceLabel: "已使用", sliceValue: totalActual.value, sliceColor: "#FFC952" },
-      { sliceLabel: "剩餘", sliceValue: totalGoal.value - totalActual.value, sliceColor: "#E0E0E0" },
+      { sliceLabel: "已使用", sliceValue: totalActual.value, sliceColor: "var(--janote-expense)" },
+      { sliceLabel: "剩餘", sliceValue: totalGoal.value - totalActual.value, sliceColor: "var(--chart-neutral)" },
     ];
   } else {
     if (overallPercentage.value >= 100) {
-      return [{ sliceLabel: "超出目標", sliceValue: 1, sliceColor: "#47B8E0" }];
+      return [{ sliceLabel: "超出目標", sliceValue: 1, sliceColor: "var(--janote-income)" }];
     }
     return [
-      { sliceLabel: "已達成", sliceValue: totalActual.value, sliceColor: "#47B8E0" },
-      { sliceLabel: "距目標", sliceValue: totalGoal.value - totalActual.value, sliceColor: "#E0E0E0" },
+      { sliceLabel: "已達成", sliceValue: totalActual.value, sliceColor: "var(--janote-income)" },
+      { sliceLabel: "距目標", sliceValue: totalGoal.value - totalActual.value, sliceColor: "var(--chart-neutral)" },
     ];
   }
 });
@@ -628,11 +628,11 @@ watch(
 }
 
 .stat-value.warn {
-  color: #ef4444;
+  color: var(--state-danger);
 }
 
 .stat-value.success {
-  color: #47B8E0;
+  color: var(--janote-income);
 }
 
 /* ── Budget list ── */
@@ -712,7 +712,7 @@ watch(
 .progress-bar-track {
   flex: 1;
   height: 5px;
-  background: #f0f0f0;
+  background: var(--progress-track-bg);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -732,7 +732,7 @@ watch(
 }
 
 .percentage-badge.expense {
-  color: #b45309;
+  color: var(--state-warning);
 }
 
 .percentage-badge.income {
@@ -740,7 +740,7 @@ watch(
 }
 
 .percentage-badge.over-budget {
-  color: #ef4444;
+  color: var(--state-danger);
 }
 
 .item-right {

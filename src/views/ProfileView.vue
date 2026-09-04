@@ -964,7 +964,7 @@ async function handleInviteConfirm() {
 .invite-error {
   margin: 8px 0 0;
   font-size: 13px;
-  color: var(--janote-action, #ef4444);
+  color: var(--janote-action);
   text-align: center;
 }
 

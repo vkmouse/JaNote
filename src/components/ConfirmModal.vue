@@ -106,7 +106,7 @@ const emit = defineEmits<{
 }
 
 .btn-cancel {
-  background: var(--bg-hover, #f3f4f6);
+  background: var(--bg-hover);
   color: var(--text-secondary, #6b7280);
   border: 1px solid var(--border-primary, #e5e7eb);
 }
@@ -117,7 +117,7 @@ const emit = defineEmits<{
 }
 
 .btn-danger {
-  background: #ef4444;
+  background: var(--state-danger);
   color: #fff;
 }
 

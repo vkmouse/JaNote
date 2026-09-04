@@ -472,7 +472,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  background: var(--bg-card, #f5f5f5);
+  background: var(--bg-card);
   border: 2px solid var(--border-primary);
   border-radius: 20px;
   transition: border-color 0.15s;
@@ -566,9 +566,9 @@ onMounted(async () => {
   right: 1px;
   width: 8px;
   height: 8px;
-  background: #ef4444;
+  background: var(--state-danger);
   border-radius: 50%;
-  border: 1.5px solid var(--bg-card, #f5f5f5);
+  border: 1.5px solid var(--bg-card);
 }
 
 /* ── Active filter summary ── */

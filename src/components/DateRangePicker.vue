@@ -384,7 +384,7 @@ const handleConfirm = () => {
 }
 
 .calendar-nav-btn:active {
-  background: var(--bg-active, #e0e0e0);
+  background: var(--bg-active);
 }
 
 .arrow-icon {
@@ -478,7 +478,7 @@ const handleConfirm = () => {
 }
 
 .cancel-btn {
-  background: #e9ecef;
+  background: var(--bg-muted);
   color: var(--text-primary);
 }
 

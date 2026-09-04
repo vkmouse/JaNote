@@ -631,8 +631,8 @@ const calendarModelValue = computed({
 .detail-page { min-height: 100vh; background: var(--bg-page, #f5f5f5); }
 .page-title { font-size: 17px; font-weight: 600; color: var(--text-primary, #1a1a1a); }
 .page-content { padding: 16px; padding-bottom: 60px; display: flex; flex-direction: column; gap: 20px; }
-.chart-card { background: var(--bg-elevated, #ffffff); border-radius: 12px; padding: 16px 8px; }
-.balance-card { background: var(--bg-elevated, #ffffff); border-radius: 12px; padding: 18px 20px; border: 2px solid var(--border-primary, #000); display: flex; align-items: flex-start; gap: 14px; }
+.chart-card { background: var(--bg-elevated); border-radius: 12px; padding: 16px 8px; }
+.balance-card { background: var(--bg-elevated); border-radius: 12px; padding: 18px 20px; border: 2px solid var(--border-primary); display: flex; align-items: flex-start; gap: 14px; }
 .balance-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
 .balance-main { flex: 1; }
 .balance-label { font-size: 12px; color: var(--text-secondary, #888); margin-bottom: 3px; }
@@ -683,26 +683,26 @@ const calendarModelValue = computed({
 .form-row { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary, #666); }
 .form-hint { font-size: 12px; color: var(--text-secondary, #888); margin: 0; }
-.form-input { width: 100%; padding: 10px 12px; font-size: 15px; border: 1.5px solid var(--border-primary, #000); border-radius: 10px; background: var(--bg-page, #fff); color: var(--text-primary, #1a1a1a); outline: none; box-sizing: border-box; transition: border-color 0.2s; }
+.form-input { width: 100%; padding: 10px 12px; font-size: 15px; border: 1.5px solid var(--border-primary); border-radius: 10px; background: var(--bg-page, #fff); color: var(--text-primary, #1a1a1a); outline: none; box-sizing: border-box; transition: border-color 0.2s; }
 .form-input:focus { border-color: var(--janote-action, #f87171); }
 /* select-with-balance：外層容器顯示 select + 右側餘額小字 */
 .select-with-balance { position: relative; display: flex; align-items: center; }
 .select-with-balance .select-input { flex: 1; padding-right: 80px; appearance: none; -webkit-appearance: none; }
 .select-balance { position: absolute; right: 12px; font-size: 12px; color: var(--text-secondary, #aaa); pointer-events: none; white-space: nowrap; }
-.amount-row { display: flex; align-items: center; border: 1.5px solid var(--border-primary, #000); border-radius: 10px; background: var(--bg-page, #fff); overflow: hidden; transition: border-color 0.2s; }
+.amount-row { display: flex; align-items: center; border: 1.5px solid var(--border-primary); border-radius: 10px; background: var(--bg-page, #fff); overflow: hidden; transition: border-color 0.2s; }
 .amount-row:focus-within { border-color: var(--janote-action, #f87171); }
 .currency-sign { padding: 0 10px; font-size: 15px; font-weight: 600; color: var(--text-secondary, #888); flex-shrink: 0; }
 .amount-input { border: none !important; border-radius: 0 !important; background: transparent !important; padding-left: 0 !important; flex: 1; }
 .amount-input:focus { border-color: transparent !important; }
 .info-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1.5px solid var(--border, #e0e0e0); border-radius: 10px; background: var(--bg-page, #f9f9f9); }
-.info-row.highlight { border-color: var(--border-primary, #000); background: var(--bg-elevated, #fff); }
+.info-row.highlight { border-color: var(--border-primary); background: var(--bg-elevated); }
 .info-name { font-size: 14px; font-weight: 500; color: var(--text-secondary, #666); }
 .info-balance { font-size: 14px; font-weight: 700; color: var(--text-primary, #1a1a1a); }
-.date-btn { width: 100%; padding: 10px 12px; text-align: left; font-size: 15px; color: var(--text-primary, #1a1a1a); background: var(--bg-page, #fff); border: 1.5px solid var(--border-primary, #000); border-radius: 10px; cursor: pointer; transition: border-color 0.2s; -webkit-tap-highlight-color: transparent; }
+.date-btn { width: 100%; padding: 10px 12px; text-align: left; font-size: 15px; color: var(--text-primary, #1a1a1a); background: var(--bg-page, #fff); border: 1.5px solid var(--border-primary); border-radius: 10px; cursor: pointer; transition: border-color 0.2s; -webkit-tap-highlight-color: transparent; }
 .date-btn:active { border-color: var(--janote-action, #f87171); }
 .form-error { font-size: 12px; color: var(--janote-action, #f87171); margin: 0; }
 .btn-cancel, .btn-confirm { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
-.btn-cancel { background: var(--bg-hover, #f3f4f6); color: var(--text-secondary, #6b7280); border: 1.5px solid var(--border, #e5e7eb); }
+.btn-cancel { background: var(--bg-hover); color: var(--text-secondary, #6b7280); border: 1.5px solid var(--border); }
 .btn-confirm { background: var(--text-primary, #1a1a1a); color: #fff; }
 .btn-cancel:active, .btn-confirm:active { opacity: 0.75; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }

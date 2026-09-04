@@ -329,8 +329,8 @@ const handleCalcKey = (key: string) => {
 }
 
 .calc-btn.confirm-btn:disabled {
-  background: #e9ecef;
-  color: #adb5bd;
+  background: var(--bg-muted);
+  color: var(--text-muted);
   cursor: not-allowed;
   box-shadow: none;
 }

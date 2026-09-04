@@ -18,6 +18,36 @@
 
   --border-primary: #000000;
 
+  /* 結構用背景／邊框（原本多處以 var(--x, fallback) 使用，但從未在此宣告） */
+  --bg-active: #e0e0e0;
+  --bg-hover: #f3f4f6;
+  --bg-elevated: #ffffff;
+  --bg-card: #f5f5f5;
+  --border: #e5e7eb;
+
+  /* 狀態色 */
+  --state-danger: #EF4444;
+  --state-warning: #b45309;
+
+  /* 停用／靜音控制項（按鈕 disabled 狀態專用，與 --text-disabled 語意不同，數值也不同） */
+  --bg-muted: #e9ecef;
+  --text-muted: #adb5bd;
+
+  /* 圖表專用色 */
+  --chart-neutral: #E0E0E0;
+  --chart-stroke: #333333;
+  --progress-track-bg: #f0f0f0;
+
+  /* AccessGate 深色介面（目前固定不隨主題變化，先集中管理） */
+  --gate-bg: #111827;
+  --gate-surface: #1f2937;
+  --gate-border: #374151;
+  --gate-text: #f3f4f6;
+  --gate-text-secondary: #9ca3af;
+  --gate-text-tertiary: #d1d5db;
+  --gate-accent: #2563eb;
+  --gate-accent-text: #ffffff;
+
   --nav-width: 240px;
   --nav-width-mobile: 200px;
 }

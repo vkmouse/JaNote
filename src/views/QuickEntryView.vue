@@ -209,6 +209,10 @@ async function attemptDraftRequest(
   return (await response.json()) as DraftResponse;
 }
 
+function isDraftRequestError(e: unknown): e is DraftRequestError {
+  return e instanceof DraftRequestError;
+}
+
 async function handleSubmit() {
   if (!canSubmit.value || isSubmitting.value) return;
 
@@ -238,9 +242,7 @@ async function handleSubmit() {
   } catch (err) {
     // 三次全部失敗（AggregateError）或其他未預期錯誤
     const errors: unknown[] = err instanceof AggregateError ? err.errors : [err];
-    const draftError = errors.find(
-      (e: unknown): e is DraftRequestError => e instanceof DraftRequestError,
-    );
+    const draftError = errors.find(isDraftRequestError);
     submitError.value = draftError
       ? mapErrorToMessage(draftError.errorCode)
       : "連線逾時，請確認網路後重試";
@@ -415,7 +417,7 @@ onMounted(async () => {
   margin: 0;
   padding: 8px 12px;
   font-size: 13px;
-  color: #ef4444;
+  color: var(--state-danger);
   background: rgba(239, 68, 68, 0.08);
   border-radius: 8px;
 }
@@ -440,8 +442,8 @@ onMounted(async () => {
 }
 
 .submit-btn:disabled {
-  background: #e9ecef;
-  color: #adb5bd;
+  background: var(--bg-muted);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -497,7 +499,7 @@ onMounted(async () => {
 }
 
 .draft-item:active {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  background: var(--bg-hover);
 }
 
 .item-left {

@@ -27,7 +27,7 @@
   margin-right: auto;
   height: calc(56px + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top); /* iPhone 瀏海 / 靈動島安全區域 */
-  background: var(--bg-elevated, #ffffff);
+  background: var(--bg-elevated);
   border-bottom: 1px solid var(--border, #e0e0e0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   display: flex;
