@@ -75,7 +75,7 @@ function handleClick(category: Category): void {
 }
 
 .category-item.selected {
-  background: #f0f0f0;
+  background: var(--bg-active);
   border-color: var(--border-primary);
 }
 
