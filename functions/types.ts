@@ -38,8 +38,8 @@ export interface Env {
    * `wrangler pages secret put APP_JWT_SECRET` 設定，不要寫進版控。
    */
   APP_JWT_SECRET?: string;
-  GEMINI_API_KEY?: string;
-  GEMINI_MODEL?: string;
+  OPENROUTER_API_KEY?: string;
+  OPENROUTER_MODEL?: string;
 }
 
 export interface AuthContext extends Record<string, unknown> {

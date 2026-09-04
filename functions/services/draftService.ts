@@ -1,21 +1,8 @@
 import type { AiRawDraft, ExpenseDraft } from "../types";
 import { isValidDateString } from "../utils/validators";
 
-const GEMINI_TIMEOUT_MS = 15_000;
+const AI_TIMEOUT_MS = 15_000;
 const MAX_DRAFTS = 20;
-const RESPONSE_SCHEMA = {
-  type: "array",
-  items: {
-    type: "object",
-    properties: {
-      note: { type: "string" },
-      amount: { type: "number" },
-      category_name: { type: "string", nullable: true },
-      date: { type: "string", nullable: true },
-    },
-    required: ["note", "amount", "category_name", "date"],
-  },
-};
 
 /** 取得伺服器當下日期（Asia/Taipei），格式 YYYY-MM-DD，供 prompt 使用 */
 export function getTaipeiTodayString(now: Date = new Date()): string {
@@ -57,46 +44,52 @@ ${rawText}
 """`;
 }
 
-async function callGeminiOnce(
+/** 去除模型可能誤加的 ```json ... ``` 或 ``` ... ``` 包裹，取出純 JSON 文字 */
+function stripMarkdownFence(text: string): string {
+  const trimmed = text.trim();
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenceMatch ? fenceMatch[1].trim() : trimmed;
+}
+
+async function callAiOnce(
   prompt: string,
   apiKey: string,
   model: string,
 ): Promise<AiRawDraft[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: RESPONSE_SCHEMA,
-          },
+          model,
+          messages: [{ role: "user", content: prompt }],
         }),
         signal: controller.signal,
       },
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini API responded with ${response.status}`);
+      throw new Error(`OpenRouter API responded with ${response.status}`);
     }
 
     const data: any = await response.json();
-    const text: string | undefined =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text: string | undefined = data?.choices?.[0]?.message?.content;
 
     if (!text) {
-      throw new Error("Gemini API returned no content");
+      throw new Error("OpenRouter API returned no content");
     }
 
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(stripMarkdownFence(text));
     if (!Array.isArray(parsed)) {
-      throw new Error("Gemini API returned non-array JSON");
+      throw new Error("OpenRouter API returned non-array JSON");
     }
     return parsed as AiRawDraft[];
   } finally {
@@ -105,9 +98,9 @@ async function callGeminiOnce(
 }
 
 /**
- * 呼叫 Gemini 解析文字，逾時 15 秒；回傳非合法 JSON 時最多自動重試 1 次。
+ * 呼叫 AI 解析文字，逾時 15 秒；回傳非合法 JSON 時最多自動重試 1 次。
  */
-export async function parseRawTextWithGemini(
+export async function parseRawTextWithAi(
   rawText: string,
   categoryNames: string[],
   apiKey: string | undefined,
@@ -115,24 +108,24 @@ export async function parseRawTextWithGemini(
   todayStr: string = getTaipeiTodayString(),
 ): Promise<AiRawDraft[]> {
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not configured");
+    throw new Error("OPENROUTER_API_KEY is not configured");
   }
   if (!model) {
-    throw new Error("GEMINI_MODEL is not configured");
+    throw new Error("OPENROUTER_MODEL is not configured");
   }
 
   const prompt = buildPrompt(rawText, categoryNames, todayStr);
 
   try {
-    return await callGeminiOnce(prompt, apiKey, model);
+    return await callAiOnce(prompt, apiKey, model);
   } catch {
     // 第一次失敗（逾時、非合法 JSON 等），重試一次
-    return await callGeminiOnce(prompt, apiKey, model);
+    return await callAiOnce(prompt, apiKey, model);
   }
 }
 
 /**
- * 把 Gemini 的原始輸出轉成前端可用的草稿：
+ * 把 AI 的原始輸出轉成前端可用的草稿：
  * category_name 比對成 category_id、date 驗證/fallback、amount 與 note 不合法的整筆捨棄。
  */
 export function buildExpenseDrafts(
@@ -178,6 +171,6 @@ export function buildExpenseDrafts(
     });
   }
 
-  // 筆數上限防呆：即使 Gemini 沒守住 20 筆限制，仍強制 slice
+  // 筆數上限防呆：即使 AI 沒守住 20 筆限制，仍強制 slice
   return drafts.slice(0, MAX_DRAFTS);
 }

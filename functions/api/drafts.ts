@@ -4,7 +4,7 @@ import type { AuthContext, Env, DraftRequest, DraftResponse } from "../types";
 import { isNonEmptyString } from "../utils/validators";
 import { getActiveExpenseCategories } from "../repositories/categoryRepository";
 import {
-  parseRawTextWithGemini,
+  parseRawTextWithAi,
   buildExpenseDrafts,
   getTaipeiTodayString,
 } from "../services/draftService";
@@ -12,13 +12,13 @@ import {
 const MAX_RAW_TEXT_LENGTH = 2000;
 
 /**
- * 接收使用者記事本原始文字，呼叫 Gemini 拆解成多筆記帳草稿。
+ * 接收使用者記事本原始文字，呼叫 AI 拆解成多筆記帳草稿。
  * 草稿只是暫存結果，不寫入資料庫。
  */
 export const onRequest: PagesFunction<Env, any, AuthContext> = async (
   context,
 ) => {
-  const { DB, GEMINI_API_KEY, GEMINI_MODEL } = context.env;
+  const { DB, OPENROUTER_API_KEY, OPENROUTER_MODEL } = context.env;
 
   if (context.request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
@@ -58,11 +58,11 @@ export const onRequest: PagesFunction<Env, any, AuthContext> = async (
 
   let rawDrafts;
   try {
-    rawDrafts = await parseRawTextWithGemini(
+    rawDrafts = await parseRawTextWithAi(
       body.raw_text,
       categoryNames,
-      GEMINI_API_KEY,
-      GEMINI_MODEL,
+      OPENROUTER_API_KEY,
+      OPENROUTER_MODEL,
       todayStr,
     );
   } catch (error: any) {
