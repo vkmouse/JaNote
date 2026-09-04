@@ -124,13 +124,6 @@ const submitError = ref<string | null>(null);
 
 const canSubmit = computed(() => rawText.value.trim().length > 0);
 
-// TEMP DEBUG - 除錯用，之後記得移除
-const debugInfo = ref<Record<string, unknown> | null>(null);
-const debugInfoText = computed(() =>
-  debugInfo.value ? JSON.stringify(debugInfo.value, null, 2) : "",
-);
-// /TEMP DEBUG
-
 // 每次輸入 debounce 300ms 寫入 localStorage
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -156,67 +149,103 @@ function mapErrorToMessage(errorCode: string | undefined): string {
   }
 }
 
+// 每個請求的隨機起跑延遲上限（毫秒），三次各自獨立抽亂數，不共用同一個延遲
+const RETRY_JITTER_MAX_MS = 1000;
+// 單次請求逾時（毫秒）
+const REQUEST_TIMEOUT_MS = 30000;
+
+/** 等待 ms 毫秒；若 signal 在等待中被 abort，直接以 AbortError reject */
+function delay(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true },
+    );
+  });
+}
+
+class DraftRequestError extends Error {
+  errorCode?: string;
+  constructor(message: string, errorCode?: string) {
+    super(message);
+    this.errorCode = errorCode;
+  }
+}
+
+/** 單次「延遲後打 /api/drafts」的嘗試：延遲被取消或請求失敗都會 throw */
+async function attemptDraftRequest(
+  rawText: string,
+  signal: AbortSignal,
+): Promise<DraftResponse> {
+  await delay(Math.random() * RETRY_JITTER_MAX_MS, signal);
+
+  const response = await authorizedFetch("/api/drafts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ raw_text: rawText } satisfies DraftRequest),
+    signal,
+  });
+
+  if (!response.ok) {
+    let errorCode: string | undefined;
+    try {
+      const errorBody = await response.json();
+      errorCode = errorBody?.error_code;
+    } catch {
+      // 忽略錯誤內容解析失敗
+    }
+    throw new DraftRequestError(`request failed with ${response.status}`, errorCode);
+  }
+
+  return (await response.json()) as DraftResponse;
+}
+
 async function handleSubmit() {
   if (!canSubmit.value || isSubmitting.value) return;
 
   isSubmitting.value = true;
   submitError.value = null;
-  debugInfo.value = null; // TEMP DEBUG
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  const trimmedText = rawText.value.trim();
+  const controllers = [new AbortController(), new AbortController(), new AbortController()];
+  const timeoutIds = controllers.map((controller) =>
+    setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS),
+  );
 
   try {
-    const response = await authorizedFetch("/api/drafts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        raw_text: rawText.value.trim(),
-      } satisfies DraftRequest),
-      signal: controller.signal,
+    const data = await Promise.any(
+      controllers.map((controller) => attemptDraftRequest(trimmedText, controller.signal)),
+    );
+
+    // 有一個成功了，其餘還在飛（或還在隨機延遲中）的請求直接取消
+    controllers.forEach((controller) => {
+      if (!controller.signal.aborted) controller.abort();
     });
 
-    // TEMP DEBUG - 先讀原始文字，不管成功或失敗都留一份，
-    // 因為 response.json() 如果不是合法 JSON 會直接丟例外，什麼都看不到。
-    const rawBodyText = await response.clone().text();
-    debugInfo.value = {
-      requestUrl: response.url,
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-      contentType: response.headers.get("content-type"),
-      rawBodyPreview: rawBodyText.slice(0, 1000),
-    };
-    // /TEMP DEBUG
-
-    if (!response.ok) {
-      let errorCode: string | undefined;
-      try {
-        const errorBody = await response.json();
-        errorCode = errorBody?.error_code;
-      } catch {
-        // 忽略錯誤內容解析失敗
-      }
-      submitError.value = mapErrorToMessage(errorCode);
-      return;
-    }
-
-    const data = (await response.json()) as DraftResponse;
     replaceDrafts(userStore.currentUserId, data.drafts);
     drafts.value = data.drafts;
     clearRawText(userStore.currentUserId);
     rawText.value = "";
   } catch (err) {
-    // fetch 逾時（AbortController）或網路錯誤，或 rawBodyText/JSON 解析出錯
-    submitError.value = "連線逾時，請確認網路後重試";
-    // TEMP DEBUG
-    debugInfo.value = {
-      ...(debugInfo.value ?? {}),
-      caughtError: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
-    };
-    // /TEMP DEBUG
+    // 三次全部失敗（AggregateError）或其他未預期錯誤
+    const errors = err instanceof AggregateError ? err.errors : [err];
+    const draftError = errors.find(
+      (e): e is DraftRequestError => e instanceof DraftRequestError,
+    );
+    submitError.value = draftError
+      ? mapErrorToMessage(draftError.errorCode)
+      : "連線逾時，請確認網路後重試";
   } finally {
-    clearTimeout(timeoutId);
+    timeoutIds.forEach(clearTimeout);
     isSubmitting.value = false;
   }
 }
@@ -390,47 +419,6 @@ onMounted(async () => {
   background: rgba(239, 68, 68, 0.08);
   border-radius: 8px;
 }
-
-/* TEMP DEBUG PANEL - 除錯用，之後記得移除 */
-.debug-panel {
-  border: 1px dashed #f59e0b;
-  background: #fffbeb;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.debug-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: #fde68a;
-  font-size: 12px;
-  color: #78350f;
-}
-
-.debug-close {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 13px;
-  color: #78350f;
-  line-height: 1;
-  padding: 2px 4px;
-}
-
-.debug-panel-body {
-  margin: 0;
-  padding: 10px;
-  font-size: 11px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-all;
-  color: #451a03;
-  max-height: 240px;
-  overflow: auto;
-}
-/* /TEMP DEBUG PANEL */
 
 .submit-btn {
   height: 46px;

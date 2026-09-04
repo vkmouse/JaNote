@@ -98,7 +98,8 @@ async function callAiOnce(
 }
 
 /**
- * 呼叫 AI 解析文字，逾時 15 秒；回傳非合法 JSON 時最多自動重試 1 次。
+ * 呼叫 AI 解析文字，逾時 15 秒。重試改由前端負責（平行打多次請求），
+ * 後端這裡維持單純：呼叫一次，失敗就直接把錯誤往外丟。
  */
 export async function parseRawTextWithAi(
   rawText: string,
@@ -115,13 +116,7 @@ export async function parseRawTextWithAi(
   }
 
   const prompt = buildPrompt(rawText, categoryNames, todayStr);
-
-  try {
-    return await callAiOnce(prompt, apiKey, model);
-  } catch {
-    // 第一次失敗（逾時、非合法 JSON 等），重試一次
-    return await callAiOnce(prompt, apiKey, model);
-  }
+  return await callAiOnce(prompt, apiKey, model);
 }
 
 /**
