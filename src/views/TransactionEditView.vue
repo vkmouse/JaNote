@@ -520,7 +520,7 @@ onUnmounted(() => {
 
 .input-panel {
   flex-shrink: 0;
-  background: var(--janote-expense);
+  background: var(--calc-panel-bg);
   margin: 0;
   border-radius: 0;
   padding: 16px;

@@ -281,13 +281,13 @@ const handleCalcKey = (key: string) => {
 
 .calc-btn {
   padding: 18px;
-  border: 2px solid var(--border-primary);
+  border: 2px solid var(--calc-key-border);
   border-radius: 10px;
   cursor: pointer;
   font-size: 18px;
   font-weight: 600;
   transition: all 0.15s;
-  color: var(--text-primary);
+  color: var(--calc-key-text);
   background: transparent;
 }
 
@@ -296,23 +296,24 @@ const handleCalcKey = (key: string) => {
 }
 
 .calc-btn.number-btn {
-  background: var(--bg-page);
+  background: var(--calc-key-bg);
 }
 
 .calc-btn.function-btn {
-  background: var(--janote-income);
-  color: var(--text-light);
+  background: var(--calc-fn-bg);
+  color: var(--calc-fn-text);
   font-weight: 700;
 }
 
 .calc-btn.function-btn.operator-active {
-  background: var(--janote-action);
-  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
+  background: var(--calc-active-bg);
+  color: var(--calc-active-text);
+  box-shadow: 0 2px 8px var(--calc-active-glow);
 }
 
 .calc-btn.confirm-btn {
-  background: var(--janote-action);
-  color: var(--text-light);
+  background: var(--calc-active-bg);
+  color: var(--calc-active-text);
   font-weight: 700;
   font-size: 16px;
   grid-row: span 2;
@@ -320,8 +321,8 @@ const handleCalcKey = (key: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
-  border: 2px solid var(--border-primary);
+  box-shadow: 0 2px 8px var(--calc-active-glow);
+  border: 2px solid var(--calc-key-border);
 }
 
 .calc-btn.confirm-btn:active:not(:disabled) {
@@ -329,8 +330,8 @@ const handleCalcKey = (key: string) => {
 }
 
 .calc-btn.confirm-btn:disabled {
-  background: var(--bg-muted);
-  color: var(--text-muted);
+  background: var(--calc-disabled-bg);
+  color: var(--calc-disabled-text);
   cursor: not-allowed;
   box-shadow: none;
 }

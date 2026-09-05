@@ -54,6 +54,26 @@
   --chart-stroke: #333333;
   --progress-track-bg: #f0f0f0;
 
+  /*
+   * 計算機獨立 token，不直接借用 --border-primary 等全域語意色，
+   * 讓深色模式可以單獨調整配色，不影響其他共用該 token 的元件。
+   */
+  --calc-panel-bg: var(--janote-expense);
+
+  --calc-key-bg: var(--bg-page);
+  --calc-key-border: var(--border-primary);
+  --calc-key-text: var(--text-primary);
+
+  --calc-fn-bg: var(--janote-income);
+  --calc-fn-text: var(--text-light);
+
+  --calc-active-bg: var(--janote-action);
+  --calc-active-text: var(--text-light);
+  --calc-active-glow: rgba(248, 113, 113, 0.3);
+
+  --calc-disabled-bg: var(--bg-muted);
+  --calc-disabled-text: var(--text-muted);
+
   /* AccessGate 深色介面（目前固定不隨主題變化，先集中管理） */
   --gate-bg: #111827;
   --gate-surface: #1f2937;
@@ -109,6 +129,20 @@
   --chart-neutral: #4A453C;
   --chart-stroke: #17150F;
   --progress-track-bg: #2C2822;
+
+  /*
+   * --janote-expense 固定不隨主題變化（見上方註解），整片亮黃拿來當計算機
+   * 底板，在其他區塊都已轉為低飽和暖色調的深色模式裡會顯得突兀刺眼，
+   * 所以計算機底板改用它既有的深色模式淺色版本（本身就是為深色背景調校過
+   * 的暗金棕色），而不是直接沿用全局的亮黃色。
+   */
+  --calc-panel-bg: var(--janote-expense-light);
+
+  /* 數字鍵改用 elevated 底色，比純黑底稍微提亮，跟暗金棕底板不會死黑一片 */
+  --calc-key-bg: var(--bg-elevated);
+
+  /* 深色底板已經不再是高反光的亮黃，同樣透明度的光暈會變得不明顯，提高不透明度維持強調感 */
+  --calc-active-glow: rgba(248, 113, 113, 0.45);
 }
 
 *,
