@@ -1,6 +1,4 @@
 import { createRouter, createWebHistory } from "vue-router";
-import AccountView from "../views/AccountView.vue";
-import AccountDetailView from "../views/AccountDetailView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import TransactionSummaryView from "../views/TransactionSummaryView.vue";
 import TransactionView from "../views/TransactionView.vue";
@@ -16,12 +14,6 @@ const router = createRouter({
   routes: [
     { path: "/", redirect: "/transactions" },
     { path: "/profile", name: "profile", component: ProfileView },
-    { path: "/accounts", name: "accounts", component: AccountView },
-    {
-      path: "/accounts/:id",
-      name: "account-detail",
-      component: AccountDetailView,
-    },
     {
       path: "/transactions/summary",
       name: "transaction-summary",

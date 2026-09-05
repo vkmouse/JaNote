@@ -204,36 +204,6 @@ export interface RecurringBudgetPayload {
   last_executed_at?: string | null;
 }
 
-// ── 帳戶管理（純前端，localStorage） ─────────────────────────
-
-/** 轉帳類型：實體→實體、實體→邏輯、邏輯→實體 */
-export type AccountTransferType =
-  | "physical-physical"
-  | "physical-logical"
-  | "logical-physical";
-
-export interface Account {
-  id: string;
-  name: string;
-  /** 帳戶類型：physical = 實體帳戶（有固定金額），logical = 邏輯帳戶（依轉帳計算） */
-  accountType: "physical" | "logical";
-  /** 實體帳戶儲存金額；邏輯帳戶固定為 0 */
-  amount: number;
-  color: string;
-  createdAt: number;
-}
-
-export interface AccountTransfer {
-  id: string;
-  fromAccountId: string;
-  toAccountId: string;
-  amount: number;
-  date: number; // Unix ms
-  note: string;
-  transferType: AccountTransferType;
-  createdAt: number;
-}
-
 export interface LogEntry {
   id: string;
   time: string;
