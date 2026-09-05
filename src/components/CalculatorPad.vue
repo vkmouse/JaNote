@@ -297,10 +297,12 @@ const handleCalcKey = (key: string) => {
 
 .calc-btn.number-btn {
   background: var(--calc-key-bg);
+  border-color: var(--calc-num-border);
 }
 
 .calc-btn.function-btn {
   background: var(--calc-fn-bg);
+  border-color: var(--calc-fn-border);
   color: var(--calc-fn-text);
   font-weight: 700;
 }
