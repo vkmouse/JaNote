@@ -19,6 +19,9 @@ import iconCoin from "../assets/icons/new/icon-coin.svg?raw";
 import iconCookie from "../assets/icons/new/icon-cookie.svg?raw";
 import iconDeviceMobile from "../assets/icons/new/icon-device-mobile.svg?raw";
 import iconDollarCircle from "../assets/icons/icon-dollar-circle.svg?raw";
+import iconShield from "../assets/icons/new/icon-shield.svg?raw";
+import iconDumbbell from "../assets/icons/new/icon-dumbbell.svg?raw";
+import iconSalad from "../assets/icons/new/icon-salad.svg?raw";
 import iconGameController from "../assets/icons/new/icon-game-controller.svg?raw";
 import iconGift from "../assets/icons/new/icon-gift.svg?raw";
 import iconHandshake from "../assets/icons/new/icon-handshake.svg?raw";
@@ -81,4 +84,7 @@ export {
   iconWine,
   iconFunnel,
   iconShareProfit,
+  iconShield,
+  iconDumbbell,
+  iconSalad,
 };

@@ -18,6 +18,9 @@ export const categoryColorMap: Record<string, string> = {
   數位: "#AED6F1",
   貓咪: "#A3E4D7",
   旅行: "#C8B8E8",
+  保險: "#7FA8D9",
+  運動: "#FF8C69",
+  飲食: "#9FD8A0",
   其他: "#CCD1D1",
   // 收入
   薪水: "#A8D8B9",
@@ -63,6 +66,9 @@ import {
   iconUtensils,
   iconWine,
   iconShareProfit,
+  iconShield,
+  iconDumbbell,
+  iconSalad,
 } from "../utils/icons";
 
 const props = defineProps<{
@@ -89,6 +95,9 @@ const categoryIconMap: Record<string, string> = {
   數位: iconDeviceMobile,
   貓咪: iconCat,
   旅行: iconPlane,
+  保險: iconShield,
+  運動: iconDumbbell,
+  飲食: iconSalad,
   其他: iconSquaresFour,
   薪水: iconMoney,
   獎金: iconCoin,

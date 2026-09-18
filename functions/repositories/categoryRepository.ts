@@ -105,6 +105,9 @@ export async function initializeDefaultCategories(
     "數位",
     "貓咪",
     "旅行",
+    "保險",
+    "運動",
+    "飲食",
     "其他",
   ];
   const incomeCategories = ["薪水", "獎金", "交易", "投資", "股息", "利息", "分潤", "其他"];
@@ -153,6 +156,41 @@ export async function initializeDefaultCategories(
 
     await insertSyncEvent(userId, crypto.randomUUID(), "CAT", id, payload, DB);
   }
+}
+
+/**
+ * 檢查使用者是否已擁有同名同類型的分類（不論是否已刪除）。
+ * 用來讓「補齊分類」這類批次腳本具備冪等性：已存在就跳過，不重複建立。
+ */
+export async function categoryExistsByName(
+  userId: string,
+  name: string,
+  type: string,
+  DB: D1Database,
+): Promise<boolean> {
+  const row = await DB.prepare(
+    "SELECT 1 FROM categories WHERE user_id = ? AND name = ? AND type = ? LIMIT 1",
+  )
+    .bind(userId, name, type)
+    .first();
+  return !!row;
+}
+
+/**
+ * 取得使用者在某個類型下，下一個可用的 sort_order（目前最大值 + 1）。
+ * 用於在既有分類清單「後面」補插新分類，不會覆蓋或打亂原本的排序。
+ */
+export async function getNextCategorySortOrder(
+  userId: string,
+  type: string,
+  DB: D1Database,
+): Promise<number> {
+  const row = await DB.prepare(
+    "SELECT MAX(sort_order) as max_order FROM categories WHERE user_id = ? AND type = ?",
+  )
+    .bind(userId, type)
+    .first<{ max_order: number | null }>();
+  return (row?.max_order ?? 0) + 1;
 }
 
 export async function dropCategoriesTable(DB: D1Database): Promise<void> {
