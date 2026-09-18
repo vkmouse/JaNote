@@ -1,21 +1,11 @@
 /**
- * 手動觸發的一次性補齊腳本。
+ * 手動觸發資料庫更新。
  *
- * 背景：`categoryRepository.ts` 的 `initializeDefaultCategories` 新增了
- * 「保險」「運動」「飲食」三個支出分類，但這只會影響「之後才註冊」的
- * 新使用者；既有使用者的 categories 資料表裡沒有這三筆，需要靠這支 API
- * 補齊。
- *
- * 設計重點：
- * - 不驗證身分（見 functions/api/_middleware.ts 的 SKIP_AUTH_PATHS），
- *   純粹讓維運者手動打一次即可，之後可以直接刪掉這支檔案。
- * - 具備冪等性：對每個使用者、每個要補的分類，先查是否已存在同名同
- *   類型的分類（不論是否已刪除），存在就跳過，不存在才新增。因此
- *   重複呼叫不會造成重複建立。
- * - 新分類的 sort_order 接在該使用者目前同類型分類的最大值之後，
- *   不會打亂既有排序。
- * - 建立分類的同時寫入 sync_events，讓前端既有的 sync 機制能把新分類
- *   同步下去，行為與 initializeDefaultCategories 一致。
+ * 本次更新會替既有使用者補齊「保險」「運動」「飲食」三個支出分類。
+ * - 具備冪等性：已存在同名、同類型分類就跳過，可重複執行。
+ * - 新分類的 sort_order 接在該使用者目前同類型分類的最大值之後。
+ * - 建立分類時寫入 sync_events，讓前端既有同步機制能同步新分類。
+ * - 此路徑受 /api middleware 的登入驗證保護。
  */
 import type { Env } from "../types";
 import { getAllUsers } from "../repositories/userRepository";
@@ -32,13 +22,13 @@ const NEW_CATEGORIES: { name: string; type: "EXPENSE" | "INCOME" }[] = [
   { name: "飲食", type: "EXPENSE" },
 ];
 
-export const onRequest: PagesFunction<Env> = async (context) => {
+export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { DB } = context.env;
 
   try {
     const users = await getAllUsers(DB);
-    const added: Record<string, string[]> = {};
-    const skipped: Record<string, string[]> = {};
+    let addedCount = 0;
+    let skippedCount = 0;
 
     for (const user of users) {
       for (const category of NEW_CATEGORIES) {
@@ -50,7 +40,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         );
 
         if (exists) {
-          (skipped[user.email] ??= []).push(category.name);
+          skippedCount++;
           continue;
         }
 
@@ -91,16 +81,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           DB,
         );
 
-        (added[user.email] ??= []).push(category.name);
+        addedCount++;
       }
     }
 
     return new Response(
       JSON.stringify({
-        message: "Backfill completed",
+        message:
+          addedCount > 0
+            ? `資料庫更新完成：新增 ${addedCount} 筆分類，略過 ${skippedCount} 筆已存在資料`
+            : `資料庫已是最新：略過 ${skippedCount} 筆已存在資料`,
         total_users: users.length,
-        added,
-        skipped,
+        added_count: addedCount,
+        skipped_count: skippedCount,
       }),
       {
         headers: { "content-type": "application/json" },
@@ -108,9 +101,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       },
     );
   } catch (error) {
-    console.error("Error backfilling new categories:", error);
+    console.error("Error applying database updates:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to backfill new categories" }),
+      JSON.stringify({ error: "資料庫更新失敗" }),
       {
         headers: { "content-type": "application/json" },
         status: 500,

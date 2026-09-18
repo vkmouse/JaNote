@@ -59,6 +59,60 @@ const pendingImportRows = ref<ImportRow[]>([]);
 // ── ConfirmModal ─────────────────────────────────────────────
 const showClearModal = ref(false);
 
+// ── 資料庫更新 ─────────────────────────────────────────────
+const showDatabaseUpdateModal = ref(false);
+const isUpdatingDatabase = ref(false);
+const databaseUpdateResult = ref<{
+  message?: string;
+  total_users?: number;
+  added_count?: number;
+  skipped_count?: number;
+  error?: string;
+} | null>(null);
+
+function openDatabaseUpdateModal() {
+  databaseUpdateResult.value = null;
+  showDatabaseUpdateModal.value = true;
+}
+
+function closeDatabaseUpdateModal() {
+  if (isUpdatingDatabase.value) return;
+  showDatabaseUpdateModal.value = false;
+}
+
+async function confirmDatabaseUpdate() {
+  if (isUpdatingDatabase.value) return;
+  isUpdatingDatabase.value = true;
+  databaseUpdateResult.value = null;
+
+  try {
+    const response = await fetch("/api/database-updates", {
+      method: "POST",
+      credentials: "include",
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      databaseUpdateResult.value = {
+        error: result?.error || "資料庫更新失敗",
+      };
+      return;
+    }
+
+    databaseUpdateResult.value = result;
+  } catch (error) {
+    console.error("資料庫更新失敗:", error);
+    databaseUpdateResult.value = {
+      error:
+        error instanceof Error
+          ? error.message
+          : "資料庫更新失敗，請稍後再試",
+    };
+  } finally {
+    isUpdatingDatabase.value = false;
+  }
+}
+
 // ── 共享刪除確認 ────────────────────────────────────────────
 const showShareDeleteModal = ref(false);
 const pendingDeleteShare = ref<UserShare | null>(null);
@@ -549,6 +603,15 @@ async function handleInviteConfirm() {
             >
               匯出資料
             </button>
+
+            <!-- 資料庫更新（僅非共享模式） -->
+            <button
+              v-if="!userStore.isViewingShared"
+              class="btn-grid-item btn-grid-update"
+              @click="openDatabaseUpdateModal"
+            >
+              資料庫更新
+            </button>
           </div>
 
           <input
@@ -692,6 +755,57 @@ async function handleInviteConfirm() {
     >
       <p class="csv-confirm-main">{{ importConfirmMain }}</p>
       <p v-if="importConfirmSkip" class="csv-confirm-skip">{{ importConfirmSkip }}</p>
+    </ConfirmModal>
+
+    <!-- ── 資料庫更新確認 Modal ─────────────────────────── -->
+    <ConfirmModal
+      :show="showDatabaseUpdateModal"
+      title="資料庫更新"
+      :confirm-text="isUpdatingDatabase ? '更新中…' : '確認更新'"
+      cancel-text="取消"
+      @confirm="confirmDatabaseUpdate"
+      @cancel="closeDatabaseUpdateModal"
+    >
+      <div class="database-update-content">
+        <template v-if="!databaseUpdateResult">
+          <p v-if="isUpdatingDatabase">正在執行資料庫更新，請稍候…</p>
+          <template v-else>
+            <p>本次更新會補齊以下支出分類：</p>
+            <ul>
+              <li>保險</li>
+              <li>運動</li>
+              <li>飲食</li>
+            </ul>
+            <p>已存在的分類會自動跳過，可重複執行，不會重複建立。</p>
+          </template>
+        </template>
+
+        <template v-else-if="databaseUpdateResult.error">
+          <p class="database-update-result database-update-result--error">
+            {{ databaseUpdateResult.error }}
+          </p>
+        </template>
+
+        <template v-else>
+          <p class="database-update-result database-update-result--success">
+            {{ databaseUpdateResult.message }}
+          </p>
+          <div class="database-update-stats">
+            <div>
+              <span>使用者數</span>
+              <strong>{{ databaseUpdateResult.total_users ?? 0 }}</strong>
+            </div>
+            <div>
+              <span>新增分類</span>
+              <strong>{{ databaseUpdateResult.added_count ?? 0 }}</strong>
+            </div>
+            <div>
+              <span>略過既有</span>
+              <strong>{{ databaseUpdateResult.skipped_count ?? 0 }}</strong>
+            </div>
+          </div>
+        </template>
+      </div>
     </ConfirmModal>
 
     <!-- ── 通知 Modal ──────────────────────── -->
@@ -889,6 +1003,11 @@ async function handleInviteConfirm() {
   color: var(--text-light);
 }
 
+.btn-grid-update {
+  background: var(--janote-expense);
+  color: var(--text-on-expense);
+}
+
 /* ── 共享管理：Header ────────────────────────────────── */
 
 .group-header-title {
@@ -1050,5 +1169,60 @@ async function handleInviteConfirm() {
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.database-update-content {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.database-update-content p {
+  margin: 0;
+}
+
+.database-update-content ul {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.database-update-result {
+  text-align: center;
+  font-weight: 600;
+}
+
+.database-update-result--success {
+  color: var(--text-primary);
+}
+
+.database-update-result--error {
+  color: var(--state-danger);
+}
+
+.database-update-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.database-update-stats > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+}
+
+.database-update-stats span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.database-update-stats strong {
+  font-size: 18px;
+  color: var(--text-primary);
 }
 </style>

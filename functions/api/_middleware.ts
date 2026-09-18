@@ -6,11 +6,6 @@
  * （login 驗 Cf-Access-Jwt-Assertion，refresh 驗 refresh_token Cookie），
  * 這裡直接放行、不重複驗證。
  *
- * `/api/backfill-new-categories` 是給維運者手動觸發的一次性補齊腳本
- * （見該檔案開頭註解），不需要使用者身分，所以也放進白名單。腳本本身
- * 靠檢查資料是否已存在來保證冪等性，補完既有使用者的資料後可以把這
- * 條白名單和對應的檔案一起刪掉。
- *
  * 其餘所有 `/api/*` 路徑一律只驗 `access_token` Cookie 裡的 App JWT
  * 簽章 / 效期，直接從 payload 拿 email / userId 塞進 context.data，
  * **不再查 DB**（DB 查詢只發生在 functions/api/auth/login.ts 簽發 token 的當下）。
@@ -25,7 +20,6 @@ import { ACCESS_TOKEN_COOKIE_NAME, getCookie } from "../utils/cookie";
 const SKIP_AUTH_PATHS = new Set([
   "/api/auth/login",
   "/api/auth/refresh",
-  "/api/backfill-new-categories",
 ]);
 
 export const onRequest: PagesFunction<Env, any, AuthContext> = async (
