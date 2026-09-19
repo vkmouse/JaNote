@@ -213,18 +213,16 @@ export interface LogEntry {
   tone: "info" | "warn" | "error" | "success";
 }
 
-// ── AI 快速記帳（Quick Entry，純前端，localStorage） ──────────
-
 export interface DraftRequest {
   raw_text: string;
 }
 
 export interface ExpenseDraft {
-  draft_id: string; // 後端 crypto.randomUUID() 產生
+  draft_id: string;
   note: string;
   amount: number;
-  category_id: string | null; // 後端已比對好，對不到就是 null → 前端顯示「未分類」
-  date: number; // unix ms，後端已完成格式驗證/fallback
+  category_id: string | null;
+  date: number;
 }
 
 export interface DraftResponse {
@@ -256,3 +254,19 @@ export type StoreCallback<T = any> = (
   store: IDBObjectStore,
   tx: IDBTransaction,
 ) => T | IDBRequest<any>;
+
+export type AssetCategory =
+  | "國內證券"
+  | "海外證券"
+  | "基金"
+  | "約當現金"
+  | "信託";
+
+export interface AssetRecord {
+  id: string;
+  category: AssetCategory;
+  name: string;
+  amount: number;
+  date: number;
+  seq: number;
+}

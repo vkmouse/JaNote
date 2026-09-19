@@ -30,6 +30,12 @@ export const categoryColorMap: Record<string, string> = {
   股息: "#B0C4DE",
   利息: "#D4B8E0",
   分潤: "#A8E6CF",
+  // 資產
+  國內證券: "#45B7D1",
+  海外證券: "#F7DC6F",
+  基金: "#F1948A",
+  約當現金: "#82E0AA",
+  信託: "#BB8FCE",
 };
 
 export function getCategoryColor(categoryName: string): string {
@@ -106,6 +112,11 @@ const categoryIconMap: Record<string, string> = {
   股息: iconChartLineUp,
   利息: iconChartNoAxesColumnIncreasing,
   分潤: iconShareProfit,
+  國內證券: iconChartLineUp,
+  海外證券: iconPlane,
+  基金: iconPiggyBank,
+  約當現金: iconCoin,
+  信託: iconShield,
 };
 
 const iconSvg = computed(

@@ -7,6 +7,8 @@ import TransactionEditView from "../views/TransactionEditView.vue";
 import TransactionBudgetView from "../views/TransactionBudgetView.vue";
 import TransactionRecurringView from "../views/TransactionRecurringView.vue";
 import QuickEntryView from "../views/QuickEntryView.vue";
+import AssetView from "../views/AssetView.vue";
+import AssetEditView from "../views/AssetEditView.vue";
 
 
 const router = createRouter({
@@ -84,6 +86,8 @@ const router = createRouter({
       name: "budget-recurring-edit",
       component: TransactionEditView,
     },
+    { path: "/assets", name: "assets", component: AssetView },
+    { path: "/assets/new", name: "asset-new", component: AssetEditView },
   ],
 });
 
