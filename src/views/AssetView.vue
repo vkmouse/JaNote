@@ -43,7 +43,14 @@
             <template #header-left>
               <span class="date-title">{{ group.dateDisplay }}</span>
             </template>
-            <ListItem v-for="record in group.records" :key="record.id">
+            <ListItem
+              v-for="record in group.records"
+              :key="record.id"
+              :swipeable="true"
+              @delete="onSwipeDelete(record.id)"
+              @edit="editRecord(record.id)"
+              @item-click="editRecord(record.id)"
+            >
               <div class="asset-item">
                 <div class="item-left">
                   <CategoryIcon
@@ -90,6 +97,18 @@
         </div>
       </div>
     </nav>
+
+    <!-- Delete Confirm Modal -->
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="刪除資產紀錄"
+      message="確定要刪除這筆資產紀錄嗎？此操作無法復原。"
+      confirm-text="刪除"
+      cancel-text="取消"
+      variant="danger"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </section>
 </template>
 
@@ -105,6 +124,7 @@ import type { DonutSlice } from "../components/DonutChart.vue";
 import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
+import ConfirmModal from "../components/ConfirmModal.vue";
 import type { AssetRecord } from "../types";
 import {
   useAssetStore,
@@ -138,6 +158,9 @@ function nextMonth() {
     selectedMonth.value++;
   }
 }
+
+const showDeleteConfirm = ref(false);
+const deletingRecordId = ref<string | null>(null);
 
 interface DailyGroup {
   date: string;
@@ -202,6 +225,28 @@ const groupedRecords = computed<DailyGroup[]>(() => {
   }
   return Array.from(groups.values());
 });
+
+const editRecord = (id: string) => {
+  router.push(`/assets/${id}/edit`);
+};
+
+const onSwipeDelete = (id: string) => {
+  deletingRecordId.value = id;
+  showDeleteConfirm.value = true;
+};
+
+const confirmDelete = () => {
+  showDeleteConfirm.value = false;
+  const id = deletingRecordId.value;
+  deletingRecordId.value = null;
+  if (!id) return;
+  assetStore.deleteRecord(id);
+};
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false;
+  deletingRecordId.value = null;
+};
 
 // 年月同步到 query，從新增頁返回時能維持原本檢視的月份
 const isInitialized = ref(false);

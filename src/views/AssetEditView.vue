@@ -45,8 +45,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import CalendarPicker from "../components/CalendarPicker.vue";
@@ -57,8 +57,10 @@ import type { AssetCategory, Category } from "../types";
 import { useAssetStore, ASSET_CATEGORIES } from "../stores/assetStore";
 
 const router = useRouter();
+const route = useRoute();
 const assetStore = useAssetStore();
 
+const editingId = ref<string | null>(null);
 const currentDate = ref<number>(Date.now());
 const showCalendar = ref(false);
 const selectedCategory = ref<string>("");
@@ -110,14 +112,36 @@ const canSave = computed(() => {
 
 function save() {
   if (!canSave.value) return;
-  assetStore.addRecord({
-    category: selectedCategory.value as AssetCategory,
-    name: assetName.value,
-    amount: parseFloat(amount.value),
-    date: currentDate.value,
-  });
+  if (editingId.value) {
+    assetStore.updateRecord({
+      id: editingId.value,
+      category: selectedCategory.value as AssetCategory,
+      name: assetName.value,
+      amount: parseFloat(amount.value),
+      date: currentDate.value,
+    });
+  } else {
+    assetStore.addRecord({
+      category: selectedCategory.value as AssetCategory,
+      name: assetName.value,
+      amount: parseFloat(amount.value),
+      date: currentDate.value,
+    });
+  }
   router.back();
 }
+
+onMounted(() => {
+  const id = route.params.id as string | undefined;
+  if (!id) return;
+  const record = assetStore.getRecordById(id);
+  if (!record) return;
+  editingId.value = id;
+  selectedCategory.value = record.category;
+  assetName.value = record.name;
+  amount.value = String(record.amount);
+  currentDate.value = record.date;
+});
 </script>
 
 <style scoped>

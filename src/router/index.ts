@@ -88,6 +88,7 @@ const router = createRouter({
     },
     { path: "/assets", name: "assets", component: AssetView },
     { path: "/assets/new", name: "asset-new", component: AssetEditView },
+    { path: "/assets/:id/edit", name: "asset-edit", component: AssetEditView },
   ],
 });
 

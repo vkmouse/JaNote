@@ -40,6 +40,33 @@ export const useAssetStore = defineStore("asset", () => {
     });
   }
 
+  /** 依 id 取得單筆資產紀錄 */
+  function getRecordById(id: string): AssetRecord | undefined {
+    return records.value.find((r) => r.id === id);
+  }
+
+  /** 編輯既有資產紀錄 */
+  function updateRecord(input: {
+    id: string;
+    category: AssetCategory;
+    name: string;
+    amount: number;
+    date: number;
+  }): void {
+    const record = records.value.find((r) => r.id === input.id);
+    if (!record) return;
+    record.category = input.category;
+    record.name = input.name.trim();
+    record.amount = input.amount;
+    record.date = startOfDay(input.date);
+  }
+
+  /** 刪除資產紀錄 */
+  function deleteRecord(id: string): void {
+    const idx = records.value.findIndex((r) => r.id === id);
+    if (idx !== -1) records.value.splice(idx, 1);
+  }
+
   /**
    * 計算截至 asOf（含當日）各分類的資產總額：
    * 同分類且同名稱視為同一資產，以最新一筆為準；不同名稱累加
@@ -66,6 +93,9 @@ export const useAssetStore = defineStore("asset", () => {
     records,
     // actions
     addRecord,
+    getRecordById,
+    updateRecord,
+    deleteRecord,
     getSnapshot,
   };
 });
