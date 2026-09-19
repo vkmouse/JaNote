@@ -6,6 +6,7 @@ import NavSync from "../components/NavSync.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup, { useSharedSwipeContext } from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
+import { authorizedFetch } from "../services/api";
 import { useUserStore } from "../stores/userStore";
 import { useSyncStore } from "../stores/syncStore";
 import { useSyncStatusStore } from "../stores/syncStatusStore";
@@ -86,20 +87,24 @@ async function confirmDatabaseUpdate() {
   databaseUpdateResult.value = null;
 
   try {
-    const response = await fetch("/api/database-updates", {
+    const response = await authorizedFetch("/api/database-updates", {
       method: "POST",
-      credentials: "include",
     });
-    const result = await response.json();
 
     if (!response.ok) {
+      // middleware 的 401 回的是純文字，直接 json() 會拋 SyntaxError
+      const errorBody = await response.json().catch(() => null);
       databaseUpdateResult.value = {
-        error: result?.error || "資料庫更新失敗",
+        error:
+          errorBody?.error ||
+          (response.status === 401
+            ? "登入已過期，請重新登入"
+            : "資料庫更新失敗"),
       };
       return;
     }
 
-    databaseUpdateResult.value = result;
+    databaseUpdateResult.value = await response.json();
   } catch (error) {
     console.error("資料庫更新失敗:", error);
     databaseUpdateResult.value = {
