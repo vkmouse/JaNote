@@ -1,5 +1,33 @@
 import type { Category } from "../types";
 
+/**
+ * 支出分類的預設順序（sort_order = 索引 + 1）。
+ * 新使用者初始化與資料庫更新的順序校正都以這份為準，避免兩邊順序不一致。
+ */
+export const DEFAULT_EXPENSE_CATEGORY_NAMES = [
+  "早餐",
+  "午餐",
+  "晚餐",
+  "飲食",
+  "飲品",
+  "點心",
+  "酒類",
+  "交通",
+  "購物",
+  "娛樂",
+  "日用品",
+  "房租",
+  "運動",
+  "醫療",
+  "社交",
+  "禮物",
+  "數位",
+  "貓咪",
+  "旅行",
+  "保險",
+  "其他",
+];
+
 export async function getCategoryVersion(
   id: string,
   userId: string,
@@ -87,29 +115,7 @@ export async function initializeDefaultCategories(
   userId: string,
   DB: D1Database,
 ): Promise<void> {
-  const expenseCategories = [
-    "早餐",
-    "午餐",
-    "晚餐",
-    "飲品",
-    "點心",
-    "酒類",
-    "交通",
-    "購物",
-    "娛樂",
-    "日用品",
-    "房租",
-    "醫療",
-    "社交",
-    "禮物",
-    "數位",
-    "貓咪",
-    "旅行",
-    "保險",
-    "運動",
-    "飲食",
-    "其他",
-  ];
+  const expenseCategories = DEFAULT_EXPENSE_CATEGORY_NAMES;
   const incomeCategories = ["薪水", "獎金", "交易", "投資", "股息", "利息", "分潤", "其他"];
 
   // Import syncEventRepository to avoid circular dependency
@@ -191,6 +197,37 @@ export async function getNextCategorySortOrder(
     .bind(userId, type)
     .first<{ max_order: number | null }>();
   return (row?.max_order ?? 0) + 1;
+}
+
+/** 取得所有使用者未刪除的支出分類 */
+export async function getAllActiveExpenseCategories(
+  DB: D1Database,
+): Promise<
+  Pick<Category, "id" | "user_id" | "name" | "sort_order" | "version">[]
+> {
+  const result = await DB.prepare(
+    "SELECT id, user_id, name, sort_order, version FROM categories WHERE type = 'EXPENSE' AND is_deleted = 0",
+  ).all<
+    Pick<Category, "id" | "user_id" | "name" | "sort_order" | "version">
+  >();
+  return result.results || [];
+}
+
+/**
+ * 只更新排序與版本
+ */
+export async function updateCategorySortOrder(
+  id: string,
+  userId: string,
+  sort_order: number,
+  version: number,
+  DB: D1Database,
+): Promise<void> {
+  await DB.prepare(
+    "UPDATE categories SET sort_order = ?, version = ? WHERE id = ? AND user_id = ?",
+  )
+    .bind(sort_order, version, id, userId)
+    .run();
 }
 
 export async function dropCategoriesTable(DB: D1Database): Promise<void> {

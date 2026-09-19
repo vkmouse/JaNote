@@ -68,6 +68,8 @@ const databaseUpdateResult = ref<{
   total_users?: number;
   added_count?: number;
   skipped_count?: number;
+  reordered_count?: number;
+  order_skipped_count?: number;
   error?: string;
 } | null>(null);
 
@@ -781,7 +783,8 @@ async function handleInviteConfirm() {
               <li>運動</li>
               <li>飲食</li>
             </ul>
-            <p>已存在的分類會自動跳過，可重複執行，不會重複建立。</p>
+            <p>同時會統一支出分類的順序：飲食接在晚餐後、運動接在房租後、保險接在旅行後。</p>
+            <p>已存在的分類、順序已正確的都會自動跳過，可重複執行。</p>
           </template>
         </template>
 
@@ -807,6 +810,14 @@ async function handleInviteConfirm() {
             <div>
               <span>略過既有</span>
               <strong>{{ databaseUpdateResult.skipped_count ?? 0 }}</strong>
+            </div>
+            <div>
+              <span>調整順序</span>
+              <strong>{{ databaseUpdateResult.reordered_count ?? 0 }}</strong>
+            </div>
+            <div>
+              <span>略過順序</span>
+              <strong>{{ databaseUpdateResult.order_skipped_count ?? 0 }}</strong>
             </div>
           </div>
         </template>
@@ -1206,7 +1217,7 @@ async function handleInviteConfirm() {
 
 .database-update-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 8px;
   margin-top: 14px;
 }
