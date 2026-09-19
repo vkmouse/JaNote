@@ -268,5 +268,5 @@ export interface AssetRecord {
   name: string;
   amount: number;
   date: number;
-  seq: number;
+  created_at: number;
 }

@@ -206,7 +206,7 @@ const groupedRecords = computed<DailyGroup[]>(() => {
   const weekDays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
   const inMonth = assetStore.records
     .filter((r) => r.date >= monthStart.value && r.date <= monthEnd.value)
-    .sort((a, b) => b.date - a.date || b.seq - a.seq);
+    .sort((a, b) => b.date - a.date || b.created_at - a.created_at);
 
   const groups = new Map<number, DailyGroup>();
   for (const r of inMonth) {

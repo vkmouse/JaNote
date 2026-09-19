@@ -19,7 +19,6 @@ export function startOfDay(ts: number): number {
 export const useAssetStore = defineStore("asset", () => {
   // ── State ──────────────────────────────────────────────────
   const records = ref<AssetRecord[]>([]);
-  let seqCounter = 0;
 
   // ── Actions ────────────────────────────────────────────────
   /** 新增資產紀錄 */
@@ -29,14 +28,13 @@ export const useAssetStore = defineStore("asset", () => {
     amount: number;
     date: number;
   }): void {
-    seqCounter++;
     records.value.push({
       id: crypto.randomUUID(),
       category: input.category,
       name: input.name.trim(),
       amount: input.amount,
       date: startOfDay(input.date),
-      seq: seqCounter,
+      created_at: Date.now(),
     });
   }
 
@@ -77,7 +75,11 @@ export const useAssetStore = defineStore("asset", () => {
       if (r.date > asOf) continue;
       const key = `${r.category}\u0000${r.name}`;
       const cur = latest.get(key);
-      if (!cur || r.date > cur.date || (r.date === cur.date && r.seq > cur.seq)) {
+      if (
+        !cur ||
+        r.date > cur.date ||
+        (r.date === cur.date && r.created_at > cur.created_at)
+      ) {
         latest.set(key, r);
       }
     }
