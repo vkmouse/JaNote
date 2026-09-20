@@ -15,8 +15,9 @@
 
     <YearPicker v-model:open="showYearPicker" v-model:year="selectedYear" />
 
-    <!-- 趨勢內容待設計 -->
-    <div class="page-content page"></div>
+    <div class="page-content page">
+      <AssetTrendChart :year="selectedYear" />
+    </div>
 
     <AssetBottomBar />
   </section>
@@ -32,11 +33,14 @@ import NavSync from "../components/NavSync.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import YearPicker from "../components/YearPicker.vue";
 import AssetBottomBar from "../components/AssetBottomBar.vue";
+import AssetTrendChart from "../components/AssetTrendChart.vue";
+import { useAssetStore } from "../stores/assetStore";
 import { useUserStore } from "../stores/userStore";
 
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
+const assetStore = useAssetStore();
 
 const selectedYear = ref(new Date().getFullYear());
 const showYearPicker = ref(false);
@@ -57,6 +61,7 @@ onMounted(async () => {
   await nextTick();
   isInitialized.value = true;
   await userStore.loadUser();
+  await Promise.all([assetStore.loadCategories(), assetStore.loadRecords()]);
 });
 </script>
 
