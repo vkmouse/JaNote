@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import type { Category } from "../types";
+import type { TimeMode } from "../utils/searchFilters";
 import ViewModeToggle from "./ViewModeToggle.vue";
 import CategoryGrid from "./CategoryGrid.vue";
 import MonthPicker from "./MonthPicker.vue";
 import YearPicker from "./YearPicker.vue";
 import DateRangePicker from "./DateRangePicker.vue";
 
-type TimeMode = "" | "monthly" | "yearly" | "custom";
 type VMToggleMode = "monthly" | "yearly" | "custom";
 
 const props = defineProps<{

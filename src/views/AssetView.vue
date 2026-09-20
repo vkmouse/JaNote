@@ -206,11 +206,13 @@ const totalAsset = computed(() =>
 );
 
 const chartSlices = computed<DonutSlice[]>(() =>
-  assetStore.visibleCategories.map((c) => ({
-    sliceLabel: c.name,
-    sliceValue: snapshot.value[c.id] ?? 0,
-    sliceColor: getCategoryColor(c.name),
-  })),
+  assetStore.visibleCategories
+    .map((c) => ({
+      sliceLabel: c.name,
+      sliceValue: snapshot.value[c.id] ?? 0,
+      sliceColor: getCategoryColor(c.name),
+    }))
+    .sort((a, b) => b.sliceValue - a.sliceValue),
 );
 
 const groupedRecords = computed(() =>
@@ -401,8 +403,7 @@ onMounted(async () => {
   padding: 0 16px calc(24px + env(safe-area-inset-bottom));
 }
 
-/* 與 BottomTabBar 的 tab 膠囊同尺寸（4 個 tab、3 條分隔線、內距與邊框），
-   讓「＋」和記帳頁落在同一處；那邊的 tab 數量或尺寸改變時要一起調整 */
+/* 佔位：尺寸須與 BottomTabBar 的 tab 膠囊一致，「＋」才會和記帳頁同位置 */
 .tab-spacer {
   flex-shrink: 0;
   width: calc(4 * 56px + 3 * 6px + 12px);

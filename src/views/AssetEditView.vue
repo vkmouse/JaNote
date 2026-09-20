@@ -18,6 +18,7 @@
           :categories="assetStore.visibleCategories"
           :modelValue="selectedCategoryId"
           @update:modelValue="selectedCategoryId = $event as string"
+          @select="onCategorySelect"
         />
       </div>
 
@@ -45,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
@@ -55,6 +56,7 @@ import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";
 import { useAssetStore } from "../stores/assetStore";
 import { useUserStore } from "../stores/userStore";
+import type { Category } from "../types";
 
 const router = useRouter();
 const route = useRoute();
@@ -67,6 +69,7 @@ const showCalendar = ref(false);
 const selectedCategoryId = ref<string>("");
 const assetName = ref<string>("");
 const amount = ref<string>("");
+const previousAutoNote = ref<string | null>(null);
 
 const selectedCategoryName = computed(() =>
   selectedCategoryId.value
@@ -104,6 +107,21 @@ const canSave = computed(() => {
     !isNaN(value) &&
     value >= 0
   );
+});
+
+const onCategorySelect = (category: Category) => {
+  if (!assetName.value || assetName.value === previousAutoNote.value) {
+    assetName.value = category.name;
+    previousAutoNote.value = category.name;
+  } else {
+    previousAutoNote.value = null;
+  }
+};
+
+watch(assetName, (newVal) => {
+  if (previousAutoNote.value && newVal !== previousAutoNote.value) {
+    previousAutoNote.value = null;
+  }
 });
 
 async function save() {

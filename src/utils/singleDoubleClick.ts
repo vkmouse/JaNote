@@ -22,7 +22,7 @@ export function useSingleDoubleClick(
     }, DOUBLE_CLICK_DELAY);
   }
 
-  // 等待期間元件卸載（例如切換分頁）時取消，避免事後才觸發單擊動作
+  // 元件卸載時取消計時，避免事後才觸發 onSingle
   onBeforeUnmount(() => {
     if (timer) clearTimeout(timer);
   });
