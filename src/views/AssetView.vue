@@ -97,33 +97,7 @@
       </div>
     </div>
 
-    <!-- 新增按鈕（BottomTabBar 的分頁與新增路徑綁定記帳，故獨立實作） -->
-    <nav v-show="!drawerOpen" class="bottom-add-bar">
-      <div class="inner">
-        <div class="tab-spacer" />
-        <div class="add-capsule">
-          <button
-            class="add-btn"
-            :disabled="isViewingShared"
-            @click="router.push('/assets/new')"
-            aria-label="新增"
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </nav>
+    <AssetBottomBar />
 
     <!-- Delete Confirm Modal -->
     <ConfirmModal
@@ -140,8 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick, inject } from "vue";
-import type { Ref } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
@@ -151,6 +124,7 @@ import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
+import AssetBottomBar from "../components/AssetBottomBar.vue";
 import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
@@ -167,7 +141,6 @@ const router = useRouter();
 const route = useRoute();
 const assetStore = useAssetStore();
 const userStore = useUserStore();
-const drawerOpen = inject<Ref<boolean>>("sideDrawerOpen");
 
 const {
   selectedYear,
@@ -495,67 +468,5 @@ onMounted(async () => {
   font-weight: 700;
   flex-shrink: 0;
   color: var(--text-primary);
-}
-
-/* Add button capsule */
-.bottom-add-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: linear-gradient(to bottom, transparent 0%, var(--bg-page) 40%);
-  padding-top: 32px;
-}
-
-.inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 0 16px calc(24px + env(safe-area-inset-bottom));
-}
-
-/* 佔位：尺寸須與 BottomTabBar 的 tab 膠囊一致，「＋」才會和記帳頁同位置 */
-.tab-spacer {
-  flex-shrink: 0;
-  width: calc(4 * 56px + 3 * 6px + 12px);
-  height: calc(46px + 12px);
-}
-
-.add-capsule {
-  display: flex;
-  align-items: center;
-  background: var(--bg-page);
-  border: 2px solid var(--border-primary);
-  border-radius: 999px;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.add-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: none;
-  background: var(--janote-action, #1a1a1a);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.add-btn:active {
-  transform: scale(0.91);
-  opacity: 0.75;
-}
-
-.add-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  pointer-events: none;
 }
 </style>
