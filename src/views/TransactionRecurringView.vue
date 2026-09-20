@@ -173,7 +173,7 @@ import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import type { TransactionType, RecurringTransaction } from "../types";
 import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
-import { useSharedSwipeContext } from "../components/ListGroup.vue";
+import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 
 const router = useRouter();
 const route = useRoute();

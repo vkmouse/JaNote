@@ -178,7 +178,7 @@ import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
-import { useSharedSwipeContext } from "../components/ListGroup.vue";
+import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 
 // ── Types ──────────────────────────────────────────────────
 

@@ -40,16 +40,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { iconChevronLeft, iconChevronRight } from "../utils/icons";
-
-interface CalendarDay {
-  day: number;
-  month: number;
-  year: number;
-  isCurrentMonth: boolean;
-  date: Date;
-}
+import { useMonthGrid, type CalendarDay } from "../composables/useMonthGrid";
 
 const props = defineProps<{ open: boolean; modelValue: number }>();
 const emit = defineEmits<{
@@ -69,82 +62,13 @@ watch(
   },
 );
 
-const calendarYearMonth = computed(() => {
-  const year = calendarViewDate.value.getFullYear();
-  const month = calendarViewDate.value.getMonth() + 1;
-  return `${year} 年 ${month} 月`;
-});
-
-const calendarDays = computed<CalendarDay[]>(() => {
-  const year = calendarViewDate.value.getFullYear();
-  const month = calendarViewDate.value.getMonth();
-
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
-  let firstDayOfWeek = firstDay.getDay();
-  firstDayOfWeek = firstDayOfWeek === 0 ? 7 : firstDayOfWeek;
-
-  const days: CalendarDay[] = [];
-
-  const prevMonthLastDay = new Date(year, month, 0).getDate();
-  for (let i = firstDayOfWeek - 2; i >= 0; i--) {
-    const day = prevMonthLastDay - i;
-    const prevMonth = month - 1;
-    const prevYear = prevMonth < 0 ? year - 1 : year;
-    const actualMonth = prevMonth < 0 ? 11 : prevMonth;
-    days.push({
-      day,
-      month: actualMonth,
-      year: prevYear,
-      isCurrentMonth: false,
-      date: new Date(prevYear, actualMonth, day),
-    });
-  }
-
-  for (let day = 1; day <= lastDay.getDate(); day++) {
-    days.push({
-      day,
-      month,
-      year,
-      isCurrentMonth: true,
-      date: new Date(year, month, day),
-    });
-  }
-
-  const remainingDays = 42 - days.length;
-  for (let day = 1; day <= remainingDays; day++) {
-    const nextMonth = month + 1;
-    const nextYear = nextMonth > 11 ? year + 1 : year;
-    const actualMonth = nextMonth > 11 ? 0 : nextMonth;
-    days.push({
-      day,
-      month: actualMonth,
-      year: nextYear,
-      isCurrentMonth: false,
-      date: new Date(nextYear, actualMonth, day),
-    });
-  }
-
-  return days;
-});
+const { calendarYearMonth, calendarDays, previousMonth, nextMonth } =
+  useMonthGrid(calendarViewDate);
 
 const updateDate = (date: Date) => {
   date.setHours(0, 0, 0, 0);
   emit("update:modelValue", date.getTime());
   calendarViewDate.value = new Date(date);
-};
-
-const previousMonth = () => {
-  const newDate = new Date(calendarViewDate.value);
-  newDate.setMonth(newDate.getMonth() - 1);
-  calendarViewDate.value = newDate;
-};
-
-const nextMonth = () => {
-  const newDate = new Date(calendarViewDate.value);
-  newDate.setMonth(newDate.getMonth() + 1);
-  calendarViewDate.value = newDate;
 };
 
 const selectToday = () => {

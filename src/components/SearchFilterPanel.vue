@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import type { Category } from "../types";
-import type { TimeMode } from "../utils/searchFilters";
+import type { TimeMode } from "../composables/useSearchFilters";
 import ViewModeToggle from "./ViewModeToggle.vue";
 import CategoryGrid from "./CategoryGrid.vue";
 import MonthPicker from "./MonthPicker.vue";

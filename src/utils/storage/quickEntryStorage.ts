@@ -4,7 +4,7 @@ import type {
   QuickEntryRawText,
   QuickEntryRawTextStore,
   ExpenseDraft,
-} from "../types";
+} from "../../types";
 
 const LS_RAW_TEXT_KEY = "janote_quick_entry_raw_text";
 const LS_DRAFTS_KEY = "janote_quick_entry_drafts";

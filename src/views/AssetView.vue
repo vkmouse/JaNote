@@ -131,7 +131,7 @@ import type { DonutSlice } from "../components/DonutChart.vue";
 import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
-import { useSharedSwipeContext } from "../components/ListGroup.vue";
+import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import type { AssetRecord } from "../types";
 import { useAssetStore, startOfDay } from "../stores/assetStore";

@@ -45,7 +45,7 @@ import { inject, computed } from "vue";
 import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { iconDollarCircle, iconPieChart, iconPiggyBank, iconTag } from "../utils/icons";
-import { useSingleDoubleClick } from "../utils/singleDoubleClick";
+import { useSingleDoubleClick } from "../composables/useSingleDoubleClick";
 import { useUserStore } from "../stores/userStore";
 
 const userStore = useUserStore();

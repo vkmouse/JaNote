@@ -140,7 +140,7 @@ import BottomTabBar from "../components/BottomTabBar.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
-import { useSharedSwipeContext } from "../components/ListGroup.vue";
+import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 
 const router = useRouter();
 const route = useRoute();

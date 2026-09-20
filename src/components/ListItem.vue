@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, watch } from "vue";
-import { listGroupKey } from "./ListGroup.vue";
+import { listGroupKey } from "../composables/useSharedSwipeContext";
 import { iconTrash, iconDefault } from "../utils/icons";
 
 const props = withDefaults(

@@ -140,10 +140,11 @@ import ListItem from "../components/ListItem.vue";
 import { useUserStore } from "../stores/userStore";
 import { useAssetStore } from "../stores/assetStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
-import { useSharedSwipeContext } from "../components/ListGroup.vue";
+import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 import SearchFilterPanel from "../components/SearchFilterPanel.vue";
 import { iconFunnel, iconSearch } from "../utils/icons";
-import { useSearchFilters, highlightMatch } from "../utils/searchFilters";
+import { useSearchFilters } from "../composables/useSearchFilters";
+import { highlightMatch } from "../utils/highlightMatch";
 import { groupRecordsByDate } from "../utils/groupRecordsByDate";
 
 const router = useRouter();

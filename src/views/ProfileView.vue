@@ -4,7 +4,8 @@ import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import NavSync from "../components/NavSync.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
-import ListGroup, { useSharedSwipeContext } from "../components/ListGroup.vue";
+import ListGroup from "../components/ListGroup.vue";
+import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 import ListItem from "../components/ListItem.vue";
 import { authorizedFetch } from "../services/api";
 import { useUserStore } from "../stores/userStore";
@@ -13,7 +14,7 @@ import { useSyncStatusStore } from "../stores/syncStatusStore";
 import { useUserShareStore } from "../stores/userShareStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useAssetStore } from "../stores/assetStore";
-import { theme, setTheme } from "../utils/theme";
+import { theme, setTheme } from "../composables/useTheme";
 import type { UserShare } from "../types";
 
 const userStore = useUserStore();

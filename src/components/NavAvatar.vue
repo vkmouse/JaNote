@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/userStore";
-import { useSingleDoubleClick } from "../utils/singleDoubleClick";
+import { useSingleDoubleClick } from "../composables/useSingleDoubleClick";
 
 const userStore = useUserStore();
 const router = useRouter();

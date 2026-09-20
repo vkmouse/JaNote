@@ -4,7 +4,7 @@ import AccessGate from "./components/AccessGate.vue";
 import SideNavigation from "./components/SideNavigation.vue";
 import BottomNavigation from "./components/BottomNavigation.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
-import { useServiceWorkerUpdate } from "./utils/serviceWorkerUpdate";
+import { useServiceWorkerUpdate } from "./composables/useServiceWorkerUpdate";
 import { useUserStore } from "./stores/userStore";
 import { useSyncStatusStore } from "./stores/syncStatusStore";
 

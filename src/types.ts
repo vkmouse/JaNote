@@ -258,23 +258,6 @@ export interface QuickEntryRawText {
 export type QuickEntryRawTextStore = Record<string, QuickEntryRawText>;
 export type QuickEntryDraftsStore = Record<string, QuickEntryDraft[]>;
 
-export type StoreName =
-  | "categories"
-  | "transactions"
-  | "sync_queue"
-  | "sync_meta"
-  | "user"
-  | "user_shares"
-  | "budgets"
-  | "recurring_transactions"
-  | "recurring_budgets"
-  | "assets";
-export type StoreMode = "readonly" | "readwrite";
-export type StoreCallback<T = any> = (
-  store: IDBObjectStore,
-  tx: IDBTransaction,
-) => T | IDBRequest<any>;
-
 export interface AssetRecord {
   id: string;
   user_id: string;
