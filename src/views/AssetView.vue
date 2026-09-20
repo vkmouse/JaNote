@@ -77,9 +77,11 @@
     <!-- 新增按鈕（BottomTabBar 的分頁與新增路徑綁定記帳，故獨立實作） -->
     <nav v-show="!drawerOpen" class="bottom-add-bar">
       <div class="inner">
+        <div class="tab-spacer" />
         <div class="add-capsule">
           <button
             class="add-btn"
+            :disabled="isViewingShared"
             @click="router.push('/assets/new')"
             aria-label="新增"
           >
@@ -395,7 +397,16 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+/* 與 BottomTabBar 的 tab 膠囊同尺寸（4 個 tab、3 條分隔線、內距與邊框），
+   讓「＋」和記帳頁落在同一處；那邊的 tab 數量或尺寸改變時要一起調整 */
+.tab-spacer {
+  flex-shrink: 0;
+  width: calc(4 * 56px + 3 * 6px + 12px);
+  height: calc(46px + 12px);
 }
 
 .add-capsule {
@@ -426,5 +437,11 @@ onMounted(async () => {
 .add-btn:active {
   transform: scale(0.91);
   opacity: 0.75;
+}
+
+.add-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 </style>

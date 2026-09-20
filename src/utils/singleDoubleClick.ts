@@ -1,6 +1,6 @@
 import { onBeforeUnmount } from "vue";
 
-const DOUBLE_CLICK_DELAY = 250;
+const DOUBLE_CLICK_DELAY = 200;
 
 export function useSingleDoubleClick(
   onSingle: () => void,
