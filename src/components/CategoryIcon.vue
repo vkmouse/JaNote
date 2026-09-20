@@ -31,11 +31,11 @@ export const categoryColorMap: Record<string, string> = {
   利息: "#D4B8E0",
   分潤: "#A8E6CF",
   // 資產
-  國內證券: "#FF95C4",
-  海外證券: "#2BC3FF",
-  基金: "#B3BC69",
-  約當現金: "#BEBE8E",
-  信託: "#FEB3FC",
+  國內證券: "#45B7D1",
+  海外證券: "#F7DC6F",
+  基金: "#F1948A",
+  約當現金: "#82E0AA",
+  信託: "#BB8FCE",
 };
 
 export function getCategoryColor(categoryName: string): string {
