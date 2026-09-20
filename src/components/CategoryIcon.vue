@@ -31,11 +31,11 @@ export const categoryColorMap: Record<string, string> = {
   利息: "#D4B8E0",
   分潤: "#A8E6CF",
   // 資產
-  國內證券: "#45B7D1",
-  海外證券: "#F7DC6F",
-  基金: "#F1948A",
-  約當現金: "#82E0AA",
-  信託: "#BB8FCE",
+  國內證券: "#FF95C4",
+  海外證券: "#2BC3FF",
+  基金: "#B3BC69",
+  約當現金: "#BEBE8E",
+  信託: "#FEB3FC",
 };
 
 export function getCategoryColor(categoryName: string): string {
@@ -75,6 +75,11 @@ import {
   iconShield,
   iconDumbbell,
   iconSalad,
+  iconCandlestick,
+  iconGlobeTrend,
+  iconLayers,
+  iconCoins,
+  iconBank,
 } from "../utils/icons";
 
 const props = defineProps<{
@@ -112,11 +117,11 @@ const categoryIconMap: Record<string, string> = {
   股息: iconChartLineUp,
   利息: iconChartNoAxesColumnIncreasing,
   分潤: iconShareProfit,
-  國內證券: iconChartLineUp,
-  海外證券: iconPlane,
-  基金: iconPiggyBank,
-  約當現金: iconCoin,
-  信託: iconShield,
+  國內證券: iconCandlestick,
+  海外證券: iconGlobeTrend,
+  基金: iconLayers,
+  約當現金: iconCoins,
+  信託: iconBank,
 };
 
 const iconSvg = computed(

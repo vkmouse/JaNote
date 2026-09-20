@@ -43,6 +43,11 @@ import iconUtensils from "../assets/icons/new/icon-utensils.svg?raw";
 import iconWine from "../assets/icons/new/icon-wine.svg?raw";
 import iconFunnel from "../assets/icons/new/icon-funnel.svg?raw";
 import iconShareProfit from "../assets/icons/new/icon-share-profit.svg?raw";
+import iconCandlestick from "../assets/icons/new/icon-candlestick.svg?raw";
+import iconGlobeTrend from "../assets/icons/new/icon-globe-trend.svg?raw";
+import iconLayers from "../assets/icons/new/icon-layers.svg?raw";
+import iconCoins from "../assets/icons/new/icon-coins.svg?raw";
+import iconBank from "../assets/icons/new/icon-bank.svg?raw";
 
 export {
   iconDefault,
@@ -87,4 +92,9 @@ export {
   iconShield,
   iconDumbbell,
   iconSalad,
+  iconCandlestick,
+  iconGlobeTrend,
+  iconLayers,
+  iconCoins,
+  iconBank,
 };
