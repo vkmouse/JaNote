@@ -160,6 +160,7 @@ import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
+import { useDeleteConfirm } from "../composables/useDeleteConfirm";
 import SearchFilterPanel from "../components/SearchFilterPanel.vue";
 import { iconFunnel, iconSearch } from "../utils/icons";
 import { useSearchFilters } from "../composables/useSearchFilters";
@@ -204,8 +205,15 @@ const isViewingShared = computed(() => userStore.isViewingShared);
 
 // ── Delete state ──────────────────────────────────────────────────────────────
 
-const showDeleteConfirm = ref(false);
-const deletingTransactionId = ref<string | null>(null);
+const {
+  showDeleteConfirm,
+  requestDelete: onSwipeDelete,
+  confirmDelete,
+  cancelDelete,
+} = useDeleteConfirm<string>(async (id) => {
+  if (isViewingShared.value) return;
+  await transactionStore.deleteTransaction(id);
+});
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 
@@ -217,24 +225,6 @@ const clearSearch = () => {
 const editTransaction = (id: string) => {
   if (isViewingShared.value) return;
   router.push(`/transaction/${id}/edit`);
-};
-
-const onSwipeDelete = (id: string) => {
-  deletingTransactionId.value = id;
-  showDeleteConfirm.value = true;
-};
-
-const confirmDelete = async () => {
-  showDeleteConfirm.value = false;
-  const id = deletingTransactionId.value;
-  deletingTransactionId.value = null;
-  if (!id || isViewingShared.value) return;
-  await transactionStore.deleteTransaction(id);
-};
-
-const cancelDelete = () => {
-  showDeleteConfirm.value = false;
-  deletingTransactionId.value = null;
 };
 
 const getCategoryName = (categoryId: string): string => {

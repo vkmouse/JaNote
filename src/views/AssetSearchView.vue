@@ -141,6 +141,7 @@ import { useUserStore } from "../stores/userStore";
 import { useAssetStore } from "../stores/assetStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
+import { useDeleteConfirm } from "../composables/useDeleteConfirm";
 import SearchFilterPanel from "../components/SearchFilterPanel.vue";
 import { iconFunnel, iconSearch } from "../utils/icons";
 import { useSearchFilters } from "../composables/useSearchFilters";
@@ -172,8 +173,6 @@ const {
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const showFilterModal = ref(false);
-const showDeleteConfirm = ref(false);
-const deletingRecordId = ref<string | null>(null);
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 
@@ -203,23 +202,15 @@ const editRecord = (id: string) => {
   router.push(`/assets/${id}/edit`);
 };
 
-const onSwipeDelete = (id: string) => {
-  deletingRecordId.value = id;
-  showDeleteConfirm.value = true;
-};
-
-const confirmDelete = async () => {
-  showDeleteConfirm.value = false;
-  const id = deletingRecordId.value;
-  deletingRecordId.value = null;
-  if (!id || isViewingShared.value) return;
+const {
+  showDeleteConfirm,
+  requestDelete: onSwipeDelete,
+  confirmDelete,
+  cancelDelete,
+} = useDeleteConfirm<string>(async (id) => {
+  if (isViewingShared.value) return;
   await assetStore.deleteRecord(id);
-};
-
-const cancelDelete = () => {
-  showDeleteConfirm.value = false;
-  deletingRecordId.value = null;
-};
+});
 
 onMounted(async () => {
   await userStore.loadUser();

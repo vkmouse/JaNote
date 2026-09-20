@@ -174,6 +174,7 @@ import ListItem from "../components/ListItem.vue";
 import type { TransactionType, RecurringTransaction } from "../types";
 import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
+import { useDeleteConfirm } from "../composables/useDeleteConfirm";
 
 const router = useRouter();
 const route = useRoute();
@@ -188,9 +189,6 @@ const isViewingShared = computed(() => userStore.isViewingShared);
 // ── State ──────────────────────────────────────────────────
 const viewMode = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
 const filterType = ref<TransactionType>("EXPENSE");
-const showDeleteConfirm = ref(false);
-const deletingItemId = ref<string | null>(null);
-const deletingItemType = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
 
 // ── Computed ───────────────────────────────────────────────
 const filteredRecurringTransactions = computed(() =>
@@ -232,28 +230,27 @@ function goToSearchByRecurring(item: RecurringTransaction): void {
   router.push({ path: "/transactions/search", query });
 }
 
-function onItemSwipeDelete(type: "TRANSACTION" | "BUDGET", id: string): void {
-  deletingItemType.value = type;
-  deletingItemId.value = id;
-  showDeleteConfirm.value = true;
+interface DeletingItem {
+  type: "TRANSACTION" | "BUDGET";
+  id: string;
 }
 
-async function confirmItemDelete(): Promise<void> {
-  showDeleteConfirm.value = false;
-  const id = deletingItemId.value;
-  const type = deletingItemType.value;
-  deletingItemId.value = null;
-  if (!id || isViewingShared.value) return;
+const {
+  showDeleteConfirm,
+  requestDelete: requestItemDelete,
+  confirmDelete: confirmItemDelete,
+  cancelDelete: cancelItemDelete,
+} = useDeleteConfirm<DeletingItem>(async ({ type, id }) => {
+  if (isViewingShared.value) return;
   if (type === "TRANSACTION") {
     await recurringStore.deleteRecurringTransaction(id);
   } else {
     await recurringStore.deleteRecurringBudget(id);
   }
-}
+});
 
-function cancelItemDelete(): void {
-  showDeleteConfirm.value = false;
-  deletingItemId.value = null;
+function onItemSwipeDelete(type: "TRANSACTION" | "BUDGET", id: string): void {
+  requestItemDelete({ type, id });
 }
 
 // ── Lifecycle ──────────────────────────────────────────────

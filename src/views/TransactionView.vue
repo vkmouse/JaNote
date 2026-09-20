@@ -141,37 +141,24 @@ import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
+import { useMonthNavigation } from "../composables/useMonthNavigation";
+import { useDeleteConfirm } from "../composables/useDeleteConfirm";
 
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 const transactionStore = useTransactionStore();
-const selectedYear = ref(new Date().getFullYear());
-const selectedMonth = ref(new Date().getMonth() + 1);
-const showMonthPicker = ref(false);
 
-function prevMonth() {
-  if (selectedMonth.value === 1) {
-    selectedMonth.value = 12;
-    selectedYear.value--;
-  } else {
-    selectedMonth.value--;
-  }
-}
-
-function nextMonth() {
-  if (selectedMonth.value === 12) {
-    selectedMonth.value = 1;
-    selectedYear.value++;
-  } else {
-    selectedMonth.value++;
-  }
-}
+const {
+  selectedYear,
+  selectedMonth,
+  showMonthPicker,
+  currentMonthDisplay,
+  prevMonth,
+  nextMonth,
+} = useMonthNavigation();
 
 useSharedSwipeContext();
-
-const showDeleteConfirm = ref(false);
-const deletingTransactionId = ref<string | null>(null);
 
 interface DailyGroup {
   date: string;
@@ -179,10 +166,6 @@ interface DailyGroup {
   total: number;
   transactions: Transaction[];
 }
-
-const currentMonthDisplay = computed(() => {
-  return `${selectedYear.value}\u5e74${selectedMonth.value}\u6708`;
-});
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 
@@ -310,23 +293,15 @@ const goToSearch = (transaction: Transaction) => {
   router.push({ path: "/transactions/search", query });
 };
 
-const onSwipeDelete = (id: string) => {
-  deletingTransactionId.value = id;
-  showDeleteConfirm.value = true;
-};
-
-const confirmDelete = async () => {
-  showDeleteConfirm.value = false;
-  const id = deletingTransactionId.value;
-  deletingTransactionId.value = null;
-  if (!id || isViewingShared.value) return;
+const {
+  showDeleteConfirm,
+  requestDelete: onSwipeDelete,
+  confirmDelete,
+  cancelDelete,
+} = useDeleteConfirm<string>(async (id) => {
+  if (isViewingShared.value) return;
   await transactionStore.deleteTransaction(id);
-};
-
-const cancelDelete = () => {
-  showDeleteConfirm.value = false;
-  deletingTransactionId.value = null;
-};
+});
 
 const isInitialized = ref(false);
 

@@ -132,6 +132,8 @@ import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
+import { useMonthNavigation } from "../composables/useMonthNavigation";
+import { useDeleteConfirm } from "../composables/useDeleteConfirm";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import type { AssetRecord } from "../types";
 import { useAssetStore, startOfDay } from "../stores/assetStore";
@@ -144,36 +146,16 @@ const assetStore = useAssetStore();
 const userStore = useUserStore();
 const drawerOpen = inject<Ref<boolean>>("sideDrawerOpen");
 
-const selectedYear = ref(new Date().getFullYear());
-const selectedMonth = ref(new Date().getMonth() + 1);
-const showMonthPicker = ref(false);
-
-function prevMonth() {
-  if (selectedMonth.value === 1) {
-    selectedMonth.value = 12;
-    selectedYear.value--;
-  } else {
-    selectedMonth.value--;
-  }
-}
-
-function nextMonth() {
-  if (selectedMonth.value === 12) {
-    selectedMonth.value = 1;
-    selectedYear.value++;
-  } else {
-    selectedMonth.value++;
-  }
-}
+const {
+  selectedYear,
+  selectedMonth,
+  showMonthPicker,
+  currentMonthDisplay,
+  prevMonth,
+  nextMonth,
+} = useMonthNavigation();
 
 useSharedSwipeContext();
-
-const showDeleteConfirm = ref(false);
-const deletingRecordId = ref<string | null>(null);
-
-const currentMonthDisplay = computed(
-  () => `${selectedYear.value}\u5e74${selectedMonth.value}\u6708`,
-);
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 
@@ -236,23 +218,15 @@ const goToSearch = (record: AssetRecord) => {
   });
 };
 
-const onSwipeDelete = (id: string) => {
-  deletingRecordId.value = id;
-  showDeleteConfirm.value = true;
-};
-
-const confirmDelete = async () => {
-  showDeleteConfirm.value = false;
-  const id = deletingRecordId.value;
-  deletingRecordId.value = null;
-  if (!id || isViewingShared.value) return;
+const {
+  showDeleteConfirm,
+  requestDelete: onSwipeDelete,
+  confirmDelete,
+  cancelDelete,
+} = useDeleteConfirm<string>(async (id) => {
+  if (isViewingShared.value) return;
   await assetStore.deleteRecord(id);
-};
-
-const cancelDelete = () => {
-  showDeleteConfirm.value = false;
-  deletingRecordId.value = null;
-};
+});
 
 // 年月同步到 query，從新增頁返回時能維持原本檢視的月份
 const isInitialized = ref(false);

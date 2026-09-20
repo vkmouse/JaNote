@@ -179,10 +179,9 @@ import type { DonutSlice } from "../components/DonutChart.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
-
-// ── Types ──────────────────────────────────────────────────
-
-type ViewMode = "monthly" | "yearly" | "custom";
+import { usePeriodSelector } from "../composables/usePeriodSelector";
+import type { PeriodViewMode } from "../composables/usePeriodSelector";
+import { useDeleteConfirm } from "../composables/useDeleteConfirm";
 
 // ── Stores ─────────────────────────────────────────────────
 
@@ -198,66 +197,22 @@ const isViewingShared = computed(() => userStore.isViewingShared);
 
 // ── State ──────────────────────────────────────────────────
 
-const viewMode = ref<ViewMode>("monthly");
-const selectedYear = ref(new Date().getFullYear());
-const selectedMonth = ref(new Date().getMonth() + 1);
-const showMonthPicker = ref(false);
-const showYearPicker = ref(false);
-const showDateRangePicker = ref(false);
-const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
-const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
+const {
+  viewMode,
+  selectedYear,
+  selectedMonth,
+  showMonthPicker,
+  showYearPicker,
+  showDateRangePicker,
+  customStartDate,
+  customEndDate,
+  currentMonthDisplay,
+  openPicker,
+  prevPeriod,
+  nextPeriod,
+  buildTimeQuery,
+} = usePeriodSelector();
 const transactionType = ref<TransactionType>("EXPENSE");
-
-// ── Delete mode ────────────────────────────────────────────
-
-const showDeleteConfirm = ref(false);
-const deletingBudgetId = ref<string | null>(null);
-
-// ── Date display & picker ──────────────────────────────────
-
-const currentMonthDisplay = computed(() => {
-  if (viewMode.value === "monthly") {
-    return `${selectedYear.value}年${selectedMonth.value}月`;
-  } else if (viewMode.value === "yearly") {
-    return `${selectedYear.value}年`;
-  } else {
-    const fmt = (d: Date) =>
-      `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-    return `${fmt(new Date(customStartDate.value))}~${fmt(new Date(customEndDate.value))}`;
-  }
-});
-
-function openPicker(): void {
-  if (viewMode.value === "monthly") showMonthPicker.value = true;
-  else if (viewMode.value === "yearly") showYearPicker.value = true;
-  else showDateRangePicker.value = true;
-}
-
-function prevPeriod(): void {
-  if (viewMode.value === "monthly") {
-    if (selectedMonth.value === 1) {
-      selectedMonth.value = 12;
-      selectedYear.value--;
-    } else {
-      selectedMonth.value--;
-    }
-  } else if (viewMode.value === "yearly") {
-    selectedYear.value--;
-  }
-}
-
-function nextPeriod(): void {
-  if (viewMode.value === "monthly") {
-    if (selectedMonth.value === 12) {
-      selectedMonth.value = 1;
-      selectedYear.value++;
-    } else {
-      selectedMonth.value++;
-    }
-  } else if (viewMode.value === "yearly") {
-    selectedYear.value++;
-  }
-}
 
 // ── Month key helpers ─────────────────────────────────────
 
@@ -432,20 +387,6 @@ const summaryValueClass = computed(() => {
 
 // ── Navigation to search view ─────────────────────────────
 
-function buildTimeQuery(): Record<string, string> {
-  const q: Record<string, string> = {};
-  q.mode = viewMode.value;
-  if (viewMode.value === "monthly" || viewMode.value === "yearly") {
-    q.year = String(selectedYear.value);
-    if (viewMode.value === "monthly") q.month = String(selectedMonth.value);
-  }
-  if (viewMode.value === "custom") {
-    q.start = String(customStartDate.value);
-    q.end = String(customEndDate.value);
-  }
-  return q;
-}
-
 function goToSearchByBudget(budget: Budget): void {
   const catIds = budget.category_ids
     .split(",")
@@ -464,22 +405,17 @@ function openEditModal(budget: Budget): void {
   router.push({ name: "budget-edit", params: { id: budget.id } });
 }
 
-function onBudgetSwipeDelete(budget: Budget): void {
-  deletingBudgetId.value = budget.id;
-  showDeleteConfirm.value = true;
-}
-
-async function confirmBudgetDelete(): Promise<void> {
-  showDeleteConfirm.value = false;
-  const id = deletingBudgetId.value;
-  deletingBudgetId.value = null;
-  if (!id) return;
+const {
+  showDeleteConfirm,
+  requestDelete: requestBudgetDelete,
+  confirmDelete: confirmBudgetDelete,
+  cancelDelete: cancelBudgetDelete,
+} = useDeleteConfirm<string>(async (id) => {
   await budgetStore.deleteBudget(id);
-}
+});
 
-function cancelBudgetDelete(): void {
-  showDeleteConfirm.value = false;
-  deletingBudgetId.value = null;
+function onBudgetSwipeDelete(budget: Budget): void {
+  requestBudgetDelete(budget.id);
 }
 
 // ── Lifecycle ──────────────────────────────────────────────
@@ -510,7 +446,7 @@ onMounted(async () => {
   await userStore.loadUser();
   const q = route.query;
   if (q.type === "EXPENSE" || q.type === "INCOME") transactionType.value = q.type as TransactionType;
-  if (q.mode === "monthly" || q.mode === "yearly" || q.mode === "custom") viewMode.value = q.mode as ViewMode;
+  if (q.mode === "monthly" || q.mode === "yearly" || q.mode === "custom") viewMode.value = q.mode as PeriodViewMode;
   if (typeof q.year === "string") {
     const y = parseInt(q.year);
     if (!isNaN(y)) selectedYear.value = y;

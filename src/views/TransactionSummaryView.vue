@@ -20,8 +20,8 @@ import { useTransactionStore } from "../stores/transactionStore";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
-
-type ViewMode = "monthly" | "yearly" | "custom";
+import { usePeriodSelector } from "../composables/usePeriodSelector";
+import type { PeriodViewMode } from "../composables/usePeriodSelector";
 
 interface CategorySummary {
   category_id: string;
@@ -33,66 +33,23 @@ const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 const transactionStore = useTransactionStore();
-const viewMode = ref<ViewMode>("monthly");
-const selectedYear = ref(new Date().getFullYear());
-const selectedMonth = ref(new Date().getMonth() + 1);
-const showMonthPicker = ref(false);
-const showYearPicker = ref(false);
-const showDateRangePicker = ref(false);
-const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
-const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
+
+const {
+  viewMode,
+  selectedYear,
+  selectedMonth,
+  showMonthPicker,
+  showYearPicker,
+  showDateRangePicker,
+  customStartDate,
+  customEndDate,
+  currentMonthDisplay,
+  openPicker,
+  prevPeriod,
+  nextPeriod,
+  buildTimeQuery,
+} = usePeriodSelector();
 const transactionType = ref<TransactionType>("EXPENSE");
-
-const currentMonthDisplay = computed(() => {
-  if (viewMode.value === "monthly") {
-    return `${selectedYear.value}年${selectedMonth.value}月`;
-  } else if (viewMode.value === "yearly") {
-    return `${selectedYear.value}年`;
-  } else {
-    // custom
-    const start = new Date(customStartDate.value);
-    const end = new Date(customEndDate.value);
-    const startStr = `${start.getFullYear()}/${String(start.getMonth() + 1).padStart(2, "0")}/${String(start.getDate()).padStart(2, "0")}`;
-    const endStr = `${end.getFullYear()}/${String(end.getMonth() + 1).padStart(2, "0")}/${String(end.getDate()).padStart(2, "0")}`;
-    return `${startStr}~${endStr}`;
-  }
-});
-
-const openPicker = () => {
-  if (viewMode.value === "monthly") {
-    showMonthPicker.value = true;
-  } else if (viewMode.value === "yearly") {
-    showYearPicker.value = true;
-  } else {
-    showDateRangePicker.value = true;
-  }
-};
-
-function prevPeriod(): void {
-  if (viewMode.value === "monthly") {
-    if (selectedMonth.value === 1) {
-      selectedMonth.value = 12;
-      selectedYear.value--;
-    } else {
-      selectedMonth.value--;
-    }
-  } else if (viewMode.value === "yearly") {
-    selectedYear.value--;
-  }
-}
-
-function nextPeriod(): void {
-  if (viewMode.value === "monthly") {
-    if (selectedMonth.value === 12) {
-      selectedMonth.value = 1;
-      selectedYear.value++;
-    } else {
-      selectedMonth.value++;
-    }
-  } else if (viewMode.value === "yearly") {
-    selectedYear.value++;
-  }
-}
 
 // 從 Pinia Store 取得使用者狀態
 
@@ -176,20 +133,6 @@ const centerBalance = computed(() => {
   return `$${totalAmount.value.toLocaleString()}`;
 });
 
-function buildTimeQuery(): Record<string, string> {
-  const q: Record<string, string> = {};
-  q.mode = viewMode.value;
-  if (viewMode.value === "monthly" || viewMode.value === "yearly") {
-    q.year = String(selectedYear.value);
-    if (viewMode.value === "monthly") q.month = String(selectedMonth.value);
-  }
-  if (viewMode.value === "custom") {
-    q.start = String(customStartDate.value);
-    q.end = String(customEndDate.value);
-  }
-  return q;
-}
-
 function goToSearchByCategory(summary: CategorySummary): void {
   router.push({
     path: "/transactions/search",
@@ -238,7 +181,7 @@ onMounted(async () => {
   await userStore.loadUser();
   const q = route.query;
   if (q.type === "EXPENSE" || q.type === "INCOME") transactionType.value = q.type as TransactionType;
-  if (q.mode === "monthly" || q.mode === "yearly" || q.mode === "custom") viewMode.value = q.mode as ViewMode;
+  if (q.mode === "monthly" || q.mode === "yearly" || q.mode === "custom") viewMode.value = q.mode as PeriodViewMode;
   if (typeof q.year === "string") {
     const y = parseInt(q.year);
     if (!isNaN(y)) selectedYear.value = y;
