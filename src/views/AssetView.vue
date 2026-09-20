@@ -26,9 +26,13 @@
         <div class="chart-section">
           <DonutChart
             :swipeable="true"
+            :selectable="true"
+            :active-label="activeItem?.name ?? null"
             :center-label="activeItem ? activeItem.name : '總資產'"
             :center-balance="`$${(activeItem ? activeItem.value : totalAsset).toLocaleString()}`"
+            :center-sub="activeItem ? formatPercent(activeItem.percent) : undefined"
             :slices="chartSlices"
+            @slice-click="toggleCategory"
             @swipe-prev="prevMonth"
             @swipe-next="nextMonth"
           />
@@ -36,17 +40,18 @@
             <li v-for="item in allocation" :key="item.id">
               <button
                 type="button"
-                class="legend-pill"
+                class="legend-chip"
                 :class="{
                   active: activeItem?.id === item.id,
                   dimmed: activeItem && activeItem.id !== item.id,
                 }"
-                :style="{ backgroundColor: item.color }"
                 :aria-label="`${item.name} ${formatPercent(item.percent)}`"
                 :aria-pressed="activeItem?.id === item.id"
+                :title="item.name"
                 @click="toggleCategory(item.name)"
               >
-                {{ formatPercent(item.percent) }}
+                <span class="legend-dot" :style="{ backgroundColor: item.color }" />
+                <span class="legend-percent">{{ formatPercent(item.percent) }}</span>
               </button>
             </li>
           </ul>
@@ -230,28 +235,20 @@ const allocation = computed<AllocationItem[]>(() => {
     .sort((a, b) => b.value - a.value);
 });
 
+const chartSlices = computed<DonutSlice[]>(() =>
+  allocation.value.map((item) => ({
+    sliceLabel: item.name,
+    sliceValue: item.value,
+    sliceColor: item.color,
+  })),
+);
+
 const selectedName = ref<string | null>(null);
 
 // 換月後若所選分類已無餘額，會自然回到「總資產」，不必額外重設
 const activeItem = computed(
   () =>
     allocation.value.find((item) => item.name === selectedName.value) ?? null,
-);
-
-// 選取分類時把其他色塊變淡；DonutChart 只吃顏色，所以在這層調整顏色的透明度
-const DIMMED_ALPHA = "40";
-const dimColor = (color: string) =>
-  /^#[0-9a-f]{6}$/i.test(color) ? `${color}${DIMMED_ALPHA}` : color;
-
-const chartSlices = computed<DonutSlice[]>(() =>
-  allocation.value.map((item) => ({
-    sliceLabel: item.name,
-    sliceValue: item.value,
-    sliceColor:
-      activeItem.value && activeItem.value.id !== item.id
-        ? dimColor(item.color)
-        : item.color,
-  })),
 );
 
 const toggleCategory = (name: string) => {
@@ -351,66 +348,80 @@ onMounted(async () => {
   padding-bottom: 16px;
 }
 
-/* 分類圖例：只有顏色與百分比，一排放得下，把版面留給下方的 Record */
+/* 分類圖例：只有色點與百分比。不換行、每顆等寬並隨螢幕縮小，手機上固定同一排 */
 .legend {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   margin: 0;
-  padding: 0 16px;
+  padding: 0 12px;
   list-style: none;
 }
 
-/* 底色是分類色（粉彩），文字用固定深色，深色主題下也不會看不清 */
-.legend-pill {
-  min-width: 56px;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--chart-stroke);
+.legend > li {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 76px;
+}
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  border: 1.5px solid var(--border);
   border-radius: 999px;
-  color: var(--text-on-expense);
+  background: var(--bg-page);
+  color: var(--text-primary);
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  white-space: nowrap;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     opacity 0.2s ease,
-    box-shadow 0.2s ease;
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.legend-pill.active {
-  box-shadow:
-    0 0 0 2px var(--bg-page),
-    0 0 0 4px var(--text-primary);
-}
-
-.legend-pill.dimmed {
-  opacity: 0.35;
-}
-
-.legend-pill:focus-visible {
+.legend-chip:focus-visible {
   outline: 2px solid var(--text-primary);
   outline-offset: 2px;
 }
 
-@media (max-width: 340px) {
-  .legend {
-    gap: 4px;
-    padding: 0 12px;
-  }
+.legend-chip.active {
+  border-color: var(--text-primary);
+  background: var(--bg-hover);
+}
 
-  .legend-pill {
-    min-width: 0;
-    padding: 0 6px;
-    font-size: 12px;
-  }
+.legend-chip.dimmed {
+  opacity: 0.45;
+}
+
+.legend-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--chart-stroke);
+  border-radius: 50%;
+}
+
+.legend-percent {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.legend-chip.active .legend-percent {
+  color: var(--text-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .legend-pill {
+  .legend-chip {
     transition: none;
   }
 }
