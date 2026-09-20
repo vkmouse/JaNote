@@ -6,7 +6,6 @@
     </TopNavigation>
 
     <div class="page-content page">
-      <!-- Search bar + filter panel -->
       <div class="search-section">
         <div class="search-bar">
           <span class="search-icon" v-html="iconSearch" />
@@ -15,7 +14,7 @@
             v-model="searchQuery"
             type="text"
             class="search-input"
-            placeholder="搜尋交易備註"
+            placeholder="搜尋資產名稱"
             autocomplete="off"
           />
           <button
@@ -47,70 +46,54 @@
           </button>
         </div>
 
-        <!-- Active filter summary -->
         <div v-if="hasTimeOrCategoryFilter" class="filter-summary">
           {{ activeSummary }}
         </div>
       </div>
 
-      <!-- Search Results -->
       <div class="search-results">
         <div v-if="!hasAnyFilter" class="empty-state">
           <p>輸入關鍵字或設定篩選條件</p>
         </div>
 
         <div v-else-if="groupedResults.length === 0" class="empty-state">
-          <p>找不到符合條件的交易</p>
+          <p>找不到符合條件的資產紀錄</p>
         </div>
 
         <div v-else class="daily-groups">
-          <ListGroup
-            v-for="group in groupedResults"
-            :key="group.date"
-          >
+          <ListGroup v-for="group in groupedResults" :key="group.date">
             <template #header-left>
               <span class="date-title">{{ group.dateDisplay }}</span>
             </template>
-            <template #header-right>
-              <span
-                class="daily-total"
-                :class="group.total >= 0 ? 'income' : 'expense'"
-              >
-                ${{
-                  (group.total >= 0
-                    ? group.total
-                    : Math.abs(group.total)
-                  ).toLocaleString()
-                }}
-              </span>
-            </template>
             <ListItem
-              v-for="transaction in group.transactions"
-              :key="transaction.id"
+              v-for="record in group.records"
+              :key="record.id"
               :swipeable="!isViewingShared"
-              @delete="onSwipeDelete(transaction.id)"
-              @edit="editTransaction(transaction.id)"
+              @delete="onSwipeDelete(record.id)"
+              @edit="editRecord(record.id)"
             >
-              <div class="transaction-item">
+              <div class="asset-item">
                 <div class="item-left">
                   <CategoryIcon
-                    :category-name="getCategoryName(transaction.category_id)"
-                    color-mode="type"
-                    :entry-type="transaction.type"
+                    :category-name="categoryName(record.category_id)"
+                    color-mode="category"
                   />
-                  <span class="category-name">
-                    <span
-                      v-for="(part, i) in highlightMatch(transaction.note, searchQuery)"
-                      :key="i"
-                      :class="{ highlight: part.match }"
-                      >{{ part.text }}</span
-                    >
-                    <span v-if="!transaction.note" class="no-note">無備註</span>
-                  </span>
+                  <div class="item-text">
+                    <span class="asset-name">
+                      <span
+                        v-for="(part, i) in highlightMatch(record.name, searchQuery)"
+                        :key="i"
+                        :class="{ highlight: part.match }"
+                        >{{ part.text }}</span
+                      >
+                    </span>
+                    <span class="asset-category">{{
+                      categoryName(record.category_id)
+                    }}</span>
+                  </div>
                 </div>
-                <div :class="['item-amount', transaction.type.toLowerCase()]">
-                  ${{ transaction.type === "EXPENSE" ? "-" : ""
-                  }}{{ transaction.amount.toLocaleString() }}
+                <div class="item-amount">
+                  ${{ record.amount.toLocaleString() }}
                 </div>
               </div>
             </ListItem>
@@ -119,7 +102,6 @@
       </div>
     </div>
 
-    <!-- Filter Modal -->
     <SearchFilterPanel
       :show="showFilterModal"
       v-model:timeMode="timeMode"
@@ -128,14 +110,14 @@
       v-model:startDate="customStartDate"
       v-model:endDate="customEndDate"
       v-model:categoryIds="selectedCategoryIds"
-      :categories="transactionStore.visibleCategories"
+      :categories="assetStore.visibleCategories"
       @close="showFilterModal = false"
     />
 
     <ConfirmModal
       :show="showDeleteConfirm"
-      title="刪除交易"
-      message="確定要刪除這筆交易嗎？此操作無法復原。"
+      title="刪除資產紀錄"
+      message="確定要刪除這筆資產紀錄嗎？此操作無法復原。"
       confirm-text="刪除"
       cancel-text="取消"
       variant="danger"
@@ -152,32 +134,23 @@ import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import NavSync from "../components/NavSync.vue";
 import NavAvatar from "../components/NavAvatar.vue";
-import type { Transaction } from "../types";
 import CategoryIcon from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import { useUserStore } from "../stores/userStore";
-import { useTransactionStore } from "../stores/transactionStore";
+import { useAssetStore } from "../stores/assetStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import { useSharedSwipeContext } from "../components/ListGroup.vue";
 import SearchFilterPanel from "../components/SearchFilterPanel.vue";
 import { iconFunnel, iconSearch } from "../utils/icons";
 import { useSearchFilters, highlightMatch } from "../utils/searchFilters";
-
-interface DailyGroup {
-  date: string;
-  dateDisplay: string;
-  total: number;
-  transactions: Transaction[];
-}
+import { groupRecordsByDate } from "../utils/groupRecordsByDate";
 
 const router = useRouter();
 const userStore = useUserStore();
-const transactionStore = useTransactionStore();
+const assetStore = useAssetStore();
 
 useSharedSwipeContext();
-
-// ── Search & filter state ─────────────────────────────────────────────────────
 
 const {
   searchQuery,
@@ -198,111 +171,60 @@ const {
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const showFilterModal = ref(false);
+const showDeleteConfirm = ref(false);
+const deletingRecordId = ref<string | null>(null);
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 
-// ── Delete state ──────────────────────────────────────────────────────────────
+const categoryName = (categoryId: string) =>
+  assetStore.getCategoryName(categoryId);
 
-const showDeleteConfirm = ref(false);
-const deletingTransactionId = ref<string | null>(null);
+const searchResults = computed(() => {
+  if (!hasAnyFilter.value) return [];
 
-// ── Actions ───────────────────────────────────────────────────────────────────
+  return assetStore.visibleRecords.filter(
+    (r) =>
+      matchesTime(new Date(r.date)) &&
+      matchesCategory(r.category_id) &&
+      matchesText(r.name),
+  );
+});
+
+const groupedResults = computed(() => groupRecordsByDate(searchResults.value));
 
 const clearSearch = () => {
   searchQuery.value = "";
   nextTick(() => inputRef.value?.focus());
 };
 
-const editTransaction = (id: string) => {
+const editRecord = (id: string) => {
   if (isViewingShared.value) return;
-  router.push(`/transaction/${id}/edit`);
+  router.push(`/assets/${id}/edit`);
 };
 
 const onSwipeDelete = (id: string) => {
-  deletingTransactionId.value = id;
+  deletingRecordId.value = id;
   showDeleteConfirm.value = true;
 };
 
 const confirmDelete = async () => {
   showDeleteConfirm.value = false;
-  const id = deletingTransactionId.value;
-  deletingTransactionId.value = null;
+  const id = deletingRecordId.value;
+  deletingRecordId.value = null;
   if (!id || isViewingShared.value) return;
-  await transactionStore.deleteTransaction(id);
+  await assetStore.deleteRecord(id);
 };
 
 const cancelDelete = () => {
   showDeleteConfirm.value = false;
-  deletingTransactionId.value = null;
+  deletingRecordId.value = null;
 };
-
-const getCategoryName = (categoryId: string): string => {
-  const category = transactionStore.visibleCategories.find(
-    (c) => c.id === categoryId,
-  );
-  return category?.name || "其他";
-};
-
-// ── Filter logic ──────────────────────────────────────────────────────────────
-
-const searchResults = computed(() => {
-  if (!hasAnyFilter.value) return [];
-
-  return transactionStore.visibleTransactions.filter((t) => {
-    if (timeMode.value !== "") {
-      const dateValue: unknown = t.date;
-      const dateString =
-        typeof dateValue === "string" ? dateValue.replace(/-/g, "/") : dateValue;
-      const date = new Date(dateString as string | number);
-      if (isNaN(date.getTime())) return false;
-      if (!matchesTime(date)) return false;
-    }
-
-    return matchesCategory(t.category_id) && matchesText(t.note || "");
-  });
-});
-
-const groupedResults = computed<DailyGroup[]>(() => {
-  const groups = new Map<string, DailyGroup>();
-  const sorted = [...searchResults.value].sort((a, b) => b.date - a.date);
-
-  sorted.forEach((transaction) => {
-    const date = new Date(transaction.date);
-    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-    if (!groups.has(dateKey)) {
-      const weekDays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
-      groups.set(dateKey, {
-        date: dateKey,
-        dateDisplay: `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${weekDays[date.getDay()]}`,
-        total: 0,
-        transactions: [],
-      });
-    }
-
-    const group = groups.get(dateKey)!;
-    group.transactions.push(transaction);
-    if (transaction.type === "EXPENSE") {
-      group.total -= transaction.amount;
-    } else {
-      group.total += transaction.amount;
-    }
-  });
-
-  return Array.from(groups.values());
-});
-
-// ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
   await userStore.loadUser();
   inputRef.value?.focus();
   await restoreFromUrl();
-
-  await Promise.all([
-    transactionStore.loadTransactions(),
-    transactionStore.loadCategories(),
-  ]);
+  await Promise.all([assetStore.loadRecords(), assetStore.loadCategories()]);
 });
 </script>
 
@@ -320,7 +242,6 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
-/* ── Search section ── */
 .search-section {
   padding: 12px 16px;
   display: flex;
@@ -393,7 +314,6 @@ onMounted(async () => {
   pointer-events: none;
 }
 
-/* ── Funnel button (inside search bar) ── */
 .funnel-btn {
   position: relative;
   width: 28px;
@@ -433,14 +353,12 @@ onMounted(async () => {
   border: 1.5px solid var(--bg-card);
 }
 
-/* ── Active filter summary ── */
 .filter-summary {
   font-size: 12px;
   color: var(--text-secondary, #888);
   padding: 0 4px;
 }
 
-/* ── Results ── */
 .search-results {
   padding: 0 16px;
 }
@@ -467,27 +385,13 @@ onMounted(async () => {
   color: var(--text-primary);
 }
 
-.daily-total {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.daily-total.expense {
-  color: var(--janote-expense);
-}
-
-.daily-total.income {
-  color: var(--janote-income);
-}
-
-.transaction-item {
+.asset-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  cursor: pointer;
-  position: relative;
   background: var(--bg-page);
+  gap: 8px;
 }
 
 .item-left {
@@ -498,18 +402,25 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.category-name {
+.item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.asset-name {
   font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
 }
 
-.no-note {
-  color: var(--text-disabled);
+.asset-category {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .highlight {
@@ -521,7 +432,6 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
-  margin-left: 16px;
   color: var(--text-primary);
 }
 </style>

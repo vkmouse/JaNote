@@ -3,12 +3,16 @@ import { useRouter } from "vue-router";
 import { iconSearch } from "../utils/icons";
 
 const router = useRouter();
+
+const props = withDefaults(defineProps<{ to?: string }>(), {
+  to: "/transactions/search",
+});
 </script>
 
 <template>
   <button
     class="nav-btn"
-    @click="router.push('/transactions/search')"
+    @click="router.push(props.to)"
     aria-label="搜尋"
   >
     <span v-html="iconSearch" class="icon"></span>

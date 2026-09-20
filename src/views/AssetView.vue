@@ -4,6 +4,7 @@
     <TopNavigation>
       <template #left>
         <NavMenu />
+        <NavSearch to="/assets/search" />
       </template>
       <template #center>
         <div class="month-display" @click="showMonthPicker = true">
@@ -50,9 +51,9 @@
               :swipeable="!isViewingShared"
               @delete="onSwipeDelete(record.id)"
               @edit="editRecord(record.id)"
-              @item-click="editRecord(record.id)"
+              @item-click="goToSearch(record)"
             >
-              <div class="asset-item">
+              <div class="asset-item" @click="isViewingShared && goToSearch(record)">
                 <div class="item-left">
                   <CategoryIcon
                     :category-name="categoryName(record.category_id)"
@@ -119,6 +120,7 @@ import type { Ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
+import NavSearch from "../components/NavSearch.vue";
 import NavSync from "../components/NavSync.vue";
 import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
@@ -132,6 +134,7 @@ import ConfirmModal from "../components/ConfirmModal.vue";
 import type { AssetRecord } from "../types";
 import { useAssetStore, startOfDay } from "../stores/assetStore";
 import { useUserStore } from "../stores/userStore";
+import { groupRecordsByDate } from "../utils/groupRecordsByDate";
 
 const router = useRouter();
 const route = useRoute();
@@ -165,12 +168,6 @@ useSharedSwipeContext();
 
 const showDeleteConfirm = ref(false);
 const deletingRecordId = ref<string | null>(null);
-
-interface DailyGroup {
-  date: string;
-  dateDisplay: string;
-  records: AssetRecord[];
-}
 
 const currentMonthDisplay = computed(
   () => `${selectedYear.value}\u5e74${selectedMonth.value}\u6708`,
@@ -214,33 +211,25 @@ const chartSlices = computed<DonutSlice[]>(() =>
   })),
 );
 
-const groupedRecords = computed<DailyGroup[]>(() => {
-  const weekDays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
-  const inMonth = assetStore.visibleRecords
-    .filter((r) => r.date >= monthStart.value && r.date <= monthEnd.value)
-    .sort((a, b) => b.date - a.date || b.created_at - a.created_at);
-
-  const groups = new Map<number, DailyGroup>();
-  for (const r of inMonth) {
-    if (!groups.has(r.date)) {
-      const d = new Date(r.date);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      groups.set(r.date, {
-        date: `${y}-${m}-${day}`,
-        dateDisplay: `${y}/${m}/${day} ${weekDays[d.getDay()]}`,
-        records: [],
-      });
-    }
-    groups.get(r.date)!.records.push(r);
-  }
-  return Array.from(groups.values());
-});
+const groupedRecords = computed(() =>
+  groupRecordsByDate(
+    assetStore.visibleRecords.filter(
+      (r) => r.date >= monthStart.value && r.date <= monthEnd.value,
+    ),
+  ),
+);
 
 const editRecord = (id: string) => {
   if (isViewingShared.value) return;
   router.push(`/assets/${id}/edit`);
+};
+
+// 點擊看同一資產的歷史紀錄，編輯改走左滑
+const goToSearch = (record: AssetRecord) => {
+  router.push({
+    path: "/assets/search",
+    query: { cat: record.category_id, q: record.name },
+  });
 };
 
 const onSwipeDelete = (id: string) => {
