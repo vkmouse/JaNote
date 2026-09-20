@@ -171,7 +171,7 @@ import { useUserStore } from "../stores/userStore";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
-import type { EntryType, RecurringTransaction } from "../types";
+import type { TransactionType, RecurringTransaction } from "../types";
 import { iconDollarCircle, iconPiggyBank } from "../utils/icons";
 import { useSharedSwipeContext } from "../components/ListGroup.vue";
 
@@ -187,7 +187,7 @@ const isViewingShared = computed(() => userStore.isViewingShared);
 
 // ── State ──────────────────────────────────────────────────
 const viewMode = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
-const filterType = ref<EntryType>("EXPENSE");
+const filterType = ref<TransactionType>("EXPENSE");
 const showDeleteConfirm = ref(false);
 const deletingItemId = ref<string | null>(null);
 const deletingItemType = ref<"TRANSACTION" | "BUDGET">("TRANSACTION");
@@ -272,7 +272,7 @@ watch(
 
 onMounted(async () => {
   const q = route.query;
-  if (q.type === "EXPENSE" || q.type === "INCOME") filterType.value = q.type as EntryType;
+  if (q.type === "EXPENSE" || q.type === "INCOME") filterType.value = q.type as TransactionType;
   if (q.view === "TRANSACTION" || q.view === "BUDGET") viewMode.value = q.view as "TRANSACTION" | "BUDGET";
   await nextTick();
   isInitialized.value = true;

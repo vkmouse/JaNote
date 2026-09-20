@@ -59,6 +59,7 @@ import {
   putRecurringBudget,
   deleteRecurringBudget,
 } from "../services/recurringBudgetService";
+import { postAsset, putAsset, deleteAsset } from "../services/assetService";
 import { executeRecurringSchedules } from "../services/recurringExecutionService";
 
 // 實體處理函式映射表 (Routing Map)
@@ -81,6 +82,9 @@ const entityHandlers: Record<string, EntityHandler> = {
   "POST:RBGT": postRecurringBudget,
   "PUT:RBGT": putRecurringBudget,
   "DELETE:RBGT": deleteRecurringBudget,
+  "POST:AST": postAsset,
+  "PUT:AST": putAsset,
+  "DELETE:AST": deleteAsset,
 };
 
 /**
@@ -314,9 +318,18 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
 /**
  * 對推送指令進行排序：優先順序為 分類(CAT) > 交易(TXN) > 共用設定(SHR)
  * 這是為了確保外鍵關聯正確（交易通常會綁定分類）。
+ * AST（資產）也會綁定分類，所以一樣排在 CAT 之後；沒有其他實體依賴它，優先度放最後即可。
  */
 function sortPushCommands(commands: PushCommand[]): PushCommand[] {
-  const priority: Record<EntityType, number> = { CAT: 0, TXN: 1, BGT: 2, RTXN: 3, RBGT: 4, SHR: 5 };
+  const priority: Record<EntityType, number> = {
+    CAT: 0,
+    TXN: 1,
+    BGT: 2,
+    RTXN: 3,
+    RBGT: 4,
+    SHR: 5,
+    AST: 6,
+  };
   return [...commands].sort(
     (a, b) => priority[a.entity_type] - priority[b.entity_type],
   );

@@ -1,4 +1,12 @@
-export type EntryType = "EXPENSE" | "INCOME";
+/** 交易、預算、固定交易等「收支」實體可用的類型（不含 ASSET） */
+export type TransactionType = "EXPENSE" | "INCOME";
+
+/**
+ * 分類的類型：收支類型再加上資產分類專用的 ASSET。
+ * 只有 Category / CategoryPayload 使用；Transaction、Budget、Recurring* 一律用 TransactionType，
+ * 讓 ASSET 在型別層級就無法流進收支流程。
+ */
+export type EntryType = TransactionType | "ASSET";
 
 export interface User {
   id: string;
@@ -19,7 +27,7 @@ export interface Transaction {
   id: string;
   user_id: string;
   category_id: string;
-  type: EntryType;
+  type: TransactionType;
   amount: number;
   note: string;
   date: number;
@@ -31,7 +39,7 @@ export interface Budget {
   id: string;
   user_id: string;
   name: string;
-  type: EntryType;
+  type: TransactionType;
   goal: number;
   month_key: string;
   category_ids: string;
@@ -43,7 +51,7 @@ export interface RecurringTransaction {
   id: string;
   user_id: string;
   category_id: string;
-  type: EntryType;
+  type: TransactionType;
   amount: number;
   note: string;
   recurrence_type: "MONTHLY" | "WEEKLY";
@@ -58,7 +66,7 @@ export interface RecurringBudget {
   id: string;
   user_id: string;
   name: string;
-  type: EntryType;
+  type: TransactionType;
   goal: number;
   category_ids: string;
   is_active: number;
@@ -82,7 +90,7 @@ export interface UserShare {
 
 export interface SyncQueueItem {
   mutation_id: string;
-  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
+  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT" | "AST";
   entity_id: string;
   action: "PUT" | "DELETE" | "POST";
   payload: string | null;
@@ -98,7 +106,7 @@ export interface SyncMeta {
 
 export interface PushCommand {
   mutation_id: string;
-  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
+  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT" | "AST";
   entity_id: string;
   action: "PUT" | "DELETE" | "POST";
   base_version: number;
@@ -109,6 +117,7 @@ export interface PushCommand {
     | BudgetPayload
     | RecurringTransactionPayload
     | RecurringBudgetPayload
+    | AssetPayload
     | null;
 }
 
@@ -122,7 +131,7 @@ export interface PushResult {
 
 export interface PullEvent {
   entity_id: string;
-  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
+  entity_type: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT" | "AST";
   action: "PUT" | "DELETE";
   version: number;
   payload: string | null;
@@ -153,7 +162,7 @@ export interface TransactionPayload {
   id: string;
   user_id: string;
   category_id: string;
-  type: EntryType;
+  type: TransactionType;
   amount: number;
   note: string;
   date: number;
@@ -172,7 +181,7 @@ export interface BudgetPayload {
   id: string;
   user_id: string;
   name: string;
-  type: EntryType;
+  type: TransactionType;
   goal: number;
   month_key: string;
   category_ids: string;
@@ -182,7 +191,7 @@ export interface RecurringTransactionPayload {
   id: string;
   user_id: string;
   category_id: string;
-  type: EntryType;
+  type: TransactionType;
   amount: number;
   note: string;
   recurrence_type: "MONTHLY" | "WEEKLY";
@@ -195,13 +204,23 @@ export interface RecurringBudgetPayload {
   id: string;
   user_id: string;
   name: string;
-  type: EntryType;
+  type: TransactionType;
   goal: number;
   category_ids: string;
   is_active: number;
   recurrence_type: string;
   recurrence_day: number;
   last_executed_at?: string | null;
+}
+
+export interface AssetPayload {
+  id: string;
+  user_id: string;
+  category_id: string;
+  name: string;
+  amount: number;
+  date: number;
+  created_at: number;
 }
 
 export interface LogEntry {
@@ -248,25 +267,22 @@ export type StoreName =
   | "user_shares"
   | "budgets"
   | "recurring_transactions"
-  | "recurring_budgets";
+  | "recurring_budgets"
+  | "assets";
 export type StoreMode = "readonly" | "readwrite";
 export type StoreCallback<T = any> = (
   store: IDBObjectStore,
   tx: IDBTransaction,
 ) => T | IDBRequest<any>;
 
-export type AssetCategory =
-  | "國內證券"
-  | "海外證券"
-  | "基金"
-  | "約當現金"
-  | "信託";
-
 export interface AssetRecord {
   id: string;
-  category: AssetCategory;
+  user_id: string;
+  category_id: string;
   name: string;
   amount: number;
   date: number;
   created_at: number;
+  version: number;
+  is_deleted: number;
 }

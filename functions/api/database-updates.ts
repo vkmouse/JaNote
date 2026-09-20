@@ -9,6 +9,8 @@ import type { Env } from "../types";
 import { getAllUsers } from "../repositories/userRepository";
 import {
   DEFAULT_EXPENSE_CATEGORY_NAMES,
+  DEFAULT_ASSET_CATEGORY_NAMES,
+  ASSET_CATEGORY_SORT_ORDER_START,
   categoryExistsByName,
   createCategory,
   getAllActiveExpenseCategories,
@@ -16,6 +18,7 @@ import {
   updateCategorySortOrder,
 } from "../repositories/categoryRepository";
 import { insertSyncEvent } from "../repositories/syncEventRepository";
+import { createAssetsTable } from "../repositories/assetRepository";
 
 const NEW_CATEGORIES: { name: string; type: "EXPENSE" | "INCOME" }[] = [
   { name: "保險", type: "EXPENSE" },
@@ -29,6 +32,8 @@ interface DatabaseUpdateResult {
   skipped_count: number;
   reordered_count: number;
   order_skipped_count: number;
+  asset_category_added_count: number;
+  asset_category_skipped_count: number;
 }
 
 async function applyDatabaseUpdates(
@@ -39,6 +44,12 @@ async function applyDatabaseUpdates(
   let skippedCount = 0;
   let reorderedCount = 0;
   let orderSkippedCount = 0;
+  let assetCategoryAddedCount = 0;
+  let assetCategorySkippedCount = 0;
+
+  // Step 0：確保 assets 資料表存在。
+  // CREATE TABLE IF NOT EXISTS 本身就是冪等操作，重複執行不會有副作用。
+  await createAssetsTable(DB);
 
   // Step 1：替既有使用者補齊「保險」「運動」「飲食」支出分類。
   // 建立分類時同步寫入 sync_events，前端才能透過既有同步機制拿到新分類。
@@ -146,12 +157,57 @@ async function applyDatabaseUpdates(
     reorderedCount++;
   }
 
+  // Step 3：替既有使用者補齊 5 筆資產分類（國內證券／海外證券／基金／約當現金／信託）。
+  // 做法跟 Step 1 一樣：用 categoryExistsByName 判斷是否已存在，
+  // 已存在就跳過，確保這個 Step 可以重複執行（冪等）。
+  // sort_order 不用 MAX+1（無資料時會從 1 開始，與新使用者的 201+ 不一致），
+  // 而是固定用「起始值 + 在預設清單中的索引」，讓新舊使用者的順序完全相同。
+  for (const user of users) {
+    for (const [index, name] of DEFAULT_ASSET_CATEGORY_NAMES.entries()) {
+      const exists = await categoryExistsByName(user.id, name, "ASSET", DB);
+
+      if (exists) {
+        assetCategorySkippedCount++;
+        continue;
+      }
+
+      const sort_order = ASSET_CATEGORY_SORT_ORDER_START + index;
+      const id = crypto.randomUUID();
+
+      await createCategory(id, user.id, name, "ASSET", sort_order, 1, DB);
+
+      const payload = JSON.stringify({
+        action: "POST",
+        version: 1,
+        payload: JSON.stringify({
+          id,
+          user_id: user.id,
+          name,
+          type: "ASSET",
+          sort_order,
+        }),
+      });
+      await insertSyncEvent(
+        user.id,
+        crypto.randomUUID(),
+        "CAT",
+        id,
+        payload,
+        DB,
+      );
+
+      assetCategoryAddedCount++;
+    }
+  }
+
   return {
     total_users: users.length,
     added_count: addedCount,
     skipped_count: skippedCount,
     reordered_count: reorderedCount,
     order_skipped_count: orderSkippedCount,
+    asset_category_added_count: assetCategoryAddedCount,
+    asset_category_skipped_count: assetCategorySkippedCount,
   };
 }
 
@@ -161,11 +217,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     const result = await applyDatabaseUpdates(DB);
 
+    const totalAdded = result.added_count + result.asset_category_added_count;
     return new Response(
       JSON.stringify({
         message:
-          result.added_count + result.reordered_count > 0
-            ? `資料庫更新完成：新增 ${result.added_count} 筆分類，調整 ${result.reordered_count} 筆分類順序`
+          totalAdded + result.reordered_count > 0
+            ? `資料庫更新完成：新增 ${totalAdded} 筆分類（含 ${result.asset_category_added_count} 筆資產分類），調整 ${result.reordered_count} 筆分類順序`
             : "資料庫已是最新：沒有需要新增或調整的分類",
         ...result,
       }),

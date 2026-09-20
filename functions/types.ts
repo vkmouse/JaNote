@@ -65,8 +65,16 @@ export interface ServiceContext {
  * - BGT: Budget
  * - RTXN: Recurring Transaction
  * - RBGT: Recurring Budget
+ * - AST: Asset
  */
-export type EntityType = "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
+export type EntityType =
+  | "CAT"
+  | "TXN"
+  | "SHR"
+  | "BGT"
+  | "RTXN"
+  | "RBGT"
+  | "AST";
 
 /**
  * Supported action types for sync operations
@@ -74,9 +82,11 @@ export type EntityType = "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT";
 export type ActionType = "PUT" | "DELETE" | "POST";
 
 /**
- * Entry type for categories
+ * 分類的帳目類型。ASSET 只用來標記「資產分類」這個群組，
+ * 交易 (Transaction) / 固定交易 (RecurringTransaction) 不會、也不應該用 ASSET，
+ * 那兩處請改用 isValidTransactionEntryType 驗證，避免誤放行。
  */
-export type EntryType = "EXPENSE" | "INCOME";
+export type EntryType = "EXPENSE" | "INCOME" | "ASSET";
 
 // ============================================
 // User Entities
@@ -164,6 +174,18 @@ export interface RecurringBudget {
   recurrence_type: string;
   recurrence_day: number;
   last_executed_at: string | null;
+  version: number;
+  is_deleted: number;
+}
+
+export interface Asset {
+  id: string;
+  user_id: string;
+  category_id: string;
+  name: string;
+  amount: number;
+  date: number;
+  created_at: number;
   version: number;
   is_deleted: number;
 }

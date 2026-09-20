@@ -2,31 +2,30 @@ import type { PushCommand, PushResult, ServiceContext } from "../types";
 import {
   isNonEmptyString,
   isNumber,
-  isValidTransactionEntryType,
   parsePayload,
 } from "../utils/validators";
 import {
-  getTransactionVersion,
-  updateTransaction,
-  createTransaction,
-  deleteTransaction as deleteTransactionRepo,
-} from "../repositories/transactionRepository";
+  getAssetVersion,
+  updateAsset,
+  createAsset,
+  deleteAsset as deleteAssetRepo,
+} from "../repositories/assetRepository";
 import { insertSyncEvent } from "../repositories/syncEventRepository";
 
 /**
- * 處理交易的 POST 操作（建立新交易）
+ * 處理資產的 POST 操作（建立新資產紀錄）
  */
-export async function postTransaction(
+export async function postAsset(
   event: PushCommand,
   context: ServiceContext,
 ): Promise<PushResult> {
   const { userId, DB } = context;
   const { payloadObject } = parsePayload(event.payload);
   const categoryId = payloadObject?.category_id;
-  const type = payloadObject?.type;
+  const name = payloadObject?.name;
   const amount = payloadObject?.amount;
   const date = payloadObject?.date;
-  const note = payloadObject?.note ?? null;
+  const createdAt = payloadObject?.created_at;
   const payloadUserId = payloadObject?.user_id;
 
   // 驗證 event.base_version 必須為 0
@@ -52,23 +51,21 @@ export async function postTransaction(
   // 驗證 event.payload 的欄位
   if (
     !isNonEmptyString(categoryId) ||
-    !isValidTransactionEntryType(type) ||
+    !isNonEmptyString(name) ||
     !isNumber(amount) ||
-    !isNumber(date)
+    !isNumber(date) ||
+    !isNumber(createdAt)
   ) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
       error_code: "INVALID_PAYLOAD",
-      error_message: "Transaction requires category_id, type, amount, and date",
+      error_message:
+        "Asset requires category_id, name, amount, date, and created_at",
     };
   }
 
-  const currentVersion = await getTransactionVersion(
-    event.entity_id,
-    userId,
-    DB,
-  );
+  const currentVersion = await getAssetVersion(event.entity_id, userId, DB);
 
   // 驗證是否已存在，version > 0 代表已存在
   if (currentVersion > 0) {
@@ -76,20 +73,20 @@ export async function postTransaction(
       mutation_id: event.mutation_id,
       status: "ERROR",
       error_code: "ALREADY_EXISTS",
-      error_message: "Transaction already exists, use PUT to update",
+      error_message: "Asset already exists, use PUT to update",
     };
   }
 
   // 實際執行資料庫更新
   const newVersion = 1;
-  await createTransaction(
+  await createAsset(
     event.entity_id,
     userId,
     categoryId,
-    type,
+    name,
     amount,
-    note,
     date,
+    createdAt,
     newVersion,
     DB,
   );
@@ -102,10 +99,10 @@ export async function postTransaction(
       id: event.entity_id,
       user_id: userId,
       category_id: categoryId,
-      type,
+      name,
       amount,
-      note,
       date,
+      created_at: createdAt,
     }),
   });
   await insertSyncEvent(
@@ -121,19 +118,19 @@ export async function postTransaction(
 }
 
 /**
- * 處理交易的 PUT 操作（更新既有交易）
+ * 處理資產的 PUT 操作（更新既有資產紀錄）
  */
-export async function putTransaction(
+export async function putAsset(
   event: PushCommand,
   context: ServiceContext,
 ): Promise<PushResult> {
   const { userId, DB } = context;
   const { payloadObject } = parsePayload(event.payload);
   const categoryId = payloadObject?.category_id;
-  const type = payloadObject?.type;
+  const name = payloadObject?.name;
   const amount = payloadObject?.amount;
   const date = payloadObject?.date;
-  const note = payloadObject?.note ?? null;
+  const createdAt = payloadObject?.created_at;
   const payloadUserId = payloadObject?.user_id;
 
   // 驗證 event.payload.user_id 中的 user_id 是否與 Token 的相同
@@ -149,31 +146,29 @@ export async function putTransaction(
   // 驗證 event.payload 的欄位
   if (
     !isNonEmptyString(categoryId) ||
-    !isValidTransactionEntryType(type) ||
+    !isNonEmptyString(name) ||
     !isNumber(amount) ||
-    !isNumber(date)
+    !isNumber(date) ||
+    !isNumber(createdAt)
   ) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
       error_code: "INVALID_PAYLOAD",
-      error_message: "Transaction requires category_id, type, amount, and date",
+      error_message:
+        "Asset requires category_id, name, amount, date, and created_at",
     };
   }
 
-  const currentVersion = await getTransactionVersion(
-    event.entity_id,
-    userId,
-    DB,
-  );
+  const currentVersion = await getAssetVersion(event.entity_id, userId, DB);
 
-  // 驗證是否已存在，version > 0 代表已存在
+  // 驗證是否已存在，version = 0 代表不存在
   if (currentVersion === 0) {
     return {
       mutation_id: event.mutation_id,
       status: "ERROR",
       error_code: "NOT_FOUND",
-      error_message: "Transaction does not exist, use POST to create",
+      error_message: "Asset does not exist, use POST to create",
     };
   }
 
@@ -184,14 +179,14 @@ export async function putTransaction(
 
   // 實際執行資料庫更新
   const newVersion = currentVersion + 1;
-  await updateTransaction(
+  await updateAsset(
     event.entity_id,
     userId,
     categoryId,
-    type,
+    name,
     amount,
-    note,
     date,
+    createdAt,
     newVersion,
     DB,
   );
@@ -204,10 +199,10 @@ export async function putTransaction(
       id: event.entity_id,
       user_id: userId,
       category_id: categoryId,
-      type,
+      name,
       amount,
-      note,
       date,
+      created_at: createdAt,
     }),
   });
   await insertSyncEvent(
@@ -223,18 +218,14 @@ export async function putTransaction(
 }
 
 /**
- * 處理交易的 DELETE 操作
+ * 處理資產的 DELETE 操作
  */
-export async function deleteTransaction(
+export async function deleteAsset(
   event: PushCommand,
   context: ServiceContext,
 ): Promise<PushResult> {
   const { userId, DB } = context;
-  const currentVersion = await getTransactionVersion(
-    event.entity_id,
-    userId,
-    DB,
-  );
+  const currentVersion = await getAssetVersion(event.entity_id, userId, DB);
 
   // 驗證是否存在，version = 0 代表不存在
   if (currentVersion === 0) {
@@ -248,7 +239,7 @@ export async function deleteTransaction(
 
   // 實際執行資料庫更新
   const newVersion = currentVersion + 1;
-  await deleteTransactionRepo(event.entity_id, userId, newVersion, DB);
+  await deleteAssetRepo(event.entity_id, userId, newVersion, DB);
 
   // 寫入 sync_events
   const syncPayload = JSON.stringify({

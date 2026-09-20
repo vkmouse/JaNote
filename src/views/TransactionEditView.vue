@@ -99,7 +99,7 @@ import CalculatorPad from "../components/CalculatorPad.vue";
 import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";
 import TypeToggle from "../components/TypeToggle.vue";
-import type { Category, EntryType } from "../types";
+import type { Category, TransactionType } from "../types";
 import { formatRecurrence } from "../utils/recurrence";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
@@ -124,7 +124,7 @@ const isRecurring = computed(() => route.path.includes("/recurring"));
 
 // ── Shared state ───────────────────────────────────────────
 const editingId = ref<string | null>(null);
-const transactionType = ref<EntryType>("EXPENSE");
+const transactionType = ref<TransactionType>("EXPENSE");
 const amount = ref<string>("");
 
 // ── Transaction mode state ─────────────────────────────────
@@ -463,7 +463,7 @@ onMounted(async () => {
       | { type?: string; year?: number; month?: number }
       | undefined;
     if (state?.type === "EXPENSE" || state?.type === "INCOME") {
-      transactionType.value = state.type as EntryType;
+      transactionType.value = state.type as TransactionType;
     }
     if (state?.year) selectedYear.value = state.year;
     if (state?.month) selectedMonth.value = state.month;

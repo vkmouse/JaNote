@@ -8,6 +8,7 @@ import { userShareRepository } from "../db/repositories/userShareRepository";
 import { budgetRepository } from "../db/repositories/budgetRepository";
 import { recurringTransactionRepository } from "../db/repositories/recurringTransactionRepository";
 import { recurringBudgetRepository } from "../db/repositories/recurringBudgetRepository";
+import { assetRepository } from "../db/repositories/assetRepository";
 import { userRepository } from "../db/repositories/userRepository";
 import { authorizedFetch } from "../services/api";
 import type {
@@ -22,6 +23,7 @@ import type {
   BudgetPayload,
   RecurringTransactionPayload,
   RecurringBudgetPayload,
+  AssetPayload,
 } from "../types";
 
 // ── Private business logic helpers ────────────────────────────────────────────
@@ -35,6 +37,7 @@ function parsePayload(
   | BudgetPayload
   | RecurringTransactionPayload
   | RecurringBudgetPayload
+  | AssetPayload
   | null {
   if (!payload) return null;
   if (typeof payload === "string") {
@@ -218,10 +221,34 @@ async function applyPullEvent(event: PullEvent): Promise<void> {
     });
     return;
   }
+
+  if (event.entity_type === "AST") {
+    if (event.action === "DELETE") {
+      await assetRepository.update(event.entity_id, (record) => {
+        if (!record) return null;
+        return { ...record, version: event.version, is_deleted: 1 };
+      });
+      return;
+    }
+    if (!payload || typeof payload !== "object") return;
+    const astPayload = payload as AssetPayload;
+    await assetRepository.upsert({
+      id: event.entity_id,
+      user_id: astPayload.user_id || "",
+      category_id: astPayload.category_id || "",
+      name: astPayload.name || "",
+      amount: Number(astPayload.amount) || 0,
+      date: astPayload.date || Date.now(),
+      created_at: astPayload.created_at || Date.now(),
+      version: event.version,
+      is_deleted: 0,
+    });
+    return;
+  }
 }
 
 async function bumpLocalVersion(
-  entityType: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT",
+  entityType: "CAT" | "TXN" | "SHR" | "BGT" | "RTXN" | "RBGT" | "AST",
   entityId: string,
   version: number,
   action: "PUT" | "DELETE" | "POST",
@@ -292,6 +319,17 @@ async function bumpLocalVersion(
     });
     return;
   }
+  if (entityType === "AST") {
+    await assetRepository.update(entityId, (record) => {
+      if (!record) return null;
+      return {
+        ...record,
+        version,
+        is_deleted: action === "DELETE" ? 1 : record.is_deleted,
+      };
+    });
+    return;
+  }
 }
 
 async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
@@ -322,6 +360,11 @@ async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
           if (!record) return null;
           return { ...record, is_deleted: 1 };
         });
+      } else if (entry.entity_type === "AST") {
+        await assetRepository.update(entry.entity_id, (record) => {
+          if (!record) return null;
+          return { ...record, is_deleted: 1 };
+        });
       }
     }
     return;
@@ -340,6 +383,8 @@ async function rollbackEntity(entry: SyncQueueItem): Promise<void> {
       await recurringTransactionRepository.upsert(snapshot);
     } else if (entry.entity_type === "RBGT") {
       await recurringBudgetRepository.upsert(snapshot);
+    } else if (entry.entity_type === "AST") {
+      await assetRepository.upsert(snapshot);
     }
   } catch (error) {
     console.error(

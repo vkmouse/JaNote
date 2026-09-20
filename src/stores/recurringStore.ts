@@ -8,7 +8,7 @@ import { useUserStore } from "./userStore";
 import type {
   RecurringTransaction,
   RecurringBudget,
-  EntryType,
+  TransactionType,
 } from "../types";
 
 export const useRecurringStore = defineStore("recurring", () => {
@@ -50,7 +50,7 @@ export const useRecurringStore = defineStore("recurring", () => {
     recurrence_day,
   }: {
     category_id: string;
-    type: EntryType;
+    type: TransactionType;
     amount: number;
     note: string;
     recurrence_type: "MONTHLY" | "WEEKLY";
@@ -115,7 +115,7 @@ export const useRecurringStore = defineStore("recurring", () => {
   }: {
     id: string;
     category_id: string;
-    type: EntryType;
+    type: TransactionType;
     amount: number;
     note: string;
     recurrence_type: "MONTHLY" | "WEEKLY";
@@ -209,7 +209,7 @@ export const useRecurringStore = defineStore("recurring", () => {
     category_ids,
   }: {
     name: string;
-    type: EntryType;
+    type: TransactionType;
     goal: number;
     category_ids: string;
   }): Promise<void> {
@@ -270,7 +270,7 @@ export const useRecurringStore = defineStore("recurring", () => {
   }: {
     id: string;
     name: string;
-    type: EntryType;
+    type: TransactionType;
     goal: number;
     category_ids: string;
   }): Promise<void> {

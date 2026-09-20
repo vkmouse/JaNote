@@ -4,7 +4,7 @@ import { budgetRepository } from "../db/repositories/budgetRepository";
 import { syncQueueRepository } from "../db/repositories/syncQueueRepository";
 import { userRepository } from "../db/repositories/userRepository";
 import { useUserStore } from "./userStore";
-import type { Budget, EntryType } from "../types";
+import type { Budget, TransactionType } from "../types";
 
 export const useBudgetStore = defineStore("budget", () => {
   const userStore = useUserStore();
@@ -33,7 +33,7 @@ export const useBudgetStore = defineStore("budget", () => {
     category_ids,
   }: {
     name: string;
-    type: EntryType;
+    type: TransactionType;
     goal: number;
     month_key: string;
     category_ids: string;
@@ -85,7 +85,7 @@ export const useBudgetStore = defineStore("budget", () => {
   }: {
     id: string;
     name: string;
-    type: EntryType;
+    type: TransactionType;
     goal: number;
     month_key: string;
     category_ids: string;

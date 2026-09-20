@@ -4,6 +4,7 @@ import { useSyncStore } from "./syncStore";
 import { useTransactionStore } from "./transactionStore";
 import { useBudgetStore } from "./budgetStore";
 import { useRecurringStore } from "./recurringStore";
+import { useAssetStore } from "./assetStore";
 
 export type SyncButtonStatus = "idle" | "syncing" | "success" | "error";
 
@@ -32,12 +33,15 @@ export const useSyncStatusStore = defineStore("syncStatus", () => {
       const transactionStore = useTransactionStore();
       const budgetStore = useBudgetStore();
       const recurringStore = useRecurringStore();
+      const assetStore = useAssetStore();
       await Promise.all([
         transactionStore.loadTransactions(),
         transactionStore.loadCategories(),
         budgetStore.loadBudgets(),
         recurringStore.loadRecurringTransactions(),
         recurringStore.loadRecurringBudgets(),
+        assetStore.loadCategories(),
+        assetStore.loadRecords(),
       ]);
     } catch (e) {
       status.value = "error";

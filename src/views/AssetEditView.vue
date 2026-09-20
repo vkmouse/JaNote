@@ -15,15 +15,15 @@
       <!-- Categories Grid -->
       <div class="categories-section">
         <CategoryGrid
-          :categories="assetCategories"
-          :modelValue="selectedCategory"
-          @update:modelValue="selectedCategory = $event as string"
+          :categories="assetStore.visibleCategories"
+          :modelValue="selectedCategoryId"
+          @update:modelValue="selectedCategoryId = $event as string"
         />
       </div>
 
       <!-- Amount and Asset Name Input -->
       <AmountInput
-        :categoryName="selectedCategory || '其他'"
+        :categoryName="selectedCategoryName"
         :formattedAmount="formattedAmount"
         type="INCOME"
         v-model="assetName"
@@ -53,30 +53,26 @@ import CalendarPicker from "../components/CalendarPicker.vue";
 import CalculatorPad from "../components/CalculatorPad.vue";
 import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";
-import type { AssetCategory, Category } from "../types";
-import { useAssetStore, ASSET_CATEGORIES } from "../stores/assetStore";
+import { useAssetStore } from "../stores/assetStore";
+import { useUserStore } from "../stores/userStore";
 
 const router = useRouter();
 const route = useRoute();
 const assetStore = useAssetStore();
+const userStore = useUserStore();
 
 const editingId = ref<string | null>(null);
 const currentDate = ref<number>(Date.now());
 const showCalendar = ref(false);
-const selectedCategory = ref<string>("");
+const selectedCategoryId = ref<string>("");
 const assetName = ref<string>("");
 const amount = ref<string>("");
 
-// CategoryGrid 吃 Category[]，以分類名稱當 id 包一層
-const assetCategories: Category[] = ASSET_CATEGORIES.map((name, i) => ({
-  id: name,
-  user_id: "",
-  name,
-  type: "INCOME",
-  sortOrder: i,
-  version: 0,
-  is_deleted: 0,
-}));
+const selectedCategoryName = computed(() =>
+  selectedCategoryId.value
+    ? assetStore.getCategoryName(selectedCategoryId.value)
+    : "其他",
+);
 
 const formattedAmount = computed(() => {
   const num = amount.value || "0";
@@ -103,26 +99,26 @@ const formattedDate = computed(() => {
 const canSave = computed(() => {
   const value = parseFloat(amount.value);
   return !!(
-    selectedCategory.value &&
+    selectedCategoryId.value &&
     assetName.value.trim() &&
     !isNaN(value) &&
     value >= 0
   );
 });
 
-function save() {
+async function save() {
   if (!canSave.value) return;
   if (editingId.value) {
-    assetStore.updateRecord({
+    await assetStore.updateRecord({
       id: editingId.value,
-      category: selectedCategory.value as AssetCategory,
+      category_id: selectedCategoryId.value,
       name: assetName.value,
       amount: parseFloat(amount.value),
       date: currentDate.value,
     });
   } else {
-    assetStore.addRecord({
-      category: selectedCategory.value as AssetCategory,
+    await assetStore.addRecord({
+      category_id: selectedCategoryId.value,
       name: assetName.value,
       amount: parseFloat(amount.value),
       date: currentDate.value,
@@ -131,13 +127,16 @@ function save() {
   router.back();
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await userStore.loadUser();
+  await assetStore.loadCategories();
+
   const id = route.params.id as string | undefined;
   if (!id) return;
-  const record = assetStore.getRecordById(id);
+  const record = await assetStore.getRecordById(id);
   if (!record) return;
   editingId.value = id;
-  selectedCategory.value = record.category;
+  selectedCategoryId.value = record.category_id;
   assetName.value = record.name;
   amount.value = String(record.amount);
   currentDate.value = record.date;

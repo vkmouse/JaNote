@@ -9,6 +9,7 @@ import type {
   SyncQueueItem,
   SyncMeta,
   UserShare,
+  AssetRecord,
 } from "../types";
 
 /** Dexie 資料表型別定義 */
@@ -22,6 +23,7 @@ export interface AppDB {
   sync_queue: EntityTable<SyncQueueItem, "mutation_id">;
   sync_meta: EntityTable<SyncMeta, "key">;
   user_shares: EntityTable<UserShare, "id">;
+  assets: EntityTable<AssetRecord, "id">;
 }
 
 /** 各資料表的 Dexie schema 字串（索引定義） */
@@ -35,4 +37,5 @@ export const schema = {
   sync_queue: "mutation_id, created_at, entity_id",
   sync_meta: "key",
   user_shares: "id",
+  assets: "id",
 } satisfies Record<keyof AppDB, string>;

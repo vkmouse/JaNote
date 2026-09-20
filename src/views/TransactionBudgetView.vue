@@ -169,7 +169,7 @@ import NavSync from "../components/NavSync.vue";
 import { useUserStore } from "../stores/userStore";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useBudgetStore } from "../stores/budgetStore";
-import type { EntryType, Budget } from "../types";
+import type { TransactionType, Budget } from "../types";
 import BottomTabBar from "../components/BottomTabBar.vue";
 import ViewModeToggle from "../components/ViewModeToggle.vue";
 import TypeToggle from "../components/TypeToggle.vue";
@@ -206,7 +206,7 @@ const showYearPicker = ref(false);
 const showDateRangePicker = ref(false);
 const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
 const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
-const transactionType = ref<EntryType>("EXPENSE");
+const transactionType = ref<TransactionType>("EXPENSE");
 
 // ── Delete mode ────────────────────────────────────────────
 
@@ -509,7 +509,7 @@ watch(
 onMounted(async () => {
   await userStore.loadUser();
   const q = route.query;
-  if (q.type === "EXPENSE" || q.type === "INCOME") transactionType.value = q.type as EntryType;
+  if (q.type === "EXPENSE" || q.type === "INCOME") transactionType.value = q.type as TransactionType;
   if (q.mode === "monthly" || q.mode === "yearly" || q.mode === "custom") viewMode.value = q.mode as ViewMode;
   if (typeof q.year === "string") {
     const y = parseInt(q.year);

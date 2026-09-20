@@ -21,9 +21,14 @@ export const useTransactionStore = defineStore("transaction", () => {
     ),
   );
 
+  // 只包含收支分類；資產分類（type === "ASSET"）由 assetStore 自行管理，
+  // 避免混進交易 / 預算 / 搜尋篩選等畫面的分類清單
   const visibleCategories = computed(() =>
     categories.value.filter(
-      (c) => !c.is_deleted && c.user_id === userStore.activeUserId,
+      (c) =>
+        !c.is_deleted &&
+        c.type !== "ASSET" &&
+        c.user_id === userStore.activeUserId,
     ),
   );
 

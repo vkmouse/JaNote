@@ -9,7 +9,7 @@ import YearPicker from "../components/YearPicker.vue";
 import DateRangePicker from "../components/DateRangePicker.vue";
 import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
-import type { EntryType } from "../types";
+import type { TransactionType } from "../types";
 import ViewModeToggle from "../components/ViewModeToggle.vue";
 import TypeToggle from "../components/TypeToggle.vue";
 import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
@@ -41,7 +41,7 @@ const showYearPicker = ref(false);
 const showDateRangePicker = ref(false);
 const customStartDate = ref(new Date().setHours(0, 0, 0, 0));
 const customEndDate = ref(new Date().setHours(23, 59, 59, 999));
-const transactionType = ref<EntryType>("EXPENSE");
+const transactionType = ref<TransactionType>("EXPENSE");
 
 const currentMonthDisplay = computed(() => {
   if (viewMode.value === "monthly") {
@@ -237,7 +237,7 @@ watch(
 onMounted(async () => {
   await userStore.loadUser();
   const q = route.query;
-  if (q.type === "EXPENSE" || q.type === "INCOME") transactionType.value = q.type as EntryType;
+  if (q.type === "EXPENSE" || q.type === "INCOME") transactionType.value = q.type as TransactionType;
   if (q.mode === "monthly" || q.mode === "yearly" || q.mode === "custom") viewMode.value = q.mode as ViewMode;
   if (typeof q.year === "string") {
     const y = parseInt(q.year);

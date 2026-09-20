@@ -12,6 +12,7 @@ import { useSyncStore } from "../stores/syncStore";
 import { useSyncStatusStore } from "../stores/syncStatusStore";
 import { useUserShareStore } from "../stores/userShareStore";
 import { useTransactionStore } from "../stores/transactionStore";
+import { useAssetStore } from "../stores/assetStore";
 import { theme, setTheme } from "../utils/theme";
 import type { UserShare } from "../types";
 
@@ -20,6 +21,7 @@ const syncStore = useSyncStore();
 const syncStatusStore = useSyncStatusStore();
 const userShareStore = useUserShareStore();
 const transactionStore = useTransactionStore();
+const assetStore = useAssetStore();
 
 useSharedSwipeContext();
 
@@ -70,6 +72,8 @@ const databaseUpdateResult = ref<{
   skipped_count?: number;
   reordered_count?: number;
   order_skipped_count?: number;
+  asset_category_added_count?: number;
+  asset_category_skipped_count?: number;
   error?: string;
 } | null>(null);
 
@@ -401,6 +405,7 @@ async function clearAllData() {
   try {
     await transactionStore.deleteAllCategories();
     await transactionStore.deleteAllTransactions();
+    await assetStore.deleteAllAssets();
     await userShareStore.deleteAllShares();
     await syncStore.clearSyncData();
     await userStore.clearUser();
@@ -784,7 +789,15 @@ async function handleInviteConfirm() {
               <li>飲食</li>
             </ul>
             <p>同時會統一支出分類的順序：飲食接在晚餐後、運動接在房租後、保險接在旅行後。</p>
-            <p>已存在的分類、順序已正確的都會自動跳過，可重複執行。</p>
+            <p>並建立資產資料表，補齊以下資產分類：</p>
+            <ul>
+              <li>國內證券</li>
+              <li>海外證券</li>
+              <li>基金</li>
+              <li>約當現金</li>
+              <li>信託</li>
+            </ul>
+            <p>已存在的資料表、分類、順序已正確的都會自動跳過，可重複執行。</p>
           </template>
         </template>
 
@@ -818,6 +831,14 @@ async function handleInviteConfirm() {
             <div>
               <span>略過順序</span>
               <strong>{{ databaseUpdateResult.order_skipped_count ?? 0 }}</strong>
+            </div>
+            <div>
+              <span>新增資產分類</span>
+              <strong>{{ databaseUpdateResult.asset_category_added_count ?? 0 }}</strong>
+            </div>
+            <div>
+              <span>略過資產分類</span>
+              <strong>{{ databaseUpdateResult.asset_category_skipped_count ?? 0 }}</strong>
             </div>
           </div>
         </template>

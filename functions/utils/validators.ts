@@ -18,7 +18,15 @@ export function isNumber(value: unknown): value is number {
  * 檢查值是否為有效的實體類型
  */
 export function isValidEntityType(value: unknown): value is EntityType {
-  return value === "CAT" || value === "TXN" || value === "SHR" || value === "BGT" || value === "RTXN" || value === "RBGT";
+  return (
+    value === "CAT" ||
+    value === "TXN" ||
+    value === "SHR" ||
+    value === "BGT" ||
+    value === "RTXN" ||
+    value === "RBGT" ||
+    value === "AST"
+  );
 }
 
 /**
@@ -29,9 +37,20 @@ export function isValidAction(value: unknown): value is ActionType {
 }
 
 /**
- * 檢查值是否為有效的帳目類型
+ * 檢查值是否為有效的帳目類型（分類專用，涵蓋 EXPENSE / INCOME / ASSET）
  */
 export function isValidEntryType(value: unknown): value is EntryType {
+  return value === "EXPENSE" || value === "INCOME" || value === "ASSET";
+}
+
+/**
+ * 檢查值是否為有效的「交易」帳目類型。
+ * 交易 / 固定交易只允許 EXPENSE、INCOME，ASSET 是資產分類專用，
+ * 不應該被當成交易的 type，所以獨立於 isValidEntryType 之外驗證。
+ */
+export function isValidTransactionEntryType(
+  value: unknown,
+): value is "EXPENSE" | "INCOME" {
   return value === "EXPENSE" || value === "INCOME";
 }
 

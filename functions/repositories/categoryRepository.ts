@@ -28,6 +28,21 @@ export const DEFAULT_EXPENSE_CATEGORY_NAMES = [
   "其他",
 ];
 
+/**
+ * 資產分類的預設清單（type = "ASSET"）。
+ * sort_order 從 201 開始，避開 EXPENSE（1~N）與 INCOME（101+）的區段。
+ */
+export const DEFAULT_ASSET_CATEGORY_NAMES = [
+  "國內證券",
+  "海外證券",
+  "基金",
+  "約當現金",
+  "信託",
+];
+
+/** 資產分類 sort_order 的起始值（第 i 個預設分類 = 起始值 + i） */
+export const ASSET_CATEGORY_SORT_ORDER_START = 201;
+
 export async function getCategoryVersion(
   id: string,
   userId: string,
@@ -156,6 +171,28 @@ export async function initializeDefaultCategories(
         user_id: userId,
         name,
         type: "INCOME",
+        sort_order,
+      }),
+    });
+
+    await insertSyncEvent(userId, crypto.randomUUID(), "CAT", id, payload, DB);
+  }
+
+  const assetCategories = DEFAULT_ASSET_CATEGORY_NAMES;
+  for (let i = 0; i < assetCategories.length; i++) {
+    const name = assetCategories[i];
+    const sort_order = ASSET_CATEGORY_SORT_ORDER_START + i;
+    const id = crypto.randomUUID();
+    await createCategory(id, userId, name, "ASSET", sort_order, 1, DB);
+
+    const payload = JSON.stringify({
+      action: "POST",
+      version: 1,
+      payload: JSON.stringify({
+        id,
+        user_id: userId,
+        name,
+        type: "ASSET",
         sort_order,
       }),
     });

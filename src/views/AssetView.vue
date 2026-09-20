@@ -54,12 +54,12 @@
               <div class="asset-item">
                 <div class="item-left">
                   <CategoryIcon
-                    :category-name="record.category"
+                    :category-name="categoryName(record.category_id)"
                     color-mode="category"
                   />
                   <div class="item-text">
                     <span class="asset-name">{{ record.name }}</span>
-                    <span class="asset-category">{{ record.category }}</span>
+                    <span class="asset-category">{{ categoryName(record.category_id) }}</span>
                   </div>
                 </div>
                 <div class="item-amount">
@@ -126,15 +126,13 @@ import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import type { AssetRecord } from "../types";
-import {
-  useAssetStore,
-  ASSET_CATEGORIES,
-  startOfDay,
-} from "../stores/assetStore";
+import { useAssetStore, startOfDay } from "../stores/assetStore";
+import { useUserStore } from "../stores/userStore";
 
 const router = useRouter();
 const route = useRoute();
 const assetStore = useAssetStore();
+const userStore = useUserStore();
 const drawerOpen = inject<Ref<boolean>>("sideDrawerOpen");
 
 const selectedYear = ref(new Date().getFullYear());
@@ -190,21 +188,27 @@ const snapshotDate = computed(() => {
 
 const snapshot = computed(() => assetStore.getSnapshot(snapshotDate.value));
 
+const categoryName = (categoryId: string) =>
+  assetStore.getCategoryName(categoryId);
+
 const totalAsset = computed(() =>
-  ASSET_CATEGORIES.reduce((sum, name) => sum + snapshot.value[name], 0),
+  assetStore.visibleCategories.reduce(
+    (sum, c) => sum + (snapshot.value[c.id] ?? 0),
+    0,
+  ),
 );
 
 const chartSlices = computed<DonutSlice[]>(() =>
-  ASSET_CATEGORIES.map((name) => ({
-    sliceLabel: name,
-    sliceValue: snapshot.value[name],
-    sliceColor: getCategoryColor(name),
+  assetStore.visibleCategories.map((c) => ({
+    sliceLabel: c.name,
+    sliceValue: snapshot.value[c.id] ?? 0,
+    sliceColor: getCategoryColor(c.name),
   })),
 );
 
 const groupedRecords = computed<DailyGroup[]>(() => {
   const weekDays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
-  const inMonth = assetStore.records
+  const inMonth = assetStore.visibleRecords
     .filter((r) => r.date >= monthStart.value && r.date <= monthEnd.value)
     .sort((a, b) => b.date - a.date || b.created_at - a.created_at);
 
@@ -235,12 +239,12 @@ const onSwipeDelete = (id: string) => {
   showDeleteConfirm.value = true;
 };
 
-const confirmDelete = () => {
+const confirmDelete = async () => {
   showDeleteConfirm.value = false;
   const id = deletingRecordId.value;
   deletingRecordId.value = null;
   if (!id) return;
-  assetStore.deleteRecord(id);
+  await assetStore.deleteRecord(id);
 };
 
 const cancelDelete = () => {
@@ -259,6 +263,8 @@ watch([selectedYear, selectedMonth], () => {
 });
 
 onMounted(async () => {
+  await userStore.loadUser();
+  await Promise.all([assetStore.loadCategories(), assetStore.loadRecords()]);
   const q = route.query;
   if (typeof q.year === "string") {
     const y = parseInt(q.year);
