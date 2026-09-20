@@ -13,14 +13,17 @@
           v-for="(slice, index) in processedSlices"
           :key="index"
           :d="getSliceArcPath(index)"
-          :style="{ fill: slice.sliceColor, stroke: 'var(--chart-stroke)' }"
+          :class="{ selectable: canSelect }"
+          :style="sliceStyle(slice)"
           stroke-width="1"
           stroke-linejoin="round"
+          @click="onSliceClick(slice.sliceLabel)"
         />
       </svg>
       <div class="chart-center">
         <div class="chart-label">{{ centerLabel }}</div>
         <div class="chart-balance">{{ centerBalance }}</div>
+        <div v-if="centerSub" class="chart-sub">{{ centerSub }}</div>
       </div>
     </div>
   </div>
@@ -41,12 +44,34 @@ const props = defineProps<{
   slices: DonutSlice[]
   minSliceThreshold?: number
   swipeable?: boolean
+  selectable?: boolean
+  activeLabel?: string | null
+  centerSub?: string
 }>()
 
 const emit = defineEmits<{
   (e: 'swipe-prev'): void
   (e: 'swipe-next'): void
+  (e: 'slice-click', label: string): void
 }>()
+
+// 全為 0 時畫的是灰色佔位圓環，沒有可選的分類
+const canSelect = computed(
+  () => !!props.selectable && props.slices.some((s) => s.sliceValue > 0),
+)
+
+function sliceStyle(slice: { sliceLabel: string; sliceColor: string }) {
+  const dimmed = props.activeLabel != null && slice.sliceLabel !== props.activeLabel
+  return {
+    fill: slice.sliceColor,
+    stroke: 'var(--chart-stroke)',
+    opacity: dimmed ? 0.25 : 1,
+  }
+}
+
+function onSliceClick(label: string) {
+  if (canSelect.value) emit('slice-click', label)
+}
 
 // ── Swipe state ────────────────────────────────────────────────────────────────
 const containerRef = ref<HTMLElement>()
@@ -356,6 +381,10 @@ function getSliceArcPath(index: number): string {
 }
 
 .chart-label {
+  max-width: 112px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14px;
   color: var(--text-primary);
   font-weight: 500;
@@ -365,5 +394,27 @@ function getSliceArcPath(index: number): string {
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.chart-sub {
+  margin-top: -4px;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.donut-chart path {
+  transition: opacity 0.2s ease;
+}
+
+.donut-chart path.selectable {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donut-chart path {
+    transition: none;
+  }
 }
 </style>

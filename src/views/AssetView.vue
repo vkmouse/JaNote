@@ -26,20 +26,42 @@
         <div class="chart-section">
           <DonutChart
             :swipeable="true"
-            :center-label="'總資產'"
-            :center-balance="`$${totalAsset.toLocaleString()}`"
+            :selectable="true"
+            :active-label="activeItem?.name ?? null"
+            :center-label="activeItem ? activeItem.name : '總資產'"
+            :center-balance="`$${(activeItem ? activeItem.value : totalAsset).toLocaleString()}`"
+            :center-sub="activeItem ? formatPercent(activeItem.percent) : undefined"
             :slices="chartSlices"
+            @slice-click="toggleCategory"
             @swipe-prev="prevMonth"
             @swipe-next="nextMonth"
           />
-        </div>
-        <div v-if="groupedRecords.length === 0" class="chart-empty-text">
-          <p>本月暫無資產記錄</p>
+          <ul v-if="allocation.length > 0" class="legend" aria-label="資產分類比例">
+            <li v-for="item in allocation" :key="item.id">
+              <button
+                type="button"
+                class="legend-chip"
+                :class="{
+                  active: activeItem?.id === item.id,
+                  dimmed: activeItem && activeItem.id !== item.id,
+                }"
+                :aria-pressed="activeItem?.id === item.id"
+                @click="toggleCategory(item.name)"
+              >
+                <span class="legend-dot" :style="{ backgroundColor: item.color }" />
+                <span class="legend-name">{{ item.name }}</span>
+                <span class="legend-percent">{{ formatPercent(item.percent) }}</span>
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
 
       <!-- Daily Asset List -->
       <div class="asset-list">
+        <div v-if="groupedRecords.length === 0" class="chart-empty-text">
+          <p>本月暫無資產記錄</p>
+        </div>
         <div v-if="groupedRecords.length > 0" class="daily-groups">
           <ListGroup v-for="group in groupedRecords" :key="group.date">
             <template #header-left>
@@ -187,15 +209,53 @@ const totalAsset = computed(() =>
   ),
 );
 
-const chartSlices = computed<DonutSlice[]>(() =>
-  assetStore.visibleCategories
+interface AllocationItem {
+  id: string;
+  name: string;
+  value: number;
+  percent: number;
+  color: string;
+}
+
+// 圖與圖例共用這份資料，順序和顏色才不會分岔。
+// 百分比必須用原始金額算：DonutChart 會把過小的切片放大，圖上的角度不等於實際占比。
+const allocation = computed<AllocationItem[]>(() => {
+  const items = assetStore.visibleCategories
     .map((c) => ({
-      sliceLabel: c.name,
-      sliceValue: snapshot.value[c.id] ?? 0,
-      sliceColor: getCategoryColor(c.name),
+      id: c.id,
+      name: c.name,
+      value: snapshot.value[c.id] ?? 0,
+      color: getCategoryColor(c.name),
     }))
-    .sort((a, b) => b.sliceValue - a.sliceValue),
+    .filter((item) => item.value > 0);
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  return items
+    .map((item) => ({ ...item, percent: (item.value / total) * 100 }))
+    .sort((a, b) => b.value - a.value);
+});
+
+const chartSlices = computed<DonutSlice[]>(() =>
+  allocation.value.map((item) => ({
+    sliceLabel: item.name,
+    sliceValue: item.value,
+    sliceColor: item.color,
+  })),
 );
+
+const selectedName = ref<string | null>(null);
+
+// 換月後若所選分類已無餘額，會自然回到「總資產」，不必額外重設
+const activeItem = computed(
+  () =>
+    allocation.value.find((item) => item.name === selectedName.value) ?? null,
+);
+
+const toggleCategory = (name: string) => {
+  selectedName.value = selectedName.value === name ? null : name;
+};
+
+const formatPercent = (percent: number) =>
+  percent > 0 && percent < 0.1 ? "<0.1%" : `${percent.toFixed(1)}%`;
 
 const groupedRecords = computed(() =>
   groupRecordsByDate(
@@ -285,6 +345,79 @@ onMounted(async () => {
 .chart-section {
   background: var(--bg-page);
   padding-bottom: 16px;
+}
+
+/* 分類圖例：一排可換行的小膠囊，讓出版面給下方的 Record */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 16px;
+  list-style: none;
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.legend-chip:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.legend-chip.active {
+  border-color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.legend-chip.dimmed {
+  opacity: 0.45;
+}
+
+.legend-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--chart-stroke);
+  border-radius: 50%;
+}
+
+.legend-name {
+  font-weight: 500;
+}
+
+.legend-percent {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.legend-chip.active .legend-percent {
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legend-chip {
+    transition: none;
+  }
 }
 
 .chart-empty-text {
