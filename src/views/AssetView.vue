@@ -10,6 +10,7 @@
           <span>{{ currentMonthDisplay }}</span>
         </div>
       </template>
+      <template #right><NavSync /><NavAvatar /></template>
     </TopNavigation>
 
     <MonthPicker
@@ -46,7 +47,7 @@
             <ListItem
               v-for="record in group.records"
               :key="record.id"
-              :swipeable="true"
+              :swipeable="!isViewingShared"
               @delete="onSwipeDelete(record.id)"
               @edit="editRecord(record.id)"
               @item-click="editRecord(record.id)"
@@ -118,12 +119,15 @@ import type { Ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavMenu from "../components/NavMenu.vue";
+import NavSync from "../components/NavSync.vue";
+import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
 import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
+import { useSharedSwipeContext } from "../components/ListGroup.vue";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import type { AssetRecord } from "../types";
 import { useAssetStore, startOfDay } from "../stores/assetStore";
@@ -157,6 +161,8 @@ function nextMonth() {
   }
 }
 
+useSharedSwipeContext();
+
 const showDeleteConfirm = ref(false);
 const deletingRecordId = ref<string | null>(null);
 
@@ -169,6 +175,8 @@ interface DailyGroup {
 const currentMonthDisplay = computed(
   () => `${selectedYear.value}\u5e74${selectedMonth.value}\u6708`,
 );
+
+const isViewingShared = computed(() => userStore.isViewingShared);
 
 const monthStart = computed(() =>
   new Date(selectedYear.value, selectedMonth.value - 1, 1).getTime(),
@@ -231,6 +239,7 @@ const groupedRecords = computed<DailyGroup[]>(() => {
 });
 
 const editRecord = (id: string) => {
+  if (isViewingShared.value) return;
   router.push(`/assets/${id}/edit`);
 };
 
@@ -243,7 +252,7 @@ const confirmDelete = async () => {
   showDeleteConfirm.value = false;
   const id = deletingRecordId.value;
   deletingRecordId.value = null;
-  if (!id) return;
+  if (!id || isViewingShared.value) return;
   await assetStore.deleteRecord(id);
 };
 
