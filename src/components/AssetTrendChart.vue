@@ -47,7 +47,18 @@
             </linearGradient>
           </defs>
 
-          <line :x1="PAD_LEFT" :y1="baselineY" :x2="VIEW_W - PAD_RIGHT" :y2="baselineY" class="baseline" />
+          <g v-for="tick in yTicks" :key="tick.value">
+            <line
+              :x1="PAD_LEFT"
+              :y1="tick.y"
+              :x2="VIEW_W - PAD_RIGHT"
+              :y2="tick.y"
+              :class="tick.value === 0 ? 'baseline' : 'grid-line'"
+            />
+            <text :x="PAD_LEFT - 6" :y="tick.y" class="axis-label y-axis-label" text-anchor="end">
+              {{ tick.label }}
+            </text>
+          </g>
 
           <path v-if="points.length > 1" :d="areaPath" fill="url(#trendAreaGradient)" />
           <path
@@ -78,7 +89,9 @@
               stroke-width="2"
               class="point"
             />
-            <text :x="xAt(i)" :y="VIEW_H - 6" class="month-label" text-anchor="middle">{{ p.month }}</text>
+            <text :x="xAt(i)" :y="VIEW_H - 6" class="axis-label x-axis-label" text-anchor="middle">
+              {{ p.month }}月
+            </text>
           </g>
         </svg>
       </div>
@@ -196,9 +209,10 @@ const deltaInfo = computed<DeltaInfo | null>(() => {
 // ── SVG 幾何 ───────────────────────────────────────────────
 const VIEW_W = 340;
 const VIEW_H = 180;
-const PAD_LEFT = 14;
+// 左邊留給 Y 軸的金額刻度（例如 $1.2m），比純數字寬，要多留一點
+const PAD_LEFT = 42;
 const PAD_RIGHT = 14;
-const PAD_TOP = 16;
+const PAD_TOP = 18;
 const PAD_BOTTOM = 30;
 const plotWidth = VIEW_W - PAD_LEFT - PAD_RIGHT;
 const plotHeight = VIEW_H - PAD_TOP - PAD_BOTTOM;
@@ -225,6 +239,27 @@ function yAt(value: number): number {
   const ratio = Math.min(value / yMax.value, 1);
   return baselineY - ratio * plotHeight;
 }
+
+// Y 軸刻度要能一眼看出是金額，不是裸數字：加 $ 字首，破萬用 k、破百萬用 m 縮寫
+function formatCompact(value: number): string {
+  const trim = (n: number) => {
+    const s = n.toFixed(1);
+    return s.endsWith(".0") ? s.slice(0, -2) : s;
+  };
+  if (value >= 1_000_000) return `$${trim(value / 1_000_000)}m`;
+  if (value >= 1_000) return `$${trim(value / 1_000)}k`;
+  return `$${value.toLocaleString()}`;
+}
+
+// 0 / 一半 / 頂端三條參考線，標籤都帶著金額縮寫
+const yTicks = computed(() => {
+  const max = yMax.value;
+  return [0, max / 2, max].map((value) => ({
+    value,
+    y: yAt(value),
+    label: formatCompact(value),
+  }));
+});
 
 const linePath = computed(() => {
   if (points.value.length < 2) return "";
@@ -373,10 +408,23 @@ const areaPath = computed(() => {
   stroke-dasharray: 3 4;
 }
 
-.month-label {
+/* 上面兩條參考線比 0 那條更淡，視覺上退到背景，不搶折線的注意力 */
+.grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0.5;
+}
+
+.axis-label {
   font-size: 9px;
   font-weight: 500;
   fill: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.y-axis-label {
+  dominant-baseline: middle;
 }
 
 .point {
