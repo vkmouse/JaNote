@@ -19,8 +19,8 @@
         <button
           class="add-btn"
           :disabled="isViewingShared"
-          @click="router.push('/transactions/new')"
-          aria-label="新增"
+          @click="handleAddClick"
+          aria-label="新增（連點兩下：快速記帳）"
         >
           <svg
             width="22"
@@ -45,6 +45,7 @@ import { inject, computed } from "vue";
 import type { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { iconDollarCircle, iconPieChart, iconPiggyBank, iconTag } from "../utils/icons";
+import { useSingleDoubleClick } from "../utils/singleDoubleClick";
 import { useUserStore } from "../stores/userStore";
 
 const userStore = useUserStore();
@@ -85,6 +86,11 @@ const tabs: Tab[] = [
 ];
 
 const isActive = (tabRoute: string) => route.path === tabRoute;
+
+const handleAddClick = useSingleDoubleClick(
+  () => router.push("/transactions/new"),
+  () => router.push("/transactions/quick-entry"),
+);
 
 // ──────────────────────────────────────────────────────────
 // 跨 Tab 日期 / 模式 / 類型上下文傳遞規則：

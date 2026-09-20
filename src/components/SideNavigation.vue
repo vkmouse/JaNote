@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from "vue-router";
-import { iconDollarCircle, iconDeviceMobile, iconPieChart } from "../utils/icons";
+import { iconDollarCircle, iconPieChart } from "../utils/icons";
 
 interface Props {
   isOpen?: boolean;
@@ -18,7 +18,6 @@ const route = useRoute();
 
 const navItems = [
   { to: "/transactions", label: "記帳管理", icon: iconDollarCircle },
-  { to: "/transactions/quick-entry", label: "快速記帳", icon: iconDeviceMobile },
   { to: "/assets", label: "資產管理", icon: iconPieChart },
 ];
 

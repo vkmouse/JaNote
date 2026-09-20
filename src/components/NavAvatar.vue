@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/userStore";
+import { useSingleDoubleClick } from "../utils/singleDoubleClick";
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -9,9 +10,6 @@ const router = useRouter();
 // ── 本地 UI 狀態（純呈現，不屬於 store）──────────────────
 /** 目前輪替到第幾個共享帳號 */
 const currentShareIndex = ref(0);
-/** 單/雙擊計時器 */
-const clickTimer = ref<ReturnType<typeof setTimeout> | null>(null);
-const DOUBLE_CLICK_DELAY = 280;
 
 // ── 呈現層 Computed ────────────────────────────────────────
 const canSwitchAvatar = computed(() => userStore.userShares.length > 0);
@@ -87,18 +85,10 @@ const handleDoubleClick = () => {
 };
 
 /** 點擊分發：單擊 vs 雙擊 */
-const handleAvatarClick = () => {
-  if (clickTimer.value) {
-    clearTimeout(clickTimer.value);
-    clickTimer.value = null;
-    handleDoubleClick();
-  } else {
-    clickTimer.value = setTimeout(() => {
-      clickTimer.value = null;
-      handleSingleClick();
-    }, DOUBLE_CLICK_DELAY);
-  }
-};
+const handleAvatarClick = useSingleDoubleClick(
+  handleSingleClick,
+  handleDoubleClick,
+);
 
 /** 從 UserShare 解析出「另一方」的 id/email */
 function _resolveShare(
