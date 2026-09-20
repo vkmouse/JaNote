@@ -5,96 +5,98 @@
     </div>
 
     <template v-else>
-      <div class="trend-summary">
-        <div class="summary-label">{{ focusedPoint?.month ?? "" }}月 {{ currentSeriesLabel }}</div>
-        <div class="summary-value">${{ focusedValue.toLocaleString() }}</div>
-        <div v-if="deltaInfo" class="summary-delta" :class="deltaInfo.direction">
-          <span v-if="deltaInfo.direction !== 'flat'" class="delta-arrow">{{
-            deltaInfo.direction === "up" ? "▲" : "▼"
-          }}</span>
-          <span>{{ deltaInfo.amountText }}</span>
-          <span v-if="deltaInfo.percentText" class="delta-percent">({{ deltaInfo.percentText }})</span>
-          <span class="delta-caption">較上月</span>
+      <div class="chart-section">
+        <div class="trend-summary">
+          <div class="summary-label">{{ focusedPoint?.month ?? "" }}月 {{ currentSeriesLabel }}</div>
+          <div class="summary-value">${{ focusedValue.toLocaleString() }}</div>
+          <div v-if="deltaInfo" class="summary-delta" :class="deltaInfo.direction">
+            <span v-if="deltaInfo.direction !== 'flat'" class="delta-arrow">{{
+              deltaInfo.direction === "up" ? "▲" : "▼"
+            }}</span>
+            <span>{{ deltaInfo.amountText }}</span>
+            <span v-if="deltaInfo.percentText" class="delta-percent">({{ deltaInfo.percentText }})</span>
+            <span class="delta-caption">較上月</span>
+          </div>
+          <div v-else class="summary-delta neutral">
+            <span class="delta-caption">年度起點</span>
+          </div>
         </div>
-        <div v-else class="summary-delta neutral">
-          <span class="delta-caption">年度起點</span>
-        </div>
-      </div>
 
-      <div class="series-chips" role="tablist" aria-label="資產趨勢分類">
-        <button
-          v-for="opt in seriesOptions"
-          :key="opt.key"
-          type="button"
-          class="series-chip"
-          :class="{ active: selectedSeries === opt.key }"
-          :style="{ '--chip-color': opt.color }"
-          role="tab"
-          :aria-selected="selectedSeries === opt.key"
-          @click="selectedSeries = opt.key"
-        >
-          <span class="chip-dot" />
-          <span class="chip-label">{{ opt.label }}</span>
-        </button>
-      </div>
+        <div class="chart-wrap">
+          <svg class="trend-svg" viewBox="0 0 340 180" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="trendAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" :stop-color="currentColor" stop-opacity="0.28" />
+                <stop offset="100%" :stop-color="currentColor" stop-opacity="0" />
+              </linearGradient>
+            </defs>
 
-      <div class="chart-wrap">
-        <svg class="trend-svg" viewBox="0 0 340 180" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="trendAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" :stop-color="currentColor" stop-opacity="0.28" />
-              <stop offset="100%" :stop-color="currentColor" stop-opacity="0" />
-            </linearGradient>
-          </defs>
+            <g v-for="tick in yTicks" :key="tick.value">
+              <line
+                :x1="PAD_LEFT"
+                :y1="tick.y"
+                :x2="VIEW_W - PAD_RIGHT"
+                :y2="tick.y"
+                :class="tick.value === 0 ? 'baseline' : 'grid-line'"
+              />
+              <text :x="PAD_LEFT - 6" :y="tick.y" class="axis-label y-axis-label" text-anchor="end">
+                {{ tick.label }}
+              </text>
+            </g>
 
-          <g v-for="tick in yTicks" :key="tick.value">
-            <line
-              :x1="PAD_LEFT"
-              :y1="tick.y"
-              :x2="VIEW_W - PAD_RIGHT"
-              :y2="tick.y"
-              :class="tick.value === 0 ? 'baseline' : 'grid-line'"
-            />
-            <text :x="PAD_LEFT - 6" :y="tick.y" class="axis-label y-axis-label" text-anchor="end">
-              {{ tick.label }}
-            </text>
-          </g>
-
-          <path v-if="points.length > 1" :d="areaPath" fill="url(#trendAreaGradient)" />
-          <path
-            v-if="points.length > 1"
-            :d="linePath"
-            fill="none"
-            :stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-
-          <g v-for="(p, i) in points" :key="p.month">
-            <circle
-              :cx="xAt(i)"
-              :cy="yAt(seriesValues[i] ?? 0)"
-              r="12"
-              fill="transparent"
-              class="hit-target"
-              @click="focusedIndex = i"
-            />
-            <circle
-              :cx="xAt(i)"
-              :cy="yAt(seriesValues[i] ?? 0)"
-              :r="focusedIndex === i ? 5 : 3"
-              :fill="focusedIndex === i ? currentColor : 'var(--bg-page)'"
+            <path v-if="points.length > 1" :d="areaPath" fill="url(#trendAreaGradient)" />
+            <path
+              v-if="points.length > 1"
+              :d="linePath"
+              fill="none"
               :stroke="currentColor"
-              stroke-width="2"
-              class="point"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             />
-            <text :x="xAt(i)" :y="VIEW_H - 6" class="axis-label x-axis-label" text-anchor="middle">
-              {{ p.month }}月
-            </text>
-          </g>
-        </svg>
+
+            <g v-for="(p, i) in points" :key="p.month">
+              <circle
+                :cx="xAt(i)"
+                :cy="yAt(seriesValues[i] ?? 0)"
+                r="12"
+                fill="transparent"
+                class="hit-target"
+                @click="focusedIndex = i"
+              />
+              <circle
+                :cx="xAt(i)"
+                :cy="yAt(seriesValues[i] ?? 0)"
+                :r="focusedIndex === i ? 5 : 3"
+                :fill="focusedIndex === i ? currentColor : 'var(--bg-page)'"
+                :stroke="currentColor"
+                stroke-width="2"
+                class="point"
+              />
+              <text :x="xAt(i)" :y="VIEW_H - 6" class="axis-label x-axis-label" text-anchor="middle">
+                {{ p.month }}月
+              </text>
+            </g>
+          </svg>
+        </div>
       </div>
+
+      <ul class="series-chips" role="tablist" aria-label="資產趨勢分類">
+        <li v-for="opt in seriesOptions" :key="opt.key">
+          <button
+            type="button"
+            class="series-chip"
+            :class="{ active: selectedSeries === opt.key }"
+            :style="{ '--chip-color': opt.color }"
+            role="tab"
+            :aria-selected="selectedSeries === opt.key"
+            @click="selectedSeries = opt.key"
+          >
+            <span class="chip-dot" />
+            <span class="chip-label">{{ opt.label }}</span>
+          </button>
+        </li>
+      </ul>
     </template>
   </div>
 </template>
@@ -290,21 +292,28 @@ const areaPath = computed(() => {
   font-size: 14px;
 }
 
+.chart-section {
+  background: var(--bg-page);
+  padding-bottom: 16px;
+}
+
 .trend-summary {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 20px 4px;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 20px 4px;
+  text-align: center;
 }
 
 .summary-label {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .summary-value {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
@@ -314,7 +323,8 @@ const areaPath = computed(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  margin-top: -4px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
@@ -340,19 +350,16 @@ const areaPath = computed(() => {
 
 .series-chips {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 20px 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.series-chips::-webkit-scrollbar {
-  display: none;
+  margin: 0;
+  padding: 0 16px;
+  list-style: none;
 }
 
 .series-chip {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
