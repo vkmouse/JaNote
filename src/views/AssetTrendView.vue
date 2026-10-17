@@ -387,10 +387,9 @@ onMounted(async () => {
   transition: background-color 0.2s ease;
 }
 
-/* 選中：用分類色做淡底與內框，不改變列高避免版面跳動 */
+/* 選中：只用分類色做淡色填滿，不加邊框 */
 .category-item.selected {
   background: color-mix(in srgb, var(--cat-color) 16%, var(--bg-page));
-  box-shadow: inset 0 0 0 2px var(--cat-color);
 }
 
 .category-item:focus-visible {
