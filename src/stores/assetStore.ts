@@ -218,10 +218,11 @@ export const useAssetStore = defineStore("asset", () => {
   }
 
   /**
-   * 計算截至 asOf（含當日）各分類（category_id）的資產總額：
-   * 同分類且同名稱視為同一資產，以最新一筆為準；不同名稱累加
+   * 取得截至 asOf（含當日）每一項資產的最新一筆紀錄：
+   * 同分類且同名稱視為同一資產，以最新一筆為準。
+   * 資產明細列表與 getSnapshot 的加總都由這份清單而來，兩邊才不會對不上。
    */
-  function getSnapshot(asOf: number): Record<string, number> {
+  function getSnapshotRecords(asOf: number): AssetRecord[] {
     const latest = new Map<string, AssetRecord>();
     for (const r of visibleRecords.value) {
       if (r.date > asOf) continue;
@@ -235,9 +236,17 @@ export const useAssetStore = defineStore("asset", () => {
         latest.set(key, r);
       }
     }
+    return Array.from(latest.values());
+  }
+
+  /**
+   * 計算截至 asOf（含當日）各分類（category_id）的資產總額：
+   * 同分類且同名稱視為同一資產，以最新一筆為準；不同名稱累加
+   */
+  function getSnapshot(asOf: number): Record<string, number> {
     const result: Record<string, number> = {};
     for (const c of visibleCategories.value) result[c.id] = 0;
-    for (const r of latest.values()) {
+    for (const r of getSnapshotRecords(asOf)) {
       result[r.category_id] = (result[r.category_id] ?? 0) + r.amount;
     }
     return result;
@@ -259,6 +268,7 @@ export const useAssetStore = defineStore("asset", () => {
     updateRecord,
     deleteRecord,
     deleteAllAssets,
+    getSnapshotRecords,
     getSnapshot,
   };
 });

@@ -21,6 +21,17 @@
     />
 
     <div class="page-content page">
+      <!-- 右：紀錄/明細 toggle，靠右 -->
+      <div class="header-section">
+        <TypeToggle
+          v-model="listMode"
+          left-label="紀錄"
+          right-label="明細"
+          left-value="records"
+          right-value="holdings"
+        />
+      </div>
+
       <!-- Stats Section -->
       <div class="stats-section">
         <div class="chart-section">
@@ -58,10 +69,10 @@
         </div>
       </div>
 
-      <!-- Daily Asset List -->
-      <div class="asset-list">
+      <!-- Daily Asset List（紀錄模式） -->
+      <div v-if="listMode === 'records'" class="asset-list">
         <div v-if="groupedRecords.length === 0" class="chart-empty-text">
-          <p>本月暫無資產記錄</p>
+          <p>{{ activeItem ? "本月此分類暫無資產記錄" : "本月暫無資產記錄" }}</p>
         </div>
         <div v-if="groupedRecords.length > 0" class="daily-groups">
           <ListGroup v-for="group in groupedRecords" :key="group.date">
@@ -85,6 +96,37 @@
                   <div class="item-text">
                     <span class="asset-name">{{ record.name }}</span>
                     <span class="asset-category">{{ categoryName(record.category_id) }}</span>
+                  </div>
+                </div>
+                <div class="item-amount">
+                  ${{ record.amount.toLocaleString() }}
+                </div>
+              </div>
+            </ListItem>
+          </ListGroup>
+        </div>
+      </div>
+
+      <!-- Asset Holdings（明細模式）：依分類分組，每組標題顯示小計 -->
+      <div v-else class="asset-list">
+        <div v-if="holdingGroups.length === 0" class="chart-empty-text">
+          <p>{{ activeItem ? "此日期該分類尚無資產明細" : "此日期尚無資產明細" }}</p>
+        </div>
+        <div v-else class="daily-groups">
+          <ListGroup v-for="group in holdingGroups" :key="group.id">
+            <template #header-left>
+              <span class="date-title">{{ group.name }}</span>
+            </template>
+            <template #header-right>
+              <span class="group-subtotal">${{ group.subtotal.toLocaleString() }}</span>
+            </template>
+            <ListItem v-for="record in group.records" :key="record.id">
+              <div class="asset-item asset-item--link" @click="goToSearch(record)">
+                <div class="item-left">
+                  <CategoryIcon :category-name="group.name" color-mode="category" />
+                  <div class="item-text">
+                    <span class="asset-name">{{ record.name }}</span>
+                    <span class="asset-category">更新於 {{ formatRecordDate(record.date) }}</span>
                   </div>
                 </div>
                 <div class="item-amount">
@@ -124,6 +166,7 @@ import NavAvatar from "../components/NavAvatar.vue";
 import MonthPicker from "../components/MonthPicker.vue";
 import DonutChart from "../components/DonutChart.vue";
 import type { DonutSlice } from "../components/DonutChart.vue";
+import TypeToggle from "../components/TypeToggle.vue";
 import AssetBottomBar from "../components/AssetBottomBar.vue";
 import CategoryIcon, { getCategoryColor } from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
@@ -231,13 +274,67 @@ const toggleCategory = (name: string) => {
 const formatPercent = (percent: number) =>
   percent > 0 && percent < 0.1 ? "<0.1%" : `${percent.toFixed(1)}%`;
 
+// 紀錄：依日期列出每一筆；明細：列出每項資產的最新一筆，用來對帳總資產
+type ListMode = "records" | "holdings";
+const listMode = ref<ListMode>("records");
+
+// 兩個模式共用同一個分類篩選（activeItem），選了分類就只留該分類
 const groupedRecords = computed(() =>
   groupRecordsByDate(
     assetStore.visibleRecords.filter(
-      (r) => r.date >= monthStart.value && r.date <= monthEnd.value,
+      (r) =>
+        r.date >= monthStart.value &&
+        r.date <= monthEnd.value &&
+        (!activeItem.value || r.category_id === activeItem.value.id),
     ),
   ),
 );
+
+interface HoldingGroup {
+  id: string;
+  name: string;
+  subtotal: number;
+  records: AssetRecord[];
+}
+
+// 明細與上方總資產共用 getSnapshotRecords 這份資料，小計加起來就是總資產。
+// 只列 visibleCategories 內的分類（與 totalAsset 的加總範圍一致）；
+// 金額為 0 的資產（賣光、還清）不列，與甜甜圈圖只畫 value > 0 的行為一致。
+// 分類依小計由大到小排，與圖例順序相同。
+const holdingGroups = computed<HoldingGroup[]>(() => {
+  const byCategory = new Map<string, AssetRecord[]>();
+  for (const r of assetStore.getSnapshotRecords(snapshotDate.value)) {
+    if (r.amount === 0) continue;
+    const list = byCategory.get(r.category_id);
+    if (list) list.push(r);
+    else byCategory.set(r.category_id, [r]);
+  }
+
+  return assetStore.visibleCategories
+    .filter(
+      (c) =>
+        byCategory.has(c.id) && (!activeItem.value || c.id === activeItem.value.id),
+    )
+    .map((c) => {
+      const records = [...byCategory.get(c.id)!].sort(
+        (a, b) => b.amount - a.amount,
+      );
+      return {
+        id: c.id,
+        name: c.name,
+        subtotal: records.reduce((sum, r) => sum + r.amount, 0),
+        records,
+      };
+    })
+    .sort((a, b) => b.subtotal - a.subtotal);
+});
+
+const formatRecordDate = (ts: number) => {
+  const d = new Date(ts);
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}/${m}/${day}`;
+};
 
 const editRecord = (id: string) => {
   if (isViewingShared.value) return;
@@ -262,14 +359,17 @@ const {
   await assetStore.deleteRecord(id);
 });
 
-// 年月同步到 query，從新增頁返回時能維持原本檢視的月份
+// 年月與列表模式同步到 query，從新增頁或歷史頁返回時能維持原本的檢視
 const isInitialized = ref(false);
 
-watch([selectedYear, selectedMonth], () => {
+watch([selectedYear, selectedMonth, listMode], () => {
   if (!isInitialized.value) return;
-  router.replace({
-    query: { year: String(selectedYear.value), month: String(selectedMonth.value) },
-  });
+  const query: Record<string, string> = {
+    year: String(selectedYear.value),
+    month: String(selectedMonth.value),
+  };
+  if (listMode.value === "holdings") query.mode = "holdings";
+  router.replace({ query });
 });
 
 onMounted(async () => {
@@ -284,6 +384,7 @@ onMounted(async () => {
     const m = parseInt(q.month);
     if (!isNaN(m)) selectedMonth.value = m;
   }
+  if (q.mode === "holdings") listMode.value = "holdings";
   await nextTick();
   isInitialized.value = true;
 });
@@ -310,6 +411,14 @@ onMounted(async () => {
   flex: 1;
   background: var(--bg-page);
   padding-bottom: 100px;
+}
+
+/* 紀錄/明細 toggle：靠右，與分類總覽頁的支出/收入切換相同位置 */
+.header-section {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 13px 12px;
 }
 
 .stats-section {
@@ -423,6 +532,18 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+/* 明細模式：分類小計，放在組標題右側 */
+.group-subtotal {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 明細列可點擊跳到歷史紀錄 */
+.asset-item--link {
+  cursor: pointer;
 }
 
 .asset-item {
