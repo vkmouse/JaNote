@@ -21,8 +21,17 @@
     />
 
     <div class="page-content page">
-      <!-- 右：紀錄/明細 toggle，靠右 -->
+      <!-- 左：含不可動用徽章（綠色＝已計入，灰色＝只看可動用）；右：紀錄/明細 toggle -->
       <div class="header-section">
+        <button
+          type="button"
+          :class="['page-badge', showLocked ? 'recurring-badge-active' : 'recurring-badge-inactive']"
+          :aria-pressed="showLocked"
+          @click="toggleShowLocked"
+        >
+          <span class="page-badge-icon" v-html="iconLock"></span>
+          <span class="page-badge-label">含不可動用</span>
+        </button>
         <TypeToggle
           v-model="listMode"
           left-label="紀錄"
@@ -39,7 +48,7 @@
             :swipeable="true"
             :selectable="true"
             :active-label="activeItem?.name ?? null"
-            :center-label="activeItem ? activeItem.name : '總資產'"
+            :center-label="activeItem ? activeItem.name : showLocked ? '總資產' : '可動用資產'"
             :center-balance="`$${(activeItem ? activeItem.value : totalAsset).toLocaleString()}`"
             :center-sub="activeItem ? formatPercent(activeItem.percent) : undefined"
             :slices="chartSlices"
@@ -181,6 +190,8 @@ import type { AssetRecord } from "../types";
 import { useAssetStore, startOfDay } from "../stores/assetStore";
 import { useUserStore } from "../stores/userStore";
 import { groupRecordsByDate } from "../utils/groupRecordsByDate";
+import { iconLock } from "../utils/icons";
+import { showLocked, toggleShowLocked } from "../composables/useLockedAssets";
 
 const router = useRouter();
 const route = useRoute();
@@ -430,11 +441,11 @@ onMounted(async () => {
   padding-bottom: 100px;
 }
 
-/* 紀錄/明細 toggle：靠右，與分類總覽頁的支出/收入切換相同位置 */
+/* 左：含不可動用徽章；右：紀錄/明細 toggle，與分類總覽頁的支出/收入切換相同位置 */
 .header-section {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 13px 12px;
 }
 

@@ -49,6 +49,7 @@ import iconLayers from "../assets/icons/new/icon-layers.svg?raw";
 import iconCoins from "../assets/icons/new/icon-coins.svg?raw";
 import iconBank from "../assets/icons/new/icon-bank.svg?raw";
 import iconCopy from "../assets/icons/new/icon-copy.svg?raw";
+import iconLock from "../assets/icons/new/icon-lock.svg?raw";
 
 export {
   iconDefault,
@@ -99,4 +100,5 @@ export {
   iconCoins,
   iconBank,
   iconCopy,
+  iconLock,
 };

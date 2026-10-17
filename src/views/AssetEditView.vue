@@ -12,6 +12,21 @@
 
     <!-- Main Content -->
     <div class="edit-content page">
+      <!-- 不可動用徽章：標記這項資產（分類＋名稱）平常不計入可動用資產，例如退休基金 -->
+      <div class="header-section">
+        <div class="left-controls">
+          <button
+            type="button"
+            :class="['page-badge', isLocked ? 'recurring-badge-active' : 'recurring-badge-inactive']"
+            :aria-pressed="isLocked"
+            @click="isLocked = !isLocked"
+          >
+            <span class="page-badge-icon" v-html="iconLock"></span>
+            <span class="page-badge-label">不可動用</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Categories Grid -->
       <div class="categories-section">
         <CategoryGrid
@@ -56,6 +71,8 @@ import CategoryGrid from "../components/CategoryGrid.vue";
 import AmountInput from "../components/AmountInput.vue";
 import { useAssetStore } from "../stores/assetStore";
 import { useUserStore } from "../stores/userStore";
+import { iconLock } from "../utils/icons";
+import { isAssetLocked, setAssetLocked } from "../composables/useLockedAssets";
 import type { Category } from "../types";
 
 const router = useRouter();
@@ -70,6 +87,14 @@ const selectedCategoryId = ref<string>("");
 const assetName = ref<string>("");
 const amount = ref<string>("");
 const previousAutoNote = ref<string | null>(null);
+const isLocked = ref(false);
+
+// 徽章反映「目前分類＋名稱」這項資產是否已被標記為不可動用；
+// 為既有的不可動用資產新增紀錄時會自動亮起，避免存檔時誤把它取消標記
+watch([selectedCategoryId, assetName], ([categoryId, name]) => {
+  isLocked.value =
+    !!categoryId && !!name.trim() && isAssetLocked(categoryId, name);
+});
 
 const selectedCategoryName = computed(() =>
   selectedCategoryId.value
@@ -142,6 +167,9 @@ async function save() {
       date: currentDate.value,
     });
   }
+  if (isAssetLocked(selectedCategoryId.value, assetName.value) !== isLocked.value) {
+    setAssetLocked(selectedCategoryId.value, assetName.value, isLocked.value);
+  }
   router.back();
 }
 
@@ -195,11 +223,24 @@ onMounted(async () => {
   min-height: 0;
 }
 
+.header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 12px;
+}
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .categories-section {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 13px 12px 0;
+  padding: 0 12px;
   border-bottom: 2px solid var(--border-primary);
 }
 

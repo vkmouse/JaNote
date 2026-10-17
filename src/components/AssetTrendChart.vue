@@ -105,6 +105,7 @@
 import { computed, ref, watch } from "vue";
 import { useAssetStore, startOfDay } from "../stores/assetStore";
 import { getCategoryColor } from "./CategoryIcon.vue";
+import { showLocked } from "../composables/useLockedAssets";
 
 const props = defineProps<{ year: number }>();
 
@@ -157,8 +158,11 @@ watch([activeCategories, () => props.year], () => {
   }
 });
 
+// 只看可動用時，合計並不含不可動用的資產，標籤要如實標示
+const totalLabel = computed(() => (showLocked.value ? "總資產" : "可動用資產"));
+
 const seriesOptions = computed(() => [
-  { key: "total", label: "總資產", color: "var(--janote-income)" },
+  { key: "total", label: totalLabel.value, color: "var(--janote-income)" },
   ...activeCategories.value.map((c) => ({
     key: c.id,
     label: c.name,
@@ -167,7 +171,7 @@ const seriesOptions = computed(() => [
 ]);
 
 const currentSeriesLabel = computed(
-  () => seriesOptions.value.find((o) => o.key === selectedSeries.value)?.label ?? "總資產",
+  () => seriesOptions.value.find((o) => o.key === selectedSeries.value)?.label ?? totalLabel.value,
 );
 const currentColor = computed(
   () => seriesOptions.value.find((o) => o.key === selectedSeries.value)?.color ?? "var(--janote-income)",

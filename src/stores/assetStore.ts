@@ -6,6 +6,11 @@ import { syncQueueRepository } from "../db/repositories/syncQueueRepository";
 import { userRepository } from "../db/repositories/userRepository";
 import { useUserStore } from "./userStore";
 import type { AssetRecord, Category } from "../types";
+import {
+  showLocked,
+  isAssetLocked,
+  clearLockedAssets,
+} from "../composables/useLockedAssets";
 
 export function startOfDay(ts: number): number {
   const d = new Date(ts);
@@ -20,9 +25,13 @@ export const useAssetStore = defineStore("asset", () => {
   const categories = ref<Category[]>([]);
 
   // ── Computed ───────────────────────────────────────────────
+  // 未開啟「含不可動用」時，不可動用的資產（含其所有歷史紀錄）不進入任何統計、列表與搜尋
   const visibleRecords = computed(() =>
     records.value.filter(
-      (r) => !r.is_deleted && r.user_id === userStore.activeUserId,
+      (r) =>
+        !r.is_deleted &&
+        r.user_id === userStore.activeUserId &&
+        (showLocked.value || !isAssetLocked(r.category_id, r.name)),
     ),
   );
 
@@ -213,6 +222,8 @@ export const useAssetStore = defineStore("asset", () => {
   async function deleteAllAssets(): Promise<void> {
     await assetRepository.deleteAll();
     records.value = [];
+    // 不可動用清單只存本機，重置時一併清空，避免殘留對不到任何資產的項目
+    clearLockedAssets();
     // 分類資料表由 transactionStore.deleteAllCategories 一併清空，這裡同步清掉本 store 的快取
     categories.value = [];
   }
