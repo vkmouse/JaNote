@@ -68,13 +68,6 @@ const showDatabaseUpdateModal = ref(false);
 const isUpdatingDatabase = ref(false);
 const databaseUpdateResult = ref<{
   message?: string;
-  total_users?: number;
-  added_count?: number;
-  skipped_count?: number;
-  reordered_count?: number;
-  order_skipped_count?: number;
-  asset_category_added_count?: number;
-  asset_category_skipped_count?: number;
   error?: string;
 } | null>(null);
 
@@ -783,22 +776,7 @@ async function handleInviteConfirm() {
         <template v-if="!databaseUpdateResult">
           <p v-if="isUpdatingDatabase">正在執行資料庫更新，請稍候…</p>
           <template v-else>
-            <p>本次更新會補齊以下支出分類：</p>
-            <ul>
-              <li>保險</li>
-              <li>運動</li>
-              <li>飲食</li>
-            </ul>
-            <p>同時會統一支出分類的順序：飲食接在晚餐後、運動接在房租後、保險接在旅行後。</p>
-            <p>並建立資產資料表，補齊以下資產分類：</p>
-            <ul>
-              <li>國內證券</li>
-              <li>海外證券</li>
-              <li>基金</li>
-              <li>約當現金</li>
-              <li>信託</li>
-            </ul>
-            <p>已存在的資料表、分類、順序已正確的都會自動跳過，可重複執行。</p>
+            <p>目前沒有待執行的更新項目。</p>
           </template>
         </template>
 
@@ -812,36 +790,6 @@ async function handleInviteConfirm() {
           <p class="database-update-result database-update-result--success">
             {{ databaseUpdateResult.message }}
           </p>
-          <div class="database-update-stats">
-            <div>
-              <span>使用者數</span>
-              <strong>{{ databaseUpdateResult.total_users ?? 0 }}</strong>
-            </div>
-            <div>
-              <span>新增分類</span>
-              <strong>{{ databaseUpdateResult.added_count ?? 0 }}</strong>
-            </div>
-            <div>
-              <span>略過既有</span>
-              <strong>{{ databaseUpdateResult.skipped_count ?? 0 }}</strong>
-            </div>
-            <div>
-              <span>調整順序</span>
-              <strong>{{ databaseUpdateResult.reordered_count ?? 0 }}</strong>
-            </div>
-            <div>
-              <span>略過順序</span>
-              <strong>{{ databaseUpdateResult.order_skipped_count ?? 0 }}</strong>
-            </div>
-            <div>
-              <span>新增資產分類</span>
-              <strong>{{ databaseUpdateResult.asset_category_added_count ?? 0 }}</strong>
-            </div>
-            <div>
-              <span>略過資產分類</span>
-              <strong>{{ databaseUpdateResult.asset_category_skipped_count ?? 0 }}</strong>
-            </div>
-          </div>
         </template>
       </div>
     </ConfirmModal>
@@ -1219,11 +1167,6 @@ async function handleInviteConfirm() {
   margin: 0;
 }
 
-.database-update-content ul {
-  margin: 8px 0;
-  padding-left: 22px;
-}
-
 .database-update-result {
   text-align: center;
   font-weight: 600;
@@ -1235,32 +1178,5 @@ async function handleInviteConfirm() {
 
 .database-update-result--error {
   color: var(--state-danger);
-}
-
-.database-update-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.database-update-stats > div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 4px;
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-}
-
-.database-update-stats span {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.database-update-stats strong {
-  font-size: 18px;
-  color: var(--text-primary);
 }
 </style>
