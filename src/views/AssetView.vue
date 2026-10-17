@@ -118,30 +118,32 @@
         </div>
       </div>
 
-      <!-- Asset Holdings（明細模式）：依分類分組，每組標題顯示小計 -->
+      <!-- Asset Holdings（明細模式）：單一 ListGroup，各分類的資產排在一起，標題顯示合計 -->
       <div v-else class="asset-list">
-        <div v-if="holdingGroups.length === 0" class="chart-empty-text">
+        <div v-if="holdingItems.length === 0" class="chart-empty-text">
           <p>{{ activeItem ? "此日期該分類尚無資產明細" : "此日期尚無資產明細" }}</p>
         </div>
         <div v-else class="daily-groups">
-          <ListGroup v-for="group in holdingGroups" :key="group.id">
+          <ListGroup>
             <template #header-left>
-              <span class="date-title">{{ group.name }}</span>
+              <span class="date-title">資產明細</span>
             </template>
             <template #header-right>
-              <span class="group-subtotal">${{ group.subtotal.toLocaleString() }}</span>
+              <span class="group-subtotal">${{ holdingsTotal.toLocaleString() }}</span>
             </template>
-            <ListItem v-for="record in group.records" :key="record.id">
-              <div class="asset-item asset-item--link" @click="goToSearch(record)">
+            <ListItem v-for="item in holdingItems" :key="item.record.id">
+              <div class="asset-item asset-item--link" @click="goToSearch(item.record)">
                 <div class="item-left">
-                  <CategoryIcon :category-name="group.name" color-mode="category" />
+                  <CategoryIcon :category-name="item.categoryName" color-mode="category" />
                   <div class="item-text">
-                    <span class="asset-name">{{ record.name }}</span>
-                    <span class="asset-category">更新於 {{ formatRecordDate(record.date) }}</span>
+                    <span class="asset-name">{{ item.record.name }}</span>
+                    <span class="asset-category">
+                      {{ item.categoryName }} · 更新於 {{ formatRecordDate(item.record.date) }}
+                    </span>
                   </div>
                 </div>
                 <div class="item-amount">
-                  ${{ record.amount.toLocaleString() }}
+                  ${{ item.record.amount.toLocaleString() }}
                 </div>
               </div>
             </ListItem>
@@ -303,18 +305,18 @@ const groupedRecords = computed(() =>
   ),
 );
 
-interface HoldingGroup {
-  id: string;
-  name: string;
-  subtotal: number;
-  records: AssetRecord[];
+interface HoldingItem {
+  record: AssetRecord;
+  categoryName: string;
 }
 
-// 明細與上方總資產共用 getSnapshotRecords 這份資料，小計加起來就是總資產。
+// 明細與上方總資產共用 getSnapshotRecords 這份資料，合計就是總資產。
 // 只列 visibleCategories 內的分類（與 totalAsset 的加總範圍一致）；
 // 金額為 0 的資產（賣光、還清）不列，與甜甜圈圖只畫 value > 0 的行為一致。
-// 分類依小計由大到小排，與圖例順序相同。
-const holdingGroups = computed<HoldingGroup[]>(() => {
+// 全部放進同一個 ListGroup：先依分類固定順序（visibleCategories 的 sortOrder），
+// 同分類內再依資產名稱字串排序（zh-Hant），所以同分類的資產仍會相鄰，
+// 且順序不隨金額變動。
+const holdingItems = computed<HoldingItem[]>(() => {
   const byCategory = new Map<string, AssetRecord[]>();
   for (const r of assetStore.getSnapshotRecords(snapshotDate.value)) {
     if (r.amount === 0) continue;
@@ -328,19 +330,16 @@ const holdingGroups = computed<HoldingGroup[]>(() => {
       (c) =>
         byCategory.has(c.id) && (!activeItem.value || c.id === activeItem.value.id),
     )
-    .map((c) => {
-      const records = [...byCategory.get(c.id)!].sort(
-        (a, b) => b.amount - a.amount,
-      );
-      return {
-        id: c.id,
-        name: c.name,
-        subtotal: records.reduce((sum, r) => sum + r.amount, 0),
-        records,
-      };
-    })
-    .sort((a, b) => b.subtotal - a.subtotal);
+    .flatMap((c) =>
+      [...byCategory.get(c.id)!]
+        .sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"))
+        .map((record) => ({ record, categoryName: c.name })),
+    );
 });
+
+const holdingsTotal = computed(() =>
+  holdingItems.value.reduce((sum, item) => sum + item.record.amount, 0),
+);
 
 const formatRecordDate = (ts: number) => {
   const d = new Date(ts);
@@ -562,7 +561,7 @@ onMounted(async () => {
   color: var(--text-primary);
 }
 
-/* 明細模式：分類小計，放在組標題右側 */
+/* 明細模式：合計，放在群組標題右側 */
 .group-subtotal {
   font-size: 16px;
   font-weight: 700;
