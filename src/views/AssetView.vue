@@ -21,7 +21,7 @@
     />
 
     <div class="page-content page">
-      <!-- 左：含不可動用徽章（綠色＝已計入，灰色＝只看可動用）；右：紀錄/明細 toggle -->
+      <!-- 左：含不可動用徽章（綠色＝已計入，灰色＝只看可動用）；右：明細/紀錄 toggle -->
       <div class="header-section">
         <button
           type="button"
@@ -34,10 +34,10 @@
         </button>
         <TypeToggle
           v-model="listMode"
-          left-label="紀錄"
-          right-label="明細"
-          left-value="records"
-          right-value="holdings"
+          left-label="明細"
+          right-label="紀錄"
+          left-value="holdings"
+          right-value="records"
         />
       </div>
 
@@ -294,7 +294,7 @@ const formatPercent = (percent: number) =>
 
 // 紀錄：依日期列出每一筆；明細：列出每項資產的最新一筆，用來對帳總資產
 type ListMode = "records" | "holdings";
-const listMode = ref<ListMode>("records");
+const listMode = ref<ListMode>("holdings");
 
 // 兩個模式共用同一個分類篩選（activeItem），選了分類就只留該分類
 const groupedRecords = computed(() =>
@@ -383,7 +383,7 @@ watch([selectedYear, selectedMonth, listMode], () => {
     year: String(selectedYear.value),
     month: String(selectedMonth.value),
   };
-  if (listMode.value === "holdings") query.mode = "holdings";
+  if (listMode.value === "records") query.mode = "records";
   router.replace({ query });
 });
 
@@ -399,7 +399,7 @@ onMounted(async () => {
     const m = parseInt(q.month);
     if (!isNaN(m)) selectedMonth.value = m;
   }
-  if (q.mode === "holdings") listMode.value = "holdings";
+  if (q.mode === "records") listMode.value = "records";
   await nextTick();
   isInitialized.value = true;
 });
@@ -428,7 +428,7 @@ onMounted(async () => {
   padding-bottom: 100px;
 }
 
-/* 左：含不可動用徽章；右：紀錄/明細 toggle，與分類總覽頁的支出/收入切換相同位置 */
+/* 左：含不可動用徽章；右：明細/紀錄 toggle，與分類總覽頁的支出/收入切換相同位置 */
 .header-section {
   display: flex;
   align-items: center;
