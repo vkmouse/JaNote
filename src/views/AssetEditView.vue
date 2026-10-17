@@ -150,7 +150,24 @@ onMounted(async () => {
   await assetStore.loadCategories();
 
   const id = route.params.id as string | undefined;
-  if (!id) return;
+  if (!id) {
+    // 套用上一頁透過 history.state 帶入的初始值（例如左滑複製）
+    const state = window.history.state as
+      | {
+          prefill?: {
+            name?: string;
+            amount?: number;
+            category_id?: string | null;
+          };
+        }
+      | undefined;
+    if (state?.prefill) {
+      assetName.value = state.prefill.name ?? "";
+      amount.value = state.prefill.amount != null ? String(state.prefill.amount) : "";
+      selectedCategoryId.value = state.prefill.category_id ?? "";
+    }
+    return;
+  }
   const record = await assetStore.getRecordById(id);
   if (!record) return;
   editingId.value = id;

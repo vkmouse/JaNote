@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, inject, watch } from "vue";
 import { listGroupKey } from "../composables/useSharedSwipeContext";
-import { iconTrash, iconDefault } from "../utils/icons";
+import { iconTrash, iconDefault, iconCopy } from "../utils/icons";
 
 const props = withDefaults(
   defineProps<{
     swipeable?: boolean;
     deleteOnly?: boolean;
+    copyable?: boolean;
   }>(),
-  { swipeable: false, deleteOnly: false }
+  { swipeable: false, deleteOnly: false, copyable: false }
 );
 
 const emit = defineEmits<{
   (e: "delete"): void;
   (e: "edit"): void;
+  (e: "copy"): void;
   (e: "item-click"): void;
 }>();
 
@@ -22,7 +24,12 @@ const groupContext = inject(listGroupKey, null);
 const itemId = Symbol();
 
 // ── Swipe state ──────────────────────────────────────────────────────────────
-const buttonWidth = computed(() => (props.deleteOnly ? 72 : 144));
+const ACTION_WIDTH = 72;
+// 按鈕數量：delete 一定有，edit 在 deleteOnly 時隱藏，copy 由 copyable 決定
+const actionCount = computed(
+  () => (props.deleteOnly ? 1 : 2) + (props.copyable ? 1 : 0)
+);
+const buttonWidth = computed(() => actionCount.value * ACTION_WIDTH);
 const DIRECTION_LOCK_THRESHOLD = 8;
 
 const containerRef = ref<HTMLElement>();
@@ -144,6 +151,14 @@ function onContentClick() {
   }
 }
 
+// ── Copy button ──────────────────────────────────────────────────────────────
+function onCopyClick() {
+  emit("copy");
+  translateX.value = 0;
+  isOpen.value = false;
+  groupContext?.closeAll();
+}
+
 // ── Edit button ──────────────────────────────────────────────────────────────
 function onEditClick() {
   emit("edit");
@@ -164,7 +179,10 @@ function onDeleteClick() {
 <template>
   <div :class="['list-item', { 'list-item--swipeable': swipeable }]">
     <template v-if="swipeable">
-      <div class="swipe-actions" :class="{ 'swipe-actions--delete-only': deleteOnly }">
+      <div class="swipe-actions" :style="{ width: `${buttonWidth}px` }">
+        <div v-if="copyable" class="swipe-action swipe-action--copy" @click.stop="onCopyClick">
+          <span v-html="iconCopy" class="action-icon" />
+        </div>
         <div v-if="!deleteOnly" class="swipe-action swipe-action--edit" @click.stop="onEditClick">
           <span v-html="iconDefault" class="action-icon" />
         </div>
@@ -216,12 +234,7 @@ function onDeleteClick() {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 144px;
   display: flex;
-}
-
-.swipe-actions--delete-only {
-  width: 72px;
 }
 
 .swipe-action {
@@ -231,6 +244,10 @@ function onDeleteClick() {
   justify-content: center;
   color: #fff;
   cursor: pointer;
+}
+
+.swipe-action--copy {
+  background: var(--janote-income, #47B8E0);
 }
 
 .swipe-action--edit {

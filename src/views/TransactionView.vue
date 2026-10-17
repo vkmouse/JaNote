@@ -79,8 +79,10 @@
               v-for="transaction in group.transactions"
               :key="transaction.id"
               :swipeable="!isViewingShared"
+              :copyable="true"
               @delete="onSwipeDelete(transaction.id)"
               @edit="editTransaction(transaction.id)"
+              @copy="copyTransaction(transaction)"
               @item-click="goToSearch(transaction)"
             >
               <div class="transaction-item" @click="isViewingShared && goToSearch(transaction)">
@@ -285,6 +287,22 @@ const getCategoryName = (categoryId: string): string => {
 const editTransaction = (id: string) => {
   if (isViewingShared.value) return;
   router.push(`/transaction/${id}/edit`);
+};
+
+const copyTransaction = (transaction: Transaction) => {
+  if (isViewingShared.value) return;
+  // 不帶 date，新增頁會預設為當下時間
+  router.push({
+    name: "transaction-new",
+    state: {
+      prefill: {
+        type: transaction.type,
+        note: transaction.note,
+        amount: transaction.amount,
+        category_id: transaction.category_id,
+      },
+    },
+  });
 };
 
 const goToSearch = (transaction: Transaction) => {

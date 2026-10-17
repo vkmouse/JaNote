@@ -472,6 +472,7 @@ onMounted(async () => {
     const state = window.history.state as
       | {
           prefill?: {
+            type?: TransactionType;
             note?: string;
             amount?: number;
             category_id?: string | null;
@@ -480,6 +481,8 @@ onMounted(async () => {
         }
       | undefined;
     if (state?.prefill) {
+      // 複製收入時要帶入 type，否則分類格會顯示成預設的支出分類
+      if (state.prefill.type) transactionType.value = state.prefill.type;
       notes.value = state.prefill.note ?? "";
       amount.value = state.prefill.amount != null ? String(state.prefill.amount) : "";
       selectedCategoryId.value = state.prefill.category_id ?? "";

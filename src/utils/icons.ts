@@ -48,6 +48,7 @@ import iconGlobeTrend from "../assets/icons/new/icon-globe-trend.svg?raw";
 import iconLayers from "../assets/icons/new/icon-layers.svg?raw";
 import iconCoins from "../assets/icons/new/icon-coins.svg?raw";
 import iconBank from "../assets/icons/new/icon-bank.svg?raw";
+import iconCopy from "../assets/icons/new/icon-copy.svg?raw";
 
 export {
   iconDefault,
@@ -97,4 +98,5 @@ export {
   iconLayers,
   iconCoins,
   iconBank,
+  iconCopy,
 };

@@ -69,8 +69,10 @@
               v-for="record in group.records"
               :key="record.id"
               :swipeable="!isViewingShared"
+              :copyable="true"
               @delete="onSwipeDelete(record.id)"
               @edit="editRecord(record.id)"
+              @copy="copyRecord(record)"
             >
               <div class="asset-item">
                 <div class="item-left">
@@ -139,6 +141,7 @@ import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
 import { useUserStore } from "../stores/userStore";
 import { useAssetStore } from "../stores/assetStore";
+import type { AssetRecord } from "../types";
 import ConfirmModal from "../components/ConfirmModal.vue";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 import { useDeleteConfirm } from "../composables/useDeleteConfirm";
@@ -200,6 +203,21 @@ const clearSearch = () => {
 const editRecord = (id: string) => {
   if (isViewingShared.value) return;
   router.push(`/assets/${id}/edit`);
+};
+
+const copyRecord = (record: AssetRecord) => {
+  if (isViewingShared.value) return;
+  // 不帶 date，新增頁會預設為今天
+  router.push({
+    name: "asset-new",
+    state: {
+      prefill: {
+        name: record.name,
+        amount: record.amount,
+        category_id: record.category_id,
+      },
+    },
+  });
 };
 
 const {
