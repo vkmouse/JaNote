@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-// 純折線圖：只負責畫線、軸與資料點，資料與摘要由父層提供
+// 純折線圖，資料由父層提供
 const props = defineProps<{
   /** X 軸標籤，數量需與 values 一致 */
   labels: string[];
@@ -69,7 +69,7 @@ const props = defineProps<{
   color: string;
 }>();
 
-/** 目前聚焦的資料點索引，點擊資料點時更新 */
+/** 目前聚焦的資料點索引 */
 const focusedIndex = defineModel<number>("focusedIndex", { default: 0 });
 
 // ── SVG 幾何 ───────────────────────────────────────────────

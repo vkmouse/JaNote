@@ -12,6 +12,9 @@ import {
   clearLockedAssets,
 } from "../composables/useLockedAssets";
 
+// 共用 Collator，避免排序時重複建立
+const nameCollator = new Intl.Collator("zh-Hant");
+
 export function startOfDay(ts: number): number {
   const d = new Date(ts);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -54,6 +57,21 @@ export const useAssetStore = defineStore("asset", () => {
 
   function getCategoryName(categoryId: string): string {
     return categoryNameMap.value.get(categoryId) ?? "未知分類";
+  }
+
+  /** category_id → 分類固定順序 */
+  const categoryOrder = computed(
+    () => new Map(visibleCategories.value.map((c, i) => [c.id, i])),
+  );
+
+  /** 先依分類固定順序，再依名稱排序；紀錄、明細、搜尋共用 */
+  function compareRecords(a: AssetRecord, b: AssetRecord): number {
+    const order = categoryOrder.value;
+    return (
+      (order.get(a.category_id) ?? Number.MAX_SAFE_INTEGER) -
+        (order.get(b.category_id) ?? Number.MAX_SAFE_INTEGER) ||
+      nameCollator.compare(a.name, b.name)
+    );
   }
 
   // ── Actions ────────────────────────────────────────────────
@@ -272,6 +290,7 @@ export const useAssetStore = defineStore("asset", () => {
     visibleCategories,
     // actions
     getCategoryName,
+    compareRecords,
     loadRecords,
     loadCategories,
     getRecordById,

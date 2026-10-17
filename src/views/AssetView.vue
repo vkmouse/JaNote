@@ -118,7 +118,7 @@
         </div>
       </div>
 
-      <!-- Asset Holdings（明細模式）：單一 ListGroup，各分類的資產排在一起，標題顯示合計 -->
+      <!-- Asset Holdings（明細模式）：同一個群組，標題顯示合計 -->
       <div v-else class="asset-list">
         <div v-if="holdingItems.length === 0" class="chart-empty-text">
           <p>{{ activeItem ? "此日期該分類尚無資產明細" : "此日期尚無資產明細" }}</p>
@@ -131,19 +131,22 @@
             <template #header-right>
               <span class="group-subtotal">${{ holdingsTotal.toLocaleString() }}</span>
             </template>
-            <ListItem v-for="item in holdingItems" :key="item.record.id">
-              <div class="asset-item asset-item--link" @click="goToSearch(item.record)">
+            <ListItem v-for="record in holdingItems" :key="record.id">
+              <div class="asset-item asset-item--link" @click="goToSearch(record)">
                 <div class="item-left">
-                  <CategoryIcon :category-name="item.categoryName" color-mode="category" />
+                  <CategoryIcon
+                    :category-name="categoryName(record.category_id)"
+                    color-mode="category"
+                  />
                   <div class="item-text">
-                    <span class="asset-name">{{ item.record.name }}</span>
+                    <span class="asset-name">{{ record.name }}</span>
                     <span class="asset-category">
-                      {{ item.categoryName }} · 更新於 {{ formatRecordDate(item.record.date) }}
+                      {{ categoryName(record.category_id) }} · 更新於 {{ formatRecordDate(record.date) }}
                     </span>
                   </div>
                 </div>
                 <div class="item-amount">
-                  ${{ item.record.amount.toLocaleString() }}
+                  ${{ record.amount.toLocaleString() }}
                 </div>
               </div>
             </ListItem>
@@ -302,43 +305,28 @@ const groupedRecords = computed(() =>
         r.date <= monthEnd.value &&
         (!activeItem.value || r.category_id === activeItem.value.id),
     ),
+    assetStore.compareRecords,
   ),
 );
-
-interface HoldingItem {
-  record: AssetRecord;
-  categoryName: string;
-}
 
 // 明細與上方總資產共用 getSnapshotRecords 這份資料，合計就是總資產。
 // 只列 visibleCategories 內的分類（與 totalAsset 的加總範圍一致）；
 // 金額為 0 的資產（賣光、還清）不列，與甜甜圈圖只畫 value > 0 的行為一致。
-// 全部放進同一個 ListGroup：先依分類固定順序（visibleCategories 的 sortOrder），
-// 同分類內再依資產名稱字串排序（zh-Hant），所以同分類的資產仍會相鄰，
-// 且順序不隨金額變動。
-const holdingItems = computed<HoldingItem[]>(() => {
-  const byCategory = new Map<string, AssetRecord[]>();
-  for (const r of assetStore.getSnapshotRecords(snapshotDate.value)) {
-    if (r.amount === 0) continue;
-    const list = byCategory.get(r.category_id);
-    if (list) list.push(r);
-    else byCategory.set(r.category_id, [r]);
-  }
-
-  return assetStore.visibleCategories
+const holdingItems = computed<AssetRecord[]>(() => {
+  const visibleIds = new Set(assetStore.visibleCategories.map((c) => c.id));
+  return assetStore
+    .getSnapshotRecords(snapshotDate.value)
     .filter(
-      (c) =>
-        byCategory.has(c.id) && (!activeItem.value || c.id === activeItem.value.id),
+      (r) =>
+        r.amount !== 0 &&
+        visibleIds.has(r.category_id) &&
+        (!activeItem.value || r.category_id === activeItem.value.id),
     )
-    .flatMap((c) =>
-      [...byCategory.get(c.id)!]
-        .sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"))
-        .map((record) => ({ record, categoryName: c.name })),
-    );
+    .sort(assetStore.compareRecords);
 });
 
 const holdingsTotal = computed(() =>
-  holdingItems.value.reduce((sum, item) => sum + item.record.amount, 0),
+  holdingItems.value.reduce((sum, r) => sum + r.amount, 0),
 );
 
 const formatRecordDate = (ts: number) => {

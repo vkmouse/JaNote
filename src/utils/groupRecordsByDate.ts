@@ -8,7 +8,11 @@ export interface AssetDailyGroup {
 
 const WEEK_DAYS = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
 
-export function groupRecordsByDate(records: AssetRecord[]): AssetDailyGroup[] {
+/** 依日期分組；傳入 compare 時，群組內改用它排序 */
+export function groupRecordsByDate(
+  records: AssetRecord[],
+  compare?: (a: AssetRecord, b: AssetRecord) => number,
+): AssetDailyGroup[] {
   const sorted = [...records].sort(
     (a, b) => b.date - a.date || b.created_at - a.created_at,
   );
@@ -28,5 +32,7 @@ export function groupRecordsByDate(records: AssetRecord[]): AssetDailyGroup[] {
     }
     groups.get(r.date)!.records.push(r);
   }
-  return Array.from(groups.values());
+  const result = Array.from(groups.values());
+  if (compare) for (const g of result) g.records.sort(compare);
+  return result;
 }

@@ -193,7 +193,10 @@ const searchResults = computed(() => {
   );
 });
 
-const groupedResults = computed(() => groupRecordsByDate(searchResults.value));
+// 群組內依分類、名稱排序，與資產總覽一致
+const groupedResults = computed(() =>
+  groupRecordsByDate(searchResults.value, assetStore.compareRecords),
+);
 
 const clearSearch = () => {
   searchQuery.value = "";
