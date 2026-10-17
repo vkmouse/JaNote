@@ -81,7 +81,7 @@
       <!-- Daily Asset List（紀錄模式） -->
       <div v-if="listMode === 'records'" class="asset-list">
         <div v-if="groupedRecords.length === 0" class="chart-empty-text">
-          <p>{{ activeItem ? "本月此分類暫無資產記錄" : "本月暫無資產記錄" }}</p>
+          <p>{{ activeItem ? "本年度此分類暫無資產記錄" : "本年度暫無資產記錄" }}</p>
         </div>
         <div v-if="groupedRecords.length > 0" class="daily-groups">
           <ListGroup v-for="group in groupedRecords" :key="group.date">
@@ -216,8 +216,9 @@ useSharedSwipeContext();
 
 const isViewingShared = computed(() => userStore.isViewingShared);
 
-const monthStart = computed(() =>
-  new Date(selectedYear.value, selectedMonth.value - 1, 1).getTime(),
+const yearStart = computed(() => new Date(selectedYear.value, 0, 1).getTime());
+const yearEnd = computed(() =>
+  new Date(selectedYear.value, 11, 31).getTime(),
 );
 const monthEnd = computed(() =>
   new Date(selectedYear.value, selectedMonth.value, 0).getTime(),
@@ -301,8 +302,8 @@ const groupedRecords = computed(() =>
   groupRecordsByDate(
     assetStore.visibleRecords.filter(
       (r) =>
-        r.date >= monthStart.value &&
-        r.date <= monthEnd.value &&
+        r.date >= yearStart.value &&
+        r.date <= yearEnd.value &&
         (!activeItem.value || r.category_id === activeItem.value.id),
     ),
     assetStore.compareRecords,
