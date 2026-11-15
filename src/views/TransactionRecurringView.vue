@@ -225,7 +225,7 @@ function onItemClick(type: "TRANSACTION" | "BUDGET", id: string): void {
 }
 
 function goToSearchByRecurring(item: RecurringTransaction): void {
-  const query: Record<string, string> = { cat: item.category_id };
+  const query: Record<string, string> = {};
   if (item.note) query.q = item.note;
   router.push({ path: "/transactions/search", query });
 }

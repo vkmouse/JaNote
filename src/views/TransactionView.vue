@@ -306,7 +306,7 @@ const copyTransaction = (transaction: Transaction) => {
 };
 
 const goToSearch = (transaction: Transaction) => {
-  const query: Record<string, string> = { cat: transaction.category_id };
+  const query: Record<string, string> = {};
   if (transaction.note) query.q = transaction.note;
   router.push({ path: "/transactions/search", query });
 };

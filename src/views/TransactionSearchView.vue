@@ -53,7 +53,7 @@
         </div>
       </div>
 
-      <!-- Chart：依年月／年分組，純顯示 -->
+      <!-- Chart：依年月／年分組，點切片可在中央查看該組金額 -->
       <div v-if="showChart" class="chart-section">
         <div class="header-section">
           <div class="left-controls">
@@ -67,10 +67,12 @@
         <div class="chart-wrapper">
           <DonutChart
             :swipeable="false"
-            :selectable="false"
+            :selectable="true"
+            :active-label="chartActiveSlice?.sliceLabel ?? null"
             :center-label="chartCenterLabel"
             :center-balance="chartCenterBalance"
             :slices="chartSlices"
+            @slice-click="toggleChartSlice"
           />
           <div v-if="chartSlices.length === 0" class="chart-empty-text">
             <p>{{ chartEmptyText }}</p>
@@ -173,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
@@ -373,17 +375,42 @@ const chartTotal = computed(() =>
   chartTotals.value.reduce((sum, [, value]) => sum + value, 0),
 );
 
+const chartTypeText = computed(() =>
+  chartType.value === "EXPENSE" ? "支出" : "收入",
+);
+
+const chartSelectedLabel = ref<string | null>(null);
+
+// 結果變動後若所選分組已不存在，會自然回到總額，不必額外重設
+const chartActiveSlice = computed(
+  () =>
+    chartSlices.value.find(
+      (slice) => slice.sliceLabel === chartSelectedLabel.value,
+    ) ?? null,
+);
+
+const toggleChartSlice = (label: string) => {
+  chartSelectedLabel.value = chartSelectedLabel.value === label ? null : label;
+};
+
+// 換分組或類型後，原本選的切片已不是同一件事，直接清除
+watch([chartGroup, chartType], () => {
+  chartSelectedLabel.value = null;
+});
+
+// 選了切片：中央顯示「分組 + 支出/收入」與該組金額；沒選：顯示總額
 const chartCenterLabel = computed(() =>
-  chartType.value === "EXPENSE" ? "總支出" : "總收入",
+  chartActiveSlice.value
+    ? `${chartActiveSlice.value.sliceLabel} ${chartTypeText.value}`
+    : `總${chartTypeText.value}`,
 );
 
 const chartCenterBalance = computed(
-  () => `$${chartTotal.value.toLocaleString()}`,
+  () =>
+    `$${(chartActiveSlice.value?.sliceValue ?? chartTotal.value).toLocaleString()}`,
 );
 
-const chartEmptyText = computed(() =>
-  chartType.value === "EXPENSE" ? "暫無支出資料" : "暫無收入資料",
-);
+const chartEmptyText = computed(() => `暫無${chartTypeText.value}資料`);
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 

@@ -388,14 +388,9 @@ const summaryValueClass = computed(() => {
 // ── Navigation to search view ─────────────────────────────
 
 function goToSearchByBudget(budget: Budget): void {
-  const catIds = budget.category_ids
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .join(",");
   router.push({
     path: "/transactions/search",
-    query: { ...buildTimeQuery(), ...(catIds ? { cat: catIds } : {}) },
+    query: { ...buildTimeQuery(), q: budget.name },
   });
 }
 
