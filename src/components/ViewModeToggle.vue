@@ -1,7 +1,7 @@
 <script setup lang="ts">
 type ViewMode = "monthly" | "yearly" | "custom";
 
-defineProps<{ modelValue: ViewMode }>();
+defineProps<{ modelValue: ViewMode; showCustom: boolean }>();
 defineEmits<{ "update:modelValue": [value: ViewMode] }>();
 </script>
 
@@ -20,6 +20,7 @@ defineEmits<{ "update:modelValue": [value: ViewMode] }>();
       年
     </button>
     <button
+      v-if="showCustom"
       :class="['mode-btn', { active: modelValue === 'custom' }]"
       @click="$emit('update:modelValue', 'custom')"
     >

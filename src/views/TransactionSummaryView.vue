@@ -247,7 +247,7 @@ watch(
       <!-- 右：支出/收入 toggle，靠右 -->
       <div class="header-section">
         <div class="left-controls">
-          <ViewModeToggle v-model="viewMode" />
+          <ViewModeToggle v-model="viewMode" :show-custom="true" />
         </div>
         <div class="right-controls">
           <TypeToggle v-model="transactionType" />

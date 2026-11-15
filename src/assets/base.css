@@ -46,6 +46,19 @@
   /* 圖表專用色 */
   --chart-neutral: #E0E0E0;
   --chart-stroke: #333333;
+  /* 依序循環的多切片色盤（搜尋頁依時間分組的圓餅圖） */
+  --chart-series-1: #F28B82;
+  --chart-series-2: #F6AE5A;
+  --chart-series-3: #E8C547;
+  --chart-series-4: #8BC34A;
+  --chart-series-5: #4DB6AC;
+  --chart-series-6: #4FC3F7;
+  --chart-series-7: #7986CB;
+  --chart-series-8: #BA68C8;
+  --chart-series-9: #F06292;
+  --chart-series-10: #A1887F;
+  --chart-series-11: #90A4AE;
+  --chart-series-12: #AED581;
   --progress-track-bg: #f0f0f0;
 
   /* 計算機獨立 token，避免耦合全域語意色 */
@@ -121,6 +134,18 @@
 
   --chart-neutral: #4A453C;
   --chart-stroke: #17150F;
+  --chart-series-1: #F2918A;
+  --chart-series-2: #F5B26B;
+  --chart-series-3: #E6CB60;
+  --chart-series-4: #9CCC65;
+  --chart-series-5: #5CC4B8;
+  --chart-series-6: #61CCF7;
+  --chart-series-7: #8E9BD6;
+  --chart-series-8: #C77DD3;
+  --chart-series-9: #F27AA0;
+  --chart-series-10: #B49A91;
+  --chart-series-11: #9DB0BA;
+  --chart-series-12: #BCDD8F;
   --progress-track-bg: #2C2822;
 
   /* 面板改用深色模式的低飽和版本，避免整片亮黃刺眼 */

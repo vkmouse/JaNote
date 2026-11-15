@@ -53,6 +53,31 @@
         </div>
       </div>
 
+      <!-- Chart：依年月／年分組，純顯示 -->
+      <div v-if="showChart" class="chart-section">
+        <div class="header-section">
+          <div class="left-controls">
+            <ViewModeToggle v-model="chartGroup" :show-custom="false" />
+          </div>
+          <div class="right-controls">
+            <TypeToggle v-model="chartType" />
+          </div>
+        </div>
+
+        <div class="chart-wrapper">
+          <DonutChart
+            :swipeable="false"
+            :selectable="false"
+            :center-label="chartCenterLabel"
+            :center-balance="chartCenterBalance"
+            :slices="chartSlices"
+          />
+          <div v-if="chartSlices.length === 0" class="chart-empty-text">
+            <p>{{ chartEmptyText }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Search Results -->
       <div class="search-results">
         <div v-if="!hasAnyFilter" class="empty-state">
@@ -154,7 +179,7 @@ import TopNavigation from "../components/TopNavigation.vue";
 import NavBack from "../components/NavBack.vue";
 import NavSync from "../components/NavSync.vue";
 import NavAvatar from "../components/NavAvatar.vue";
-import type { Transaction } from "../types";
+import type { Transaction, TransactionType } from "../types";
 import CategoryIcon from "../components/CategoryIcon.vue";
 import ListGroup from "../components/ListGroup.vue";
 import ListItem from "../components/ListItem.vue";
@@ -164,6 +189,10 @@ import ConfirmModal from "../components/ConfirmModal.vue";
 import { useSharedSwipeContext } from "../composables/useSharedSwipeContext";
 import { useDeleteConfirm } from "../composables/useDeleteConfirm";
 import SearchFilterPanel from "../components/SearchFilterPanel.vue";
+import DonutChart from "../components/DonutChart.vue";
+import type { DonutSlice } from "../components/DonutChart.vue";
+import ViewModeToggle from "../components/ViewModeToggle.vue";
+import TypeToggle from "../components/TypeToggle.vue";
 import { iconFunnel, iconSearch } from "../utils/icons";
 import { useSearchFilters } from "../composables/useSearchFilters";
 import { highlightMatch } from "../utils/highlightMatch";
@@ -300,6 +329,61 @@ const groupedResults = computed<DailyGroup[]>(() => {
 
   return Array.from(groups.values());
 });
+
+// ── Chart（依年月／年分組的圓餅圖）────────────────────────────────────────────
+
+const CHART_COLOR_COUNT = 12;
+
+// 只是頁面內的顯示偏好，不寫入網址（useSearchFilters 的 mode 代表時間篩選）
+const chartGroup = ref<"monthly" | "yearly">("monthly");
+const chartType = ref<TransactionType>("EXPENSE");
+
+const showChart = computed(
+  () => hasAnyFilter.value && searchResults.value.length > 0,
+);
+
+// 以 [分組鍵, 金額加總] 表示，鍵為補零字串，所以字串由大到小即為新到舊
+const chartTotals = computed<[string, number][]>(() => {
+  const totals = new Map<string, number>();
+
+  searchResults.value.forEach((transaction) => {
+    if (transaction.type !== chartType.value) return;
+
+    const date = new Date(transaction.date);
+    const year = String(date.getFullYear());
+    const key =
+      chartGroup.value === "yearly"
+        ? year
+        : `${year}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+    totals.set(key, (totals.get(key) ?? 0) + transaction.amount);
+  });
+
+  return Array.from(totals.entries()).sort(([a], [b]) => (a < b ? 1 : -1));
+});
+
+const chartSlices = computed<DonutSlice[]>(() =>
+  chartTotals.value.map(([label, value], index) => ({
+    sliceLabel: label,
+    sliceValue: value,
+    sliceColor: `var(--chart-series-${(index % CHART_COLOR_COUNT) + 1})`,
+  })),
+);
+
+const chartTotal = computed(() =>
+  chartTotals.value.reduce((sum, [, value]) => sum + value, 0),
+);
+
+const chartCenterLabel = computed(() =>
+  chartType.value === "EXPENSE" ? "總支出" : "總收入",
+);
+
+const chartCenterBalance = computed(
+  () => `$${chartTotal.value.toLocaleString()}`,
+);
+
+const chartEmptyText = computed(() =>
+  chartType.value === "EXPENSE" ? "暫無支出資料" : "暫無收入資料",
+);
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -447,6 +531,39 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text-secondary, #888);
   padding: 0 4px;
+}
+
+/* ── Chart ── */
+.header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 12px;
+}
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.right-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.chart-wrapper {
+  padding: 0 16px 16px;
+}
+
+.chart-empty-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0 8px;
+  color: var(--text-disabled);
+  font-size: 14px;
 }
 
 /* ── Results ── */

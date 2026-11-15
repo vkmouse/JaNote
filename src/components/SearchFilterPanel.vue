@@ -139,6 +139,7 @@ function dismiss() {
 
             <ViewModeToggle
               :model-value="draftTimeMode === '' ? 'monthly' : draftTimeMode"
+              :show-custom="true"
               @update:model-value="onTimeModeChange"
             />
 
