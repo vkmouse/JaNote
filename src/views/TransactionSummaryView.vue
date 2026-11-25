@@ -136,7 +136,7 @@ const centerBalance = computed(() => {
 function goToSearchByCategory(summary: CategorySummary): void {
   router.push({
     path: "/transactions/search",
-    query: { ...buildTimeQuery(), q: summary.category_name },
+    query: { ...buildTimeQuery(), cat: summary.category_id },
   });
 }
 
